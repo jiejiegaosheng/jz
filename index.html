@@ -38,15 +38,12 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
 .empty{text-align:center;padding:20px;color:#999;font-size:14px;}
 .title-input{font-size:20px;font-weight:bold;border:none;background:transparent;outline:none;color:#222;width:100%;}
 .del-btn{background:#fee;border:none;color:#f53f3f;padding:4px 8px;border-radius:4px;font-size:12px;margin-left:6px;}
-
-/* 统一所有弹窗：和记账弹窗样式完全一样 */
 .pop-page{
 position:fixed;top:0;left:0;right:0;bottom:0;
 background:#f5f7fa;z-index:9999;padding:15px;
 display:none;overflow-y:auto;
 }
 .pop-page.active{display:block;}
-
 .month-group{margin-bottom:10px;}
 .month-title{
 background:#fff;border-radius:8px;padding:12px 15px;
@@ -66,8 +63,6 @@ font-weight:bold;margin-bottom:10px;
 </style>
 </head>
 <body>
-
-<!-- 首页 -->
 <div id="homePage">
     <div class="header">
         <div class="logo">
@@ -79,7 +74,6 @@ font-weight:bold;margin-bottom:10px;
         </div>
         <div class="update-tip">● 数据本地保存</div>
     </div>
-
     <div class="section-title">数据概览</div>
     <div class="stat-card">
         <div class="stat-grid">
@@ -93,7 +87,6 @@ font-weight:bold;margin-bottom:10px;
             <div class="stat-item"><p class="balance" id="totalBalance">¥0.00</p><span>结余</span></div>
         </div>
     </div>
-
     <div class="section-title">收入</div>
     <div class="card-single">
         <div class="card" onclick="openCatPop('生活费','in')">
@@ -111,7 +104,6 @@ font-weight:bold;margin-bottom:10px;
             </div>
         </div>
     </div>
-
     <div class="section-title">支出分类</div>
     <div class="card-grid">
         <div class="card" onclick="openCatPop('吃喝','out')"><div class="card-icon" style="background:#fff7e8;color:#ff7d00;">🍔</div><div class="card-content"><h3>吃喝</h3><p class="card-money out" id="cate_吃喝">¥0.00</p></div></div>
@@ -122,7 +114,6 @@ font-weight:bold;margin-bottom:10px;
         <div class="card" onclick="openCatPop('杂七杂八','out')"><div class="card-icon" style="background:#f5f0ff;color:#9b6cdd;">📦</div><div class="card-content"><h3>杂七杂八</h3><p class="card-money out" id="cate_杂七杂八">¥0.00</p></div></div>
         <div class="card" onclick="openCatPop('总存款','save')"><div class="card-icon" style="background:#f0efff;color:#7367f0;">🏦</div><div class="card-content"><h3>总存款</h3><p class="card-money save" id="cate_总存款">¥0.00</p></div></div>
     </div>
-
     <div class="section-title">账单管理</div>
     <div class="card-single">
         <div class="card" onclick="openAllBillPop()">
@@ -135,7 +126,6 @@ font-weight:bold;margin-bottom:10px;
     </div>
 </div>
 
-<!-- 分类详情 弹窗浮层 和记账同款 -->
 <div id="catPopPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeCatPop()">← 返回</div>
@@ -154,7 +144,6 @@ font-weight:bold;margin-bottom:10px;
     <div id="catPopList"></div>
 </div>
 
-<!-- 全部账单 弹窗浮层 和记账同款 -->
 <div id="allPopPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeAllPop()">← 返回</div>
@@ -170,7 +159,6 @@ font-weight:bold;margin-bottom:10px;
     <div id="allPopList"></div>
 </div>
 
-<!-- 记账 弹窗浮层 原版 -->
 <div id="addPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeAdd()">← 返回</div>
@@ -200,40 +188,29 @@ font-weight:bold;margin-bottom:10px;
 <script>
 let billList = JSON.parse(localStorage.getItem('billList')) || [];
 let currCat = "", currType = "";
-
 let savedTitle = localStorage.getItem('title') || '';
 document.getElementById('customTitle').value = savedTitle;
 document.getElementById('customTitle').addEventListener('input', e => {
     localStorage.setItem('title', e.target.value);
 });
 
-// 打开分类弹窗
 function openCatPop(cat, type){
-    currCat = cat;
-    currType = type;
+    currCat = cat; currType = type;
     document.getElementById('catPopTitle').innerText = cat;
     document.getElementById('catPopPage').classList.add('active');
     renderCatPop();
 }
-// 关闭分类弹窗
 function closeCatPop(){
     document.getElementById('catPopPage').classList.remove('active');
 }
-
-// 打开全部账单弹窗
 function openAllBillPop(){
     document.getElementById('allPopPage').classList.add('active');
     renderAllPop();
 }
-// 关闭全部账单弹窗
 function closeAllPop(){
     document.getElementById('allPopPage').classList.remove('active');
 }
-
-function goAddByCat(){
-    goAdd(currCat, currType);
-}
-
+function goAddByCat(){ goAdd(currCat, currType); }
 function goAdd(cat, type){
     currCat = cat; currType = type;
     document.getElementById('addTitle').innerText = cat;
@@ -250,11 +227,9 @@ function goAdd(cat, type){
     document.getElementById('addMoney').value = '';
     document.getElementById('addRemark').value = '';
 }
-
 function closeAdd(){
     document.getElementById('addPage').classList.remove('active');
 }
-
 function saveBill(){
     let money = parseFloat(document.getElementById('addMoney').value);
     let remark = document.getElementById('addRemark').value;
@@ -269,98 +244,91 @@ function saveBill(){
     if(!money || money <= 0) return alert('输入正确金额');
     billList.unshift({ id: Date.now(), cate: currCat, type: currType, date, money, remark });
     localStorage.setItem('billList', JSON.stringify(billList));
-    closeAdd();
-    renderCatPop();
-    renderAllPop();
-    refreshAll();
+    closeAdd(); renderCatPop(); renderAllPop(); refreshAll();
 }
 
-// 分类弹窗渲染
 function renderCatPop(){
     let list = billList.filter(i => i.cate === currCat);
     let thisYear = new Date().getFullYear();
-    let yearIn = 0, yearOut = 0, yearSave = 0;
-    list.forEach(i => {
+    let yearIn=0, yearOut=0, yearSave=0;
+    list.forEach(i=>{
         let y = new Date(i.date).getFullYear();
-        if(y === thisYear){
-            if(i.type === 'in') yearIn += i.money;
-            if(i.type === 'out') yearOut += i.money;
-            if(i.type === 'save') yearSave += i.money;
+        if(y===thisYear){
+            if(i.type==='in') yearIn += i.money;
+            if(i.type==='out') yearOut += i.money;
+            if(i.type==='save') yearSave += i.money;
         }
     });
     document.getElementById('catPopIn').innerText = `¥${yearIn.toFixed(2)}`;
     document.getElementById('catPopOut').innerText = `¥${yearOut.toFixed(2)}`;
     document.getElementById('catPopSave').innerText = `¥${yearSave.toFixed(2)}`;
-
-    let yearGroup = {};
-    list.forEach(i => {
-        let y = new Date(i.date).getFullYear();
-        if(!yearGroup[y]) yearGroup[y] = {};
-        let m = i.date.slice(0,7);
-        if(!yearGroup[y][m]) yearGroup[y][m] = [];
+    let yearGroup={};
+    list.forEach(i=>{
+        let y=new Date(i.date).getFullYear();
+        if(!yearGroup[y]) yearGroup[y]={};
+        let m=i.date.slice(0,7);
+        if(!yearGroup[y][m]) yearGroup[y][m]=[];
         yearGroup[y][m].push(i);
     });
-    let years = Object.keys(yearGroup).sort((a,b)=>b-a);
-    let html = years.length ? '' : '<div class="empty">暂无记录</div>';
-    years.forEach(y => {
-        html += `<div class="year-title">${y}年</div>`;
-        let months = Object.keys(yearGroup[y]).sort().reverse();
-        months.forEach(m => {
-            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
-            yearGroup[y][m].forEach(i => {
-                let c = i.type === 'in' ? 'in' : i.type === 'out' ? 'out' : 'save';
-                let s = i.type === 'in' ? '+' : '-';
-                let r = i.remark ? `｜${i.remark}` : '';
-                html += `<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+    let years=Object.keys(yearGroup).sort((a,b)=>b-a);
+    let html=years.length?'':'<div class="empty">暂无记录</div>';
+    years.forEach(y=>{
+        html+=`<div class="year-title">${y}年</div>`;
+        let months=Object.keys(yearGroup[y]).sort().reverse();
+        months.forEach(m=>{
+            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
+            yearGroup[y][m].forEach(i=>{
+                let c=i.type==='in'?'in':i.type==='out'?'out':'save';
+                let s=i.type==='in'?'+':'-';
+                let r=i.remark?`｜${i.remark}`:'';
+                html+=`<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
             });
-            html += `</div></div>`;
+            html+=`</div></div>`;
         });
     });
-    document.getElementById('catPopList').innerHTML = html;
+    document.getElementById('catPopList').innerHTML=html;
 }
 
-// 全部账单弹窗渲染
 function renderAllPop(){
-    let list = billList;
-    let thisYear = new Date().getFullYear();
-    let yearIn = 0, yearOut = 0, yearSave = 0;
-    list.forEach(i => {
-        let y = new Date(i.date).getFullYear();
-        if(y === thisYear){
-            if(i.type === 'in') yearIn += i.money;
-            if(i.type === 'out') yearOut += i.money;
-            if(i.type === 'save') yearSave += i.money;
+    let list=billList;
+    let thisYear=new Date().getFullYear();
+    let yearIn=0,yearOut=0,yearSave=0;
+    list.forEach(i=>{
+        let y=new Date(i.date).getFullYear();
+        if(y===thisYear){
+            if(i.type==='in') yearIn+=i.money;
+            if(i.type==='out') yearOut+=i.money;
+            if(i.type==='save') yearSave+=i.money;
         }
     });
-    document.getElementById('allPopIn').innerText = `¥${yearIn.toFixed(2)}`;
-    document.getElementById('allPopOut').innerText = `¥${yearOut.toFixed(2)}`;
-    document.getElementById('allPopSave').innerText = `¥${yearSave.toFixed(2)}`;
-
-    let yearGroup = {};
-    list.forEach(i => {
-        let y = new Date(i.date).getFullYear();
-        if(!yearGroup[y]) yearGroup[y] = {};
-        let m = i.date.slice(0,7);
-        if(!yearGroup[y][m]) yearGroup[y][m] = [];
+    document.getElementById('allPopIn').innerText=`¥${yearIn.toFixed(2)}`;
+    document.getElementById('allPopOut').innerText=`¥${yearOut.toFixed(2)}`;
+    document.getElementById('allPopSave').innerText=`¥${yearSave.toFixed(2)}`;
+    let yearGroup={};
+    list.forEach(i=>{
+        let y=new Date(i.date).getFullYear();
+        if(!yearGroup[y]) yearGroup[y]={};
+        let m=i.date.slice(0,7);
+        if(!yearGroup[y][m]) yearGroup[y][m]=[];
         yearGroup[y][m].push(i);
     });
-    let years = Object.keys(yearGroup).sort((a,b)=>b-a);
-    let html = years.length ? '' : '<div class="empty">暂无记录</div>';
-    years.forEach(y => {
-        html += `<div class="year-title">${y}年</div>`;
-        let months = Object.keys(yearGroup[y]).sort().reverse();
-        months.forEach(m => {
-            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
-            yearGroup[y][m].forEach(i => {
-                let c = i.type === 'in' ? 'in' : i.type === 'out' ? 'out' : 'save';
-                let s = i.type === 'in' ? '+' : '-';
-                let r = i.remark ? `｜${i.cate} ${i.remark}` : `｜${i.cate}`;
-                html += `<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+    let years=Object.keys(yearGroup).sort((a,b)=>b-a);
+    let html=years.length?'':'<div class="empty">暂无记录</div>';
+    years.forEach(y=>{
+        html+=`<div class="year-title">${y}年</div>`;
+        let months=Object.keys(yearGroup[y]).sort().reverse();
+        months.forEach(m=>{
+            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
+            yearGroup[y][m].forEach(i=>{
+                let c=i.type==='in'?'in':i.type==='out'?'out':'save';
+                let s=i.type==='in'?'+':'-';
+                let r=i.remark?`｜${i.cate} ${i.remark}`:`｜${i.cate}`;
+                html+=`<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
             });
-            html += `</div></div>`;
+            html+=`</div></div>`;
         });
     });
-    document.getElementById('allPopList').innerHTML = html;
+    document.getElementById('allPopList').innerHTML=html;
 }
 
 function toggleMonth(month){
@@ -368,39 +336,38 @@ function toggleMonth(month){
 }
 
 function delItem(id){
-    billList = billList.filter(i => i.id !== id);
-    localStorage.setItem('billList', JSON.stringify(billList));
-    renderCatPop();
-    renderAllPop();
-    refreshAll();
+    billList=billList.filter(i=>i.id!==id);
+    localStorage.setItem('billList',JSON.stringify(billList));
+    renderCatPop(); renderAllPop(); refreshAll();
 }
 
-// 首页只显示当月
+// ✅ 这里只修复了支出显示错误，其他完全不变
 function refreshAll(){
-    let now = new Date();
-    let currMonth = now.toISOString().slice(0,7);
-    let cats = ['生活费','兼职收入','吃喝','出行','追星','生活','人情往来','杂七杂八','总存款'];
-    cats.forEach(cate => {
-        let sum = 0;
-        billList.forEach(i => {
-            if(i.cate === cate && i.date.slice(0,7) === currMonth) sum += i.money;
+    let now=new Date();
+    let currMonth=now.toISOString().slice(0,7);
+    let cats=['生活费','兼职收入','吃喝','出行','追星','生活','人情往来','杂七杂八','总存款'];
+    cats.forEach(cate=>{
+        let sum=0;
+        billList.forEach(i=>{
+            if(i.cate===cate && i.date.slice(0,7)===currMonth) sum+=i.money;
         });
-        let el = document.getElementById('cate_'+cate);
-        if(el) el.innerText = '¥'+sum.toFixed(2);
+        let el=document.getElementById('cate_'+cate);
+        if(el) el.innerText='¥'+sum.toFixed(2);
     });
-    let totalIn=0, totalOut=0, totalSave=0;
-    billList.forEach(i => {
-        if(i.date.slice(0,7) === currMonth){
-            if(i.type === 'in') totalIn += i.money;
-            if(i.type === 'out') totalOut += i.money;
-            if(i.type === 'save') totalSave += i.money;
+    let totalIn=0,totalOut=0,totalSave=0;
+    billList.forEach(i=>{
+        if(i.date.slice(0,7)===currMonth){
+            if(i.type==='in') totalIn+=i.money;
+            if(i.type==='out') totalOut+=i.money;
+            if(i.type==='save') totalSave+=i.money;
         }
     });
-    let balance = totalIn - totalOut - totalSave;
-    document.getElementById('totalIn').innerText = `¥${totalIn.toFixed(2)}`;
-    document.getElementById('totalOut').innerText = `¥${totalSave.toFixed(2)}`;
-    document.getElementById('totalSave').innerText = `¥${totalSave.toFixed(2)}`;
-    document.getElementById('totalBalance').innerText = `¥${balance.toFixed(2)}`;
+    let balance=totalIn-totalOut-totalSave;
+    document.getElementById('totalIn').innerText=`¥${totalIn.toFixed(2)}`;
+    // ✅ 原来错在这里：totalOut 写成 totalSave 了
+    document.getElementById('totalOut').innerText=`¥${totalOut.toFixed(2)}`;
+    document.getElementById('totalSave').innerText=`¥${totalSave.toFixed(2)}`;
+    document.getElementById('totalBalance').innerText=`¥${balance.toFixed(2)}`;
 }
 
 refreshAll();
