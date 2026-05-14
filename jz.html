@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>记账本</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
+body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-bottom:20px;}
+.header{margin-bottom:20px;}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.logo-icon{width:45px;height:45px;background:#7367f0;border-radius:10px;color:#fff;text-align:center;line-height:45px;font-size:18px;}
+.logo-text h1{font-size:20px;color:#222;}
+.logo-text p{font-size:13px;color:#666;}
+.update-tip{background:#edefff;color:#7367f0;padding:10px;border-radius:8px;font-size:13px;margin-bottom:15px;}
+.section-title{font-size:18px;font-weight:bold;color:#222;margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
+.back-btn{color:#7367f0;text-decoration:none;font-size:14px;cursor:pointer;}
+.stat-card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;}
+.stat-item p{font-size:20px;font-weight:bold;margin-bottom:3px;}
+.stat-item span{font-size:12px;color:#666;}
+.in{color:#00b42a;}
+.out{color:#f53f3f;}
+.save{color:#7367f0;}
+.balance{color:#ff9800;}
+.card-single{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:15px;}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
+.card{background:#fff;border-radius:10px;padding:15px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.card-icon{width:40px;height:40px;border-radius:8px;text-align:center;line-height:40px;font-size:16px;}
+.card-content h3{font-size:15px;color:#222;}
+.card-money{font-size:13px;font-weight:bold;margin-top:2px;}
+.form-card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;}
+.form-item{margin-bottom:12px;}
+.form-item label{display:block;font-size:14px;color:#444;margin-bottom:5px;}
+.form-item input{width:100%;padding:10px;border:1px solid #eee;border-radius:8px;font-size:14px;}
+.btn{width:100%;padding:12px;background:#7367f0;color:#fff;border:none;border-radius:8px;font-size:15px;margin-top:5px;}
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #eee;}
+.empty{text-align:center;padding:20px;color:#999;font-size:14px;}
+.title-input{font-size:20px;font-weight:bold;border:none;background:transparent;outline:none;color:#222;width:100%;}
+.del-btn{background:#fee;border:none;color:#f53f3f;padding:4px 8px;border-radius:4px;font-size:12px;margin-left:6px;}
+
+/* 统一所有弹窗：和记账弹窗样式完全一样 */
+.pop-page{
+position:fixed;top:0;left:0;right:0;bottom:0;
+background:#f5f7fa;z-index:9999;padding:15px;
+display:none;overflow-y:auto;
+}
+.pop-page.active{display:block;}
+
+.month-group{margin-bottom:10px;}
+.month-title{
+background:#fff;border-radius:8px;padding:12px 15px;
+font-size:15px;font-weight:bold;color:#222;cursor:pointer;
+margin-bottom:5px;
+}
+.month-body{
+background:#fff;border-radius:8px;padding:8px 12px;
+display:none;
+}
+.month-body.show{display:block;}
+.year-title{
+background:#f0efff;color:#7367f0;
+padding:10px 15px;border-radius:8px;
+font-weight:bold;margin-bottom:10px;
+}
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="homePage">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">✨</div>
+            <div class="logo-text">
+                <input type="text" class="title-input" id="customTitle" placeholder="请输入标题">
+                <p>每一天都要好好存钱</p>
+            </div>
+        </div>
+        <div class="update-tip">● 数据本地保存</div>
+    </div>
+
+    <div class="section-title">数据概览</div>
+    <div class="stat-card">
+        <div class="stat-grid">
+            <div class="stat-item"><p class="in" id="totalIn">¥0.00</p><span>本月收入</span></div>
+            <div class="stat-item"><p class="out" id="totalOut">¥0.00</p><span>本月支出</span></div>
+            <div class="stat-item"><p class="save" id="totalSave">¥0.00</p><span>本月存款</span></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-grid">
+            <div class="stat-item"><p class="balance" id="totalBalance">¥0.00</p><span>结余</span></div>
+        </div>
+    </div>
+
+    <div class="section-title">收入</div>
+    <div class="card-single">
+        <div class="card" onclick="openCatPop('生活费','in')">
+            <div class="card-icon" style="background:#e8f8f0;color:#00b42a;">💵</div>
+            <div class="card-content">
+                <h3>生活费</h3>
+                <p class="card-money in" id="cate_生活费">¥0.00</p>
+            </div>
+        </div>
+        <div class="card" onclick="openCatPop('兼职收入','in')">
+            <div class="card-icon" style="background:#e8f3ff;color:#3b82f6;">💼</div>
+            <div class="card-content">
+                <h3>兼职收入</h3>
+                <p class="card-money in" id="cate_兼职收入">¥0.00</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">支出分类</div>
+    <div class="card-grid">
+        <div class="card" onclick="openCatPop('吃喝','out')"><div class="card-icon" style="background:#fff7e8;color:#ff7d00;">🍔</div><div class="card-content"><h3>吃喝</h3><p class="card-money out" id="cate_吃喝">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('出行','out')"><div class="card-icon" style="background:#e8f3ff;color:#3b82f6;">🚇</div><div class="card-content"><h3>出行</h3><p class="card-money out" id="cate_出行">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('追星','out')"><div class="card-icon" style="background:#fee8f4;color:#f53f8c;">💫</div><div class="card-content"><h3>追星</h3><p class="card-money out" id="cate_追星">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('生活','out')"><div class="card-icon" style="background:#e8f8f0;color:#00b42a;">🛒</div><div class="card-content"><h3>生活</h3><p class="card-money out" id="cate_生活">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('人情往来','out')"><div class="card-icon" style="background:#f0efff;color:#7367f0;">💌</div><div class="card-content"><h3>人情往来</h3><p class="card-money out" id="cate_人情往来">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('杂七杂八','out')"><div class="card-icon" style="background:#f5f0ff;color:#9b6cdd;">📦</div><div class="card-content"><h3>杂七杂八</h3><p class="card-money out" id="cate_杂七杂八">¥0.00</p></div></div>
+        <div class="card" onclick="openCatPop('总存款','save')"><div class="card-icon" style="background:#f0efff;color:#7367f0;">🏦</div><div class="card-content"><h3>总存款</h3><p class="card-money save" id="cate_总存款">¥0.00</p></div></div>
+    </div>
+
+    <div class="section-title">账单管理</div>
+    <div class="card-single">
+        <div class="card" onclick="openAllBillPop()">
+            <div class="card-icon" style="background:#fff3cd;color:#ffc107;">📜</div>
+            <div class="card-content">
+                <h3>全部账单</h3>
+                <p class="card-money" style="color:#666;">查看所有记录</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分类详情 弹窗浮层 和记账同款 -->
+<div id="catPopPage" class="pop-page">
+    <div class="section-title">
+        <div class="back-btn" onclick="closeCatPop()">← 返回</div>
+        <span id="catPopTitle">分类</span>
+        <div style="flex:1;text-align:right;">
+            <div class="back-btn" onclick="goAddByCat()">➕ 记账</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-grid">
+            <div class="stat-item"><p class="in" id="catPopIn">¥0.00</p><span>本年收入</span></div>
+            <div class="stat-item"><p class="out" id="catPopOut">¥0.00</p><span>本年支出</span></div>
+            <div class="stat-item"><p class="save" id="catPopSave">¥0.00</p><span>本年存款</span></div>
+        </div>
+    </div>
+    <div id="catPopList"></div>
+</div>
+
+<!-- 全部账单 弹窗浮层 和记账同款 -->
+<div id="allPopPage" class="pop-page">
+    <div class="section-title">
+        <div class="back-btn" onclick="closeAllPop()">← 返回</div>
+        <span>全部账单</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-grid">
+            <div class="stat-item"><p class="in" id="allPopIn">¥0.00</p><span>本年收入</span></div>
+            <div class="stat-item"><p class="out" id="allPopOut">¥0.00</p><span>本年支出</span></div>
+            <div class="stat-item"><p class="save" id="allPopSave">¥0.00</p><span>本年存款</span></div>
+        </div>
+    </div>
+    <div id="allPopList"></div>
+</div>
+
+<!-- 记账 弹窗浮层 原版 -->
+<div id="addPage" class="pop-page">
+    <div class="section-title">
+        <div class="back-btn" onclick="closeAdd()">← 返回</div>
+        <span id="addTitle">记账</span>
+    </div>
+    <div class="form-card">
+        <div class="form-item" id="dayArea">
+            <label>日期</label>
+            <input type="date" id="addDate">
+        </div>
+        <div class="form-item" id="monthArea" style="display:none;">
+            <label>存款月份</label>
+            <input type="month" id="addMonth">
+        </div>
+        <div class="form-item">
+            <label>金额</label>
+            <input type="number" id="addMoney" placeholder="输入金额">
+        </div>
+        <div class="form-item">
+            <label>备注</label>
+            <input type="text" id="addRemark" placeholder="选填">
+        </div>
+        <button class="btn" onclick="saveBill()">保存</button>
+    </div>
+</div>
+
+<script>
+let billList = JSON.parse(localStorage.getItem('billList')) || [];
+let currCat = "", currType = "";
+
+let savedTitle = localStorage.getItem('title') || '';
+document.getElementById('customTitle').value = savedTitle;
+document.getElementById('customTitle').addEventListener('input', e => {
+    localStorage.setItem('title', e.target.value);
+});
+
+// 打开分类弹窗
+function openCatPop(cat, type){
+    currCat = cat;
+    currType = type;
+    document.getElementById('catPopTitle').innerText = cat;
+    document.getElementById('catPopPage').classList.add('active');
+    renderCatPop();
+}
+// 关闭分类弹窗
+function closeCatPop(){
+    document.getElementById('catPopPage').classList.remove('active');
+}
+
+// 打开全部账单弹窗
+function openAllBillPop(){
+    document.getElementById('allPopPage').classList.add('active');
+    renderAllPop();
+}
+// 关闭全部账单弹窗
+function closeAllPop(){
+    document.getElementById('allPopPage').classList.remove('active');
+}
+
+function goAddByCat(){
+    goAdd(currCat, currType);
+}
+
+function goAdd(cat, type){
+    currCat = cat; currType = type;
+    document.getElementById('addTitle').innerText = cat;
+    document.getElementById('addPage').classList.add('active');
+    if(type === 'save'){
+        document.getElementById('monthArea').style.display = 'block';
+        document.getElementById('dayArea').style.display = 'none';
+        document.getElementById('addMonth').value = new Date().toISOString().slice(0,7);
+    }else{
+        document.getElementById('dayArea').style.display = 'block';
+        document.getElementById('monthArea').style.display = 'none';
+        document.getElementById('addDate').valueAsDate = new Date();
+    }
+    document.getElementById('addMoney').value = '';
+    document.getElementById('addRemark').value = '';
+}
+
+function closeAdd(){
+    document.getElementById('addPage').classList.remove('active');
+}
+
+function saveBill(){
+    let money = parseFloat(document.getElementById('addMoney').value);
+    let remark = document.getElementById('addRemark').value;
+    let date;
+    if(currType === 'save'){
+        date = document.getElementById('addMonth').value;
+        if(!date) return alert('请选择月份');
+    }else{
+        date = document.getElementById('addDate').value;
+        if(!date) return alert('请选择日期');
+    }
+    if(!money || money <= 0) return alert('输入正确金额');
+    billList.unshift({ id: Date.now(), cate: currCat, type: currType, date, money, remark });
+    localStorage.setItem('billList', JSON.stringify(billList));
+    closeAdd();
+    renderCatPop();
+    renderAllPop();
+    refreshAll();
+}
+
+// 分类弹窗渲染
+function renderCatPop(){
+    let list = billList.filter(i => i.cate === currCat);
+    let thisYear = new Date().getFullYear();
+    let yearIn = 0, yearOut = 0, yearSave = 0;
+    list.forEach(i => {
+        let y = new Date(i.date).getFullYear();
+        if(y === thisYear){
+            if(i.type === 'in') yearIn += i.money;
+            if(i.type === 'out') yearOut += i.money;
+            if(i.type === 'save') yearSave += i.money;
+        }
+    });
+    document.getElementById('catPopIn').innerText = `¥${yearIn.toFixed(2)}`;
+    document.getElementById('catPopOut').innerText = `¥${yearOut.toFixed(2)}`;
+    document.getElementById('catPopSave').innerText = `¥${yearSave.toFixed(2)}`;
+
+    let yearGroup = {};
+    list.forEach(i => {
+        let y = new Date(i.date).getFullYear();
+        if(!yearGroup[y]) yearGroup[y] = {};
+        let m = i.date.slice(0,7);
+        if(!yearGroup[y][m]) yearGroup[y][m] = [];
+        yearGroup[y][m].push(i);
+    });
+    let years = Object.keys(yearGroup).sort((a,b)=>b-a);
+    let html = years.length ? '' : '<div class="empty">暂无记录</div>';
+    years.forEach(y => {
+        html += `<div class="year-title">${y}年</div>`;
+        let months = Object.keys(yearGroup[y]).sort().reverse();
+        months.forEach(m => {
+            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
+            yearGroup[y][m].forEach(i => {
+                let c = i.type === 'in' ? 'in' : i.type === 'out' ? 'out' : 'save';
+                let s = i.type === 'in' ? '+' : '-';
+                let r = i.remark ? `｜${i.remark}` : '';
+                html += `<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+            });
+            html += `</div></div>`;
+        });
+    });
+    document.getElementById('catPopList').innerHTML = html;
+}
+
+// 全部账单弹窗渲染
+function renderAllPop(){
+    let list = billList;
+    let thisYear = new Date().getFullYear();
+    let yearIn = 0, yearOut = 0, yearSave = 0;
+    list.forEach(i => {
+        let y = new Date(i.date).getFullYear();
+        if(y === thisYear){
+            if(i.type === 'in') yearIn += i.money;
+            if(i.type === 'out') yearOut += i.money;
+            if(i.type === 'save') yearSave += i.money;
+        }
+    });
+    document.getElementById('allPopIn').innerText = `¥${yearIn.toFixed(2)}`;
+    document.getElementById('allPopOut').innerText = `¥${yearOut.toFixed(2)}`;
+    document.getElementById('allPopSave').innerText = `¥${yearSave.toFixed(2)}`;
+
+    let yearGroup = {};
+    list.forEach(i => {
+        let y = new Date(i.date).getFullYear();
+        if(!yearGroup[y]) yearGroup[y] = {};
+        let m = i.date.slice(0,7);
+        if(!yearGroup[y][m]) yearGroup[y][m] = [];
+        yearGroup[y][m].push(i);
+    });
+    let years = Object.keys(yearGroup).sort((a,b)=>b-a);
+    let html = years.length ? '' : '<div class="empty">暂无记录</div>';
+    years.forEach(y => {
+        html += `<div class="year-title">${y}年</div>`;
+        let months = Object.keys(yearGroup[y]).sort().reverse();
+        months.forEach(m => {
+            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')+'月'}</div><div class="month-body" id="mb_${m}">`;
+            yearGroup[y][m].forEach(i => {
+                let c = i.type === 'in' ? 'in' : i.type === 'out' ? 'out' : 'save';
+                let s = i.type === 'in' ? '+' : '-';
+                let r = i.remark ? `｜${i.cate} ${i.remark}` : `｜${i.cate}`;
+                html += `<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+            });
+            html += `</div></div>`;
+        });
+    });
+    document.getElementById('allPopList').innerHTML = html;
+}
+
+function toggleMonth(month){
+    document.getElementById('mb_'+month).classList.toggle('show');
+}
+
+function delItem(id){
+    billList = billList.filter(i => i.id !== id);
+    localStorage.setItem('billList', JSON.stringify(billList));
+    renderCatPop();
+    renderAllPop();
+    refreshAll();
+}
+
+// 首页只显示当月
+function refreshAll(){
+    let now = new Date();
+    let currMonth = now.toISOString().slice(0,7);
+    let cats = ['生活费','兼职收入','吃喝','出行','追星','生活','人情往来','杂七杂八','总存款'];
+    cats.forEach(cate => {
+        let sum = 0;
+        billList.forEach(i => {
+            if(i.cate === cate && i.date.slice(0,7) === currMonth) sum += i.money;
+        });
+        let el = document.getElementById('cate_'+cate);
+        if(el) el.innerText = '¥'+sum.toFixed(2);
+    });
+    let totalIn=0, totalOut=0, totalSave=0;
+    billList.forEach(i => {
+        if(i.date.slice(0,7) === currMonth){
+            if(i.type === 'in') totalIn += i.money;
+            if(i.type === 'out') totalOut += i.money;
+            if(i.type === 'save') totalSave += i.money;
+        }
+    });
+    let balance = totalIn - totalOut - totalSave;
+    document.getElementById('totalIn').innerText = `¥${totalIn.toFixed(2)}`;
+    document.getElementById('totalOut').innerText = `¥${totalSave.toFixed(2)}`;
+    document.getElementById('totalSave').innerText = `¥${totalSave.toFixed(2)}`;
+    document.getElementById('totalBalance').innerText = `¥${balance.toFixed(2)}`;
+}
+
+refreshAll();
+</script>
+</body>
+</html>
