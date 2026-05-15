@@ -10,7 +10,7 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
 body{background:#f0f7ff;padding:15px;max-width:500px;margin:0 auto;padding-bottom:20px;}
 .header{margin-bottom:20px;}
-.logo{display:flex;align-items标签:center;gap:10px;margin-bottom:10px;}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .logo-icon{width:45px;height:45px;background:#69b1ff;border-radius:10px;color:#fff;text-align:center;line-height:45px;font-size:18px;background-size:cover;background-position:center;cursor:pointer;}
 .logo-text h1{font-size:20px;color:#222;}
 .logo-text p{font-size:13px;color:#666;}
@@ -41,6 +41,7 @@ body{background:#f0f7ff;padding:15px;max-width:500px;margin:0 auto;padding-botto
 .empty{text-align:center;padding:20px;color:#999;font-size:14px;}
 .title-input{font-size:20px;font-weight:bold;border:none;background:transparent;outline:none;color:#222;width:100%;}
 .del-btn{background:#fee;border:none;color:#f53f3f;padding:4px 8px;border-radius:4px;font-size:12px;margin-left:6px;}
+.edit-btn{background:#e6f2ff;border:none;color:#1890ff;padding:4px 8px;border-radius:4px;font-size:12px;margin-left:6px;}
 .pop-page{position:fixed;top:0;left:0;right:0;bottom:0;background:#f0f7ff;padding:15px;z-index:9999;display:none;overflow-y:auto;}
 .pop-page.active{display:block;}
 .month-group{margin-bottom:10px;}
@@ -70,7 +71,6 @@ canvas{width:100% !important;height:auto !important;}
 </style>
 </head>
 <body>
-
 <div id="homePage">
     <div class="header">
         <div class="logo">
@@ -80,14 +80,12 @@ canvas{width:100% !important;height:auto !important;}
                 <p>每一天都要好好存钱</p>
             </div>
         </div>
-        <div class="update-tip">● 数据本地保存 ● 头像可换</div>
-        <!-- 恢复备份导入按钮 -->
+        <div class="update-tip">● 数据本地保存 ● 头像可换 ● 支持修改账单</div>
         <div class="btn-row">
             <button class="btn" onclick="backupData()">📤 备份数据</button>
             <button class="btn" onclick="importData()">📥 导入数据</button>
         </div>
     </div>
-
     <div class="section-title">数据概览</div>
     <div class="stat-card">
         <div class="stat-grid">
@@ -97,7 +95,6 @@ canvas{width:100% !important;height:auto !important;}
             <div class="stat-item"><p class="balance" id="totalBalance">¥0.00</p><span>本月结余</span></div>
         </div>
     </div>
-
     <div class="section-title">功能入口</div>
     <div class="card-single">
         <div class="card" onclick="openTrendPage()">
@@ -108,7 +105,6 @@ canvas{width:100% !important;height:auto !important;}
             </div>
         </div>
     </div>
-
     <div class="section-title">收入</div>
     <div class="stat-grid">
         <div class="card" onclick="openCatPop('生活费','in')">
@@ -126,7 +122,6 @@ canvas{width:100% !important;height:auto !important;}
             </div>
         </div>
     </div>
-
     <div class="section-title">支出分类</div>
     <div class="stat-grid">
         <div class="card" onclick="openCatPop('吃喝','out')">
@@ -179,7 +174,6 @@ canvas{width:100% !important;height:auto !important;}
             </div>
         </div>
     </div>
-
     <div class="section-title">账单管理</div>
     <div class="card-single">
         <div class="card" onclick="openAllBillPop()">
@@ -197,7 +191,6 @@ canvas{width:100% !important;height:auto !important;}
         <div class="back-btn" onclick="closeTrendPage()">← 返回</div>
         <span>年度收支趋势</span>
     </div>
-    <!-- 改成下拉选择年份，不用打字 -->
     <select id="trendYearSelect" class="year-select" onchange="renderYearLineChart()"></select>
     <div class="chart-box">
         <h4 id="trendChartTitle">2026年 全年12个月 支出/存款走势</h4>
@@ -213,12 +206,22 @@ canvas{width:100% !important;height:auto !important;}
             <div class="back-btn" onclick="goAddByCat()">➕ 记账</div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-grid">
-            <div class="stat-item"><p class="in" id="catPopIn">¥0.00</p><span>本年收入</span></div>
-            <div class="stat-item"><p class="out" id="catPopOut">¥0.00</p><span>本年支出</span></div>
-            <div class="stat-item"><p class="save" id="catPopSave">¥0.00</p><span>本年存款</span></div>
-            <div class="stat-item"><p class="balance">¥0.00</p><span>本年结余</span></div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-item">
+                <p class="in" id="catMonthIn" style="display:none;">¥0.00</p>
+                <p class="out" id="catMonthOut" style="display:none;">¥0.00</p>
+                <p class="save" id="catMonthSave" style="display:none;">¥0.00</p>
+                <span id="catMonthLabel">本月</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-item">
+                <p class="in" id="catYearIn" style="display:none;">¥0.00</p>
+                <p class="out" id="catYearOut" style="display:none;">¥0.00</p>
+                <p class="save" id="catYearSave" style="display:none;">¥0.00</p>
+                <span id="catYearLabel">本年</span>
+            </div>
         </div>
     </div>
     <div id="catPopList"></div>
@@ -229,12 +232,10 @@ canvas{width:100% !important;height:auto !important;}
         <div class="back-btn" onclick="closeAllPop()">← 返回</div>
         <span>全部账单</span>
     </div>
-
     <div class="tab-wrap">
         <div class="tab-item active" data-tab="listTab" onclick="switchBillTab('listTab')">账单记录</div>
         <div class="tab-item" data-tab="chartTab" onclick="switchBillTab('chartTab')">数据图表</div>
     </div>
-
     <div id="listTab" class="tab-content show">
         <input type="text" class="bill-search" id="billSearchInput" placeholder="搜索分类/备注/金额" oninput="filterBillList()">
         <div class="stat-card">
@@ -247,7 +248,6 @@ canvas{width:100% !important;height:auto !important;}
         </div>
         <div id="allPopList"></div>
     </div>
-
     <div id="chartTab" class="tab-content">
         <input type="month" id="searchMonth" class="search-month">
         <div class="pie-swipe-wrap" id="pieSwipeWrap">
@@ -293,7 +293,8 @@ canvas{width:100% !important;height:auto !important;}
             <label>备注</label>
             <input type="text" id="addRemark" placeholder="选填">
         </div>
-        <button class="btn" onclick="saveBill()">保存</button>
+        <button class="btn" id="saveBtn" onclick="saveBill()">保存</button>
+        <button class="btn" id="updateBtn" onclick="updateBill()" style="display:none;background:#fa8c16;">确认修改</button>
     </div>
 </div>
 
@@ -303,6 +304,7 @@ canvas{width:100% !important;height:auto !important;}
 <script>
 let billList = JSON.parse(localStorage.getItem('billList')) || [];
 let currCat = "", currType = "";
+let editId = null;
 let yearPieIns = null, monthPieIns = null, yearLineChartIns = null;
 const pieCateList = ["吃喝","出行","追星","生活","人情往来","杂七杂八","总存款"];
 const colorList = ['#ff7d00','#1890ff','#f53f8c','#00b42a','#1890ff','#9b6cdd','#1890ff'];
@@ -314,12 +316,10 @@ wrap.addEventListener('scroll', ()=>{
     dots.forEach((d,i)=>d.classList.toggle('active', i===page));
 });
 
-// 生成年份下拉选项
 function initYearSelect(){
     const nowYear = new Date().getFullYear();
     const sel = document.getElementById('trendYearSelect');
     sel.innerHTML = '';
-    // 往前10年 + 往后2年，够用
     for(let y = nowYear - 10; y <= nowYear + 2; y++){
         let opt = document.createElement('option');
         opt.value = y;
@@ -343,12 +343,15 @@ function switchBillTab(tabId){
     document.getElementById(tabId).classList.add('show');
     if(tabId === 'chartTab') setTimeout(initChartPage,100);
 }
+
 function filterBillList(){
     let key = document.getElementById('billSearchInput').value.trim().toLowerCase();
     renderAllPop(key);
 }
+
 document.getElementById('customTitle').value = localStorage.getItem('title') || '';
 document.getElementById('customTitle').addEventListener('input', e => localStorage.setItem('title', e.target.value));
+
 function chooseAvatar(){ document.getElementById('avatarInput').click(); }
 document.getElementById('avatarInput').addEventListener('change', function(e){
     const file = e.target.files[0]; if(!file) return;
@@ -362,6 +365,7 @@ document.getElementById('avatarInput').addEventListener('change', function(e){
     };
     reader.readAsDataURL(file);
 });
+
 window.addEventListener('load', () => {
     const src = localStorage.getItem('avatar');
     if(src){ const box = document.getElementById('avatarBox'); box.style.backgroundImage = `url(${src})`; box.innerText = ''; }
@@ -381,6 +385,7 @@ function backupData(){
     a.click();
     alert('备份成功！');
 }
+
 function importData(){
     document.getElementById('importFile').click();
 }
@@ -474,7 +479,7 @@ function renderMonthPie(monthStr){
     let monthData = {};
     pieCateList.forEach(c=>monthData[c]=0);
     billList.forEach(item=>{
-        if(item.date !== monthStr) return;
+        if(item.date.slice(0,7) !== monthStr) return;
         if(pieCateList.includes(item.cate)){
             monthData[item.cate] += item.money;
         }
@@ -506,16 +511,13 @@ function renderMonthPie(monthStr){
     });
 }
 
-// 下拉选年份自动刷新趋势图
 function renderYearLineChart(){
     let selectYear = parseInt(document.getElementById('trendYearSelect').value);
     if(!selectYear) selectYear = new Date().getFullYear();
     document.getElementById('trendChartTitle').innerText = `${selectYear}年 全年12个月 支出/存款走势`;
-
     let monthArr = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
     let outArr = Array(12).fill(0);
     let saveArr = Array(12).fill(0);
-
     billList.forEach(item=>{
         let y = new Date(item.date).getFullYear();
         let m = parseInt(item.date.split('-')[1]) - 1;
@@ -523,7 +525,6 @@ function renderYearLineChart(){
         if(item.type === 'out') outArr[m] += item.money;
         if(item.type === 'save') saveArr[m] += item.money;
     });
-
     if(yearLineChartIns) yearLineChartIns.destroy();
     let lineCtx = document.getElementById('yearLineCanvas').getContext('2d');
     yearLineChartIns = new Chart(lineCtx, {
@@ -565,8 +566,14 @@ document.getElementById('searchMonth').addEventListener('change',function(){
     renderMonthPie(val);
 });
 
-function openCatPop(cat, type){ currCat=cat; currType=type; document.getElementById('catPopTitle').innerText=cat; document.getElementById('catPopPage').classList.add('active'); renderCatPop(); }
+function openCatPop(cat, type){ 
+    currCat=cat; currType=type; 
+    document.getElementById('catPopTitle').innerText=cat; 
+    document.getElementById('catPopPage').classList.add('active'); 
+    renderCatPop(); 
+}
 function closeCatPop(){ document.getElementById('catPopPage').classList.remove('active'); }
+
 function openAllBillPop(){ 
     document.getElementById('allPopPage').classList.add('active'); 
     switchBillTab('listTab');
@@ -574,24 +581,50 @@ function openAllBillPop(){
     renderAllPop();
 }
 function closeAllPop(){ document.getElementById('allPopPage').classList.remove('active'); }
+
 function goAddByCat(){ goAdd(currCat, currType); }
-function goAdd(cat, type){
+
+function goAdd(cat, type, item=null){
     currCat=cat; currType=type;
-    document.getElementById('addTitle').innerText=cat;
-    document.getElementById('addPage').classList.add('active');
+    editId = item ? item.id : null;
+    document.getElementById('addTitle').innerText = editId ? '修改账单' : cat;
+    
     if(type==='save'){
         document.getElementById('monthArea').style.display='block';
         document.getElementById('dayArea').style.display='none';
-        document.getElementById('addMonth').value=new Date().toISOString().slice(0,7);
     }else{
         document.getElementById('dayArea').style.display='block';
         document.getElementById('monthArea').style.display='none';
-        document.getElementById('addDate').valueAsDate=new Date();
     }
-    document.getElementById('addMoney').value='';
-    document.getElementById('addRemark').value='';
+    
+    if(item){
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('updateBtn').style.display = 'block';
+        if(type==='save'){
+            document.getElementById('addMonth').value = item.date;
+        }else{
+            document.getElementById('addDate').value = item.date;
+        }
+        document.getElementById('addMoney').value = item.money;
+        document.getElementById('addRemark').value = item.remark || '';
+    }else{
+        document.getElementById('saveBtn').style.display = 'block';
+        document.getElementById('updateBtn').style.display = 'none';
+        if(type==='save'){
+            document.getElementById('addMonth').value = new Date().toISOString().slice(0,7);
+        }else{
+            document.getElementById('addDate').valueAsDate = new Date();
+        }
+        document.getElementById('addMoney').value='';
+        document.getElementById('addRemark').value='';
+    }
+    document.getElementById('addPage').classList.add('active');
 }
-function closeAdd(){ document.getElementById('addPage').classList.remove('active'); }
+
+function closeAdd(){ 
+    document.getElementById('addPage').classList.remove('active'); 
+    editId = null;
+}
 
 function saveBill(){
     let money=parseFloat(document.getElementById('addMoney').value);
@@ -607,23 +640,89 @@ function saveBill(){
     if(!money || money<=0) return alert('输入正确金额');
     billList.unshift({id:Date.now(),cate:currCat,type:currType,date,money,remark});
     localStorage.setItem('billList',JSON.stringify(billList));
-    closeAdd(); renderCatPop(); renderAllPop(); refreshAll(); renderYearLineChart();
+    closeAdd(); 
+    renderCatPop(); 
+    renderAllPop(); 
+    refreshAll(); 
+    renderYearLineChart();
+}
+
+function updateBill(){
+    let item = billList.find(i => i.id === editId);
+    if(!item) return;
+    let money=parseFloat(document.getElementById('addMoney').value);
+    let remark=document.getElementById('addRemark').value;
+    let date;
+    if(currType==='save'){
+        date=document.getElementById('addMonth').value;
+        if(!date) return alert('请选择月份');
+    }else{
+        date=document.getElementById('addDate').value;
+        if(!date) return alert('请选择日期');
+    }
+    if(!money || money<=0) return alert('输入正确金额');
+    item.date = date;
+    item.money = money;
+    item.remark = remark;
+    localStorage.setItem('billList',JSON.stringify(billList));
+    closeAdd();
+    renderCatPop();
+    renderAllPop();
+    refreshAll();
+    renderYearLineChart();
+    alert('修改成功');
 }
 
 function renderCatPop(){
     let list=billList.filter(i=>i.cate===currCat);
-    let thisYear=new Date().getFullYear();
-    let yearIn=0,yearOut=0,yearSave=0;
-    list.forEach(i=>{
-        let y=new Date(i.date).getFullYear();
-        if(y!==thisYear) return;
-        if(i.type==='in')yearIn+=i.money;
-        if(i.type==='out')yearOut+=i.money;
-        if(i.type==='save')yearSave+=i.money;
-    });
-    document.getElementById('catPopIn').innerText=`¥${yearIn.toFixed(2)}`;
-    document.getElementById('catPopOut').innerText=`¥${yearOut.toFixed(2)}`;
-    document.getElementById('catPopSave').innerText=`¥${yearSave.toFixed(2)}`;
+    let now = new Date();
+    let currMonth = now.toISOString().slice(0,7);
+    let thisYear = now.getFullYear();
+    
+    let monthVal = 0, yearVal = 0;
+    
+    document.getElementById('catMonthIn').style.display = 'none';
+    document.getElementById('catMonthOut').style.display = 'none';
+    document.getElementById('catMonthSave').style.display = 'none';
+    document.getElementById('catYearIn').style.display = 'none';
+    document.getElementById('catYearOut').style.display = 'none';
+    document.getElementById('catYearSave').style.display = 'none';
+    
+    if(currType === 'in'){
+        list.forEach(i=>{
+            if(i.date.slice(0,7) === currMonth && i.type==='in') monthVal += i.money;
+            if(new Date(i.date).getFullYear()===thisYear && i.type==='in') yearVal += i.money;
+        });
+        document.getElementById('catMonthIn').style.display = 'block';
+        document.getElementById('catYearIn').style.display = 'block';
+        document.getElementById('catMonthIn').innerText = `¥${monthVal.toFixed(2)}`;
+        document.getElementById('catYearIn').innerText = `¥${yearVal.toFixed(2)}`;
+        document.getElementById('catMonthLabel').innerText = '本月收入';
+        document.getElementById('catYearLabel').innerText = '本年收入';
+    }else if(currType === 'out'){
+        list.forEach(i=>{
+            if(i.date.slice(0,7) === currMonth && i.type==='out') monthVal += i.money;
+            if(new Date(i.date).getFullYear()===thisYear && i.type==='out') yearVal += i.money;
+        });
+        document.getElementById('catMonthOut').style.display = 'block';
+        document.getElementById('catYearOut').style.display = 'block';
+        document.getElementById('catMonthOut').innerText = `¥${monthVal.toFixed(2)}`;
+        document.getElementById('catYearOut').innerText = `¥${yearVal.toFixed(2)}`;
+        document.getElementById('catMonthLabel').innerText = '本月支出';
+        document.getElementById('catYearLabel').innerText = '本年支出';
+    }else if(currType === 'save'){
+        list.forEach(i=>{
+            if(i.date.slice(0,7) === currMonth && i.type==='save') monthVal += i.money;
+            if(new Date(i.date).getFullYear()===thisYear && i.type==='save') yearVal += i.money;
+        });
+        document.getElementById('catMonthSave').style.display = 'block';
+        document.getElementById('catYearSave').style.display = 'block';
+        document.getElementById('catMonthSave').innerText = `¥${monthVal.toFixed(2)}`;
+        document.getElementById('catYearSave').innerText = `¥${yearVal.toFixed(2)}`;
+        document.getElementById('catMonthLabel').innerText = '本月存款';
+        document.getElementById('catYearLabel').innerText = '本年存款';
+    }
+    
     let yearGroup={};
     list.forEach(i=>{
         let y=new Date(i.date).getFullYear();
@@ -643,7 +742,11 @@ function renderCatPop(){
                 let c=i.type==='in'?'in':i.type==='out'?'out':'save';
                 let s=i.type==='in'?'+':'-';
                 let r=i.remark?`｜${i.remark}`:'';
-                html+=`<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+                html+=`<div class="list-row"><div>${i.date}${r}</div><div>
+                <span class="${c}">${s}¥${i.money.toFixed(2)}</span>
+                <button class="edit-btn" onclick="editItem(${i.id})">改</button>
+                <button class="del-btn" onclick="delItem(${i.id})">删</button>
+                </div></div>`;
             });
             html+=`</div></div>`;
         });
@@ -672,6 +775,7 @@ function renderAllPop(keyWord=''){
     document.getElementById('allPopIn').innerText=`¥${yearIn.toFixed(2)}`;
     document.getElementById('allPopOut').innerText=`¥${yearOut.toFixed(2)}`;
     document.getElementById('allPopSave').innerText=`¥${yearSave.toFixed(2)}`;
+    
     let yearGroup={};
     list.forEach(i=>{
         let y=new Date(i.date).getFullYear();
@@ -691,7 +795,11 @@ function renderAllPop(keyWord=''){
                 let c=i.type==='in'?'in':i.type==='out'?'out':'save';
                 let s=i.type==='in'?'+':'-';
                 let r=i.remark?`｜${i.cate} ${i.remark}`:`｜${i.cate}`;
-                html+=`<div class="list-row"><div>${i.date}${r}</div><div><span class="${c}">${s}¥${i.money.toFixed(2)}</span><button class="del-btn" onclick="delItem(${i.id})">删</button></div></div>`;
+                html+=`<div class="list-row"><div>${i.date}${r}</div><div>
+                <span class="${c}">${s}¥${i.money.toFixed(2)}</span>
+                <button class="edit-btn" onclick="editItem(${i.id})">改</button>
+                <button class="del-btn" onclick="delItem(${i.id})">删</button>
+                </div></div>`;
             });
             html+=`</div></div>`;
         });
@@ -699,8 +807,23 @@ function renderAllPop(keyWord=''){
     document.getElementById('allPopList').innerHTML=html;
 }
 
+function editItem(id){
+    let item = billList.find(i => i.id === id);
+    if(!item) return;
+    goAdd(item.cate, item.type, item);
+}
+
 function toggleMonth(month){ document.getElementById('mb_'+month).classList.toggle('show'); }
-function delItem(id){ billList=billList.filter(i=>i.id!==id); localStorage.setItem('billList',JSON.stringify(billList)); renderCatPop(); renderAllPop(); refreshAll(); renderYearLineChart(); }
+
+function delItem(id){ 
+    if(!confirm('确定删除？')) return;
+    billList=billList.filter(i=>i.id!==id); 
+    localStorage.setItem('billList',JSON.stringify(billList)); 
+    renderCatPop(); 
+    renderAllPop(); 
+    refreshAll(); 
+    renderYearLineChart(); 
+}
 
 function refreshAll(){
     let now=new Date();
@@ -725,7 +848,7 @@ function refreshAll(){
     let balance=totalIn-totalOut-totalSave;
     document.getElementById('totalIn').innerText=`¥${totalIn.toFixed(2)}`;
     document.getElementById('totalOut').innerText=`¥${totalOut.toFixed(2)}`;
-    document.getElementById('totalSave').innerText=`¥${totalBalance.toFixed(2)}`;
+    document.getElementById('totalSave').innerText=`¥${totalSave.toFixed(2)}`;
     document.getElementById('totalBalance').innerText=`¥${balance.toFixed(2)}`;
 }
 </script>
