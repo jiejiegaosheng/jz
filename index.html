@@ -52,11 +52,9 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
 </style>
 </head>
 <body>
-
 <div id="homePage">
     <div class="header">
         <div class="logo">
-            <!-- 点击头像换图片 -->
             <div class="logo-icon" id="avatarBox" onclick="chooseAvatar()">✨</div>
             <div class="logo-text">
                 <input type="text" class="title-input" id="customTitle" placeholder="请输入标题">
@@ -65,7 +63,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
         </div>
         <div class="update-tip">● 数据本地保存 ● 支持快捷指令 ● 头像可换</div>
     </div>
-
     <div class="section-title">数据概览</div>
     <div class="stat-card">
         <div class="stat-grid">
@@ -79,7 +76,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
             <div class="stat-item"><p class="balance" id="totalBalance">¥0.00</p><span>结余</span></div>
         </div>
     </div>
-
     <div class="section-title">收入</div>
     <div class="card-single">
         <div class="card" onclick="openCatPop('生活费','in')">
@@ -97,7 +93,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
             </div>
         </div>
     </div>
-
     <div class="section-title">支出分类</div>
     <div class="card-grid">
         <div class="card" onclick="openCatPop('吃喝','out')"><div class="card-icon" style="background:#fff7e8;color:#ff7d00;">🍔</div><div class="card-content"><h3>吃喝</h3><p class="card-money out" id="cate_吃喝">¥0.00</p></div></div>
@@ -108,7 +103,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
         <div class="card" onclick="openCatPop('杂七杂八','out')"><div class="card-icon" style="background:#f5f0ff;color:#9b6cdd;">📦</div><div class="card-content"><h3>杂七杂八</h3><p class="card-money out" id="cate_杂七杂八">¥0.00</p></div></div>
         <div class="card" onclick="openCatPop('总存款','save')"><div class="card-icon" style="background:#f0efff;color:#7367f0;">🏦</div><div class="card-content"><h3>总存款</h3><p class="card-money save" id="cate_总存款">¥0.00</p></div></div>
     </div>
-
     <div class="section-title">账单管理</div>
     <div class="card-single">
         <div class="card" onclick="openAllBillPop()">
@@ -120,7 +114,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
         </div>
     </div>
 </div>
-
 <div id="catPopPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeCatPop()">← 返回</div>
@@ -138,7 +131,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
     </div>
     <div id="catPopList"></div>
 </div>
-
 <div id="allPopPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeAllPop()">← 返回</div>
@@ -153,7 +145,6 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
     </div>
     <div id="allPopList"></div>
 </div>
-
 <div id="addPage" class="pop-page">
     <div class="section-title">
         <div class="back-btn" onclick="closeAdd()">← 返回</div>
@@ -179,10 +170,7 @@ body{background:#f5f7fa;padding:15px;max-width:500px;margin:0 auto;padding-botto
         <button class="btn" onclick="saveBill()">保存</button>
     </div>
 </div>
-
-<!-- 隐藏文件选择 -->
 <input type="file" id="avatarInput" accept="image/*" style="display:none;">
-
 <script>
 let billList = JSON.parse(localStorage.getItem('billList')) || [];
 let currCat = "", currType = "";
@@ -191,8 +179,6 @@ document.getElementById('customTitle').value = savedTitle;
 document.getElementById('customTitle').addEventListener('input', e => {
     localStorage.setItem('title', e.target.value);
 });
-
-// ================== 头像选择功能 ==================
 function chooseAvatar(){
     document.getElementById('avatarInput').click();
 }
@@ -209,7 +195,6 @@ document.getElementById('avatarInput').addEventListener('change', function(e){
     };
     reader.readAsDataURL(file);
 });
-// 加载保存的头像
 window.addEventListener('load', function(){
     const src = localStorage.getItem('avatar');
     if(src){
@@ -219,17 +204,22 @@ window.addEventListener('load', function(){
     }
 });
 
-// ========== P2 快捷指令自动填金额 ==========
+// ========== iCost 同款自动记账（核心增强）==========
 function autoFillFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const money = params.get('money');
-    const cate = params.get('cate') || '吃喝';
-    const type = params.get('type') || 'out';
-    if (money && !isNaN(money) && money > 0) {
+    const cate = params.get('cate');
+    const type = params.get('type');
+
+    if (!money || isNaN(money) || money <= 0) return;
+    if (!cate || !type) return;
+
+    setTimeout(() => {
         goAdd(cate, type);
         document.getElementById('addMoney').value = money;
-    }
+    }, 300);
 }
+
 window.addEventListener('load', autoFillFromUrl);
 
 // ========== 原有逻辑 ==========
@@ -260,7 +250,6 @@ function goAdd(cat, type){
     document.getElementById('addRemark').value = '';
 }
 function closeAdd(){ document.getElementById('addPage').classList.remove('active'); }
-
 function saveBill(){
     let money = parseFloat(document.getElementById('addMoney').value);
     let remark = document.getElementById('addRemark').value;
@@ -278,7 +267,6 @@ function saveBill(){
     closeAdd();
     renderCatPop(); renderAllPop(); refreshAll();
 }
-
 function renderCatPop(){
     let list = billList.filter(i => i.cate === currCat);
     let thisYear = new Date().getFullYear();
@@ -320,7 +308,6 @@ function renderCatPop(){
     });
     document.getElementById('catPopList').innerHTML = html;
 }
-
 function renderAllPop(){
     let list = billList;
     let thisYear = new Date().getFullYear();
@@ -362,17 +349,14 @@ function renderAllPop(){
     });
     document.getElementById('allPopList').innerHTML = html;
 }
-
 function toggleMonth(month){
     document.getElementById('mb_'+month).classList.toggle('show');
 }
-
 function delItem(id){
     billList = billList.filter(i=>i.id!==id);
     localStorage.setItem('billList', JSON.stringify(billList));
     renderCatPop(); renderAllPop(); refreshAll();
 }
-
 function refreshAll(){
     let now = new Date();
     let currMonth = now.toISOString().slice(0,7);
@@ -399,7 +383,6 @@ function refreshAll(){
     document.getElementById('totalSave').innerText = `¥${totalSave.toFixed(2)}`;
     document.getElementById('totalBalance').innerText = `¥${balance.toFixed(2)}`;
 }
-
 refreshAll();
 </script>
 </body>
