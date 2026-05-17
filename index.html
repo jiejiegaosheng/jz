@@ -6,12 +6,23 @@
 <title>记账本</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
 body{background:#f0f7ff;padding:15px;max-width:500px;margin:0 auto;padding-bottom:20px;}
 .header{margin-bottom:20px;}
 .logo{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.logo-icon{width:45px;height:45px;background:#69b1ff;border-radius:10px;color:#fff;text-align:center;line-height:45px;font-size:18px;background-size:cover;background-position:center;cursor:pointer;}
+/* 【修复】头像容器：禁止显示文字、图片全覆盖 */
+.logo-icon{
+    width:45px;height:45px;
+    background:#69b1ff;border-radius:10px;
+    color:transparent !important; /* 文字透明（星星消失） */
+    text-align:center;line-height:45px;font-size:18px;
+    background-size:cover !important;
+    background-position:center !important;
+    background-repeat:no-repeat !important;
+    cursor:pointer;
+}
 .logo-text h1{font-size:20px;color:#222;}
 .logo-text p{font-size:13px;color:#666;}
 .update-tip{background:#e6f2ff;color:#1890ff;padding:10px;border-radius:8px;font-size:13px;margin-bottom:15px;}
@@ -29,6 +40,7 @@ body{background:#f0f7ff;padding:15px;max-width:500px;margin:0 auto;padding-botto
 .card{background:#fff;border-radius:10px;padding:15px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 2px 8px #e0efff;margin-bottom:10px;}
 .card-icon{width:40px;height:40px;border-radius:8px;text-align:center;line-height:40px;font-size:16px;}
 .card-content h3{font-size:15px;color:#222;}
+.card-money{font-size:13px;font-weight:bold;margin-top:2px;}
 .form-card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 2px 8px #e0efff;}
 .form-item{margin-bottom:12px;}
 .form-item label{display:block;font-size:14px;color:#444;margin-bottom:5px;}
@@ -75,7 +87,8 @@ canvas{width:100% !important;height:auto !important;}
 <div id="homePage">
     <div class="header">
         <div class="logo">
-            <div class="logo-icon" id="avatarBox" onclick="chooseAvatar()">✨</div>
+            <!-- 【修复】默认文字清空，只留背景图 -->
+            <div class="logo-icon" id="avatarBox" onclick="chooseAvatar()"></div>
             <div class="logo-text">
                 <input type="text" class="title-input" id="customTitle" placeholder="请输入标题">
                 <p>每一天都要好好存钱</p>
@@ -214,8 +227,7 @@ canvas{width:100% !important;height:auto !important;}
         2. 不要修改文件名、不要压缩、不要编辑<br>
         3. 若显示“解析失败”，请重新备份一次<br>
         4. 若显示“数据格式错误”，说明文件已损坏<br>
-        5. 建议使用 Chrome / 系统浏览器导入<br>
-        6. 导出的 .json 文件可直接导入恢复
+        5. 建议使用系统浏览器打开使用
     </div>
 </div>
 
@@ -335,54 +347,70 @@ canvas{width:100% !important;height:auto !important;}
 <input type="file" id="importFileInput" style="display:none;">
 
 <script>
-let billList = JSON.parse(localStorage.getItem('billList')) || [];
+let billList = [];
 let currCat = "", currType = "";
 let editId = null;
 let yearPieIns = null, monthPieIns = null, yearLineChartIns = null;
 const pieCateList = ["吃喝","出行","追星","生活","人情往来","杂七杂八","总存款"];
+const colorList = ['#ff0000','#90ee90','#00ffff','#ffb366','#fff44f','#999999','#87CEEB'];
 
-const colorList = [
-    '#ff0000','#90ee90','#00ffff','#ffb366','#fff44f','#999999','#87CEEB'
-];
+try{
+    let localBill = localStorage.getItem('billList');
+    if(localBill) billList = JSON.parse(localBill);
+}catch(e){
+    billList = [];
+    localStorage.setItem('billList','[]');
+}
 
 function getBackupList() {
-    return JSON.parse(localStorage.getItem("backupList") || "[]");
+    try{
+        let res = localStorage.getItem("backupList");
+        return res ? JSON.parse(res) : [];
+    }catch(e){
+        localStorage.removeItem("backupList");
+        return [];
+    }
 }
 function saveBackupList(arr) {
     localStorage.setItem("backupList", JSON.stringify(arr));
 }
 
 function backupNow() {
-    let data = {
-        id: Date.now(),
-        time: new Date().toLocaleString(),
-        billList: [...billList],
-        title: localStorage.getItem('title') || "",
-        avatar: localStorage.getItem('avatar') || ""
-    };
-    let list = getBackupList();
-    list.unshift(data);
-    if (list.length > 50) list = list.slice(0, 50);
-    saveBackupList(list);
-    alert("备份成功");
-    renderBackupList();
+    try{
+        let nowTime = new Date();
+        let data = {
+            id: nowTime.getTime(),
+            time: nowTime.toLocaleString(),
+            billList: JSON.parse(JSON.stringify(billList)),
+            title: localStorage.getItem('title') || "",
+            avatar: localStorage.getItem('avatar') || ""
+        };
+        let list = getBackupList();
+        list.unshift(data);
+        if(list.length > 30) list = list.slice(0,30);
+        saveBackupList(list);
+        alert('✅ 备份成功！');
+        renderBackupList();
+    }catch(e){
+        alert('❌ 备份失败，请清理缓存重试');
+    }
 }
 
 function renderBackupList() {
     let list = getBackupList();
     let dom = document.getElementById("backupListView");
-    if (list.length === 0) {
-        dom.innerHTML = `<div class="empty">暂无备份</div>`;
+    if(list.length === 0){
+        dom.innerHTML = `<div class="empty">暂无备份记录</div>`;
         return;
     }
     let html = "";
-    list.forEach(b => {
+    list.forEach(b=>{
         html += `
         <div class="list-row">
             <div>${b.time}</div>
             <div>
                 <button class="edit-btn" onclick="restoreBackup(${b.id})">恢复</button>
-                <button class="export-btn" onclick="exportBackup(${b.id})">导出</button>
+                <button class="export-btn" onclick="exportBackupFile(${b.id})">导出到手机</button>
                 <button class="del-btn" onclick="deleteBackup(${b.id})">删除</button>
             </div>
         </div>`;
@@ -390,89 +418,80 @@ function renderBackupList() {
     dom.innerHTML = html;
 }
 
-function exportBackup(id) {
+function exportBackupFile(id) {
     try {
         let list = getBackupList();
-        let item = list.find(x => x.id === id);
-        if (!item) return alert("备份不存在");
-        
+        let target = list.find(item => item.id === id);
+        if (!target) {
+            alert("未找到该备份数据");
+            return;
+        }
         let exportData = {
-            billList: item.billList,
-            title: item.title || "",
-            avatar: item.avatar || ""
+            billList: target.billList,
+            appTitle: target.title || ""
         };
-        
-        let blob = new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"});
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "账单备份_可导入.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        alert("导出成功！可直接导入恢复");
-    } catch (e) {
-        alert("导出失败：" + e.message);
+        let jsonStr = JSON.stringify(exportData, null, 2);
+        let blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+        let fileName = `账单备份_${new Date(target.id).toLocaleDateString()}.json`;
+        saveAs(blob, fileName);
+        alert("✅ 已弹出手机保存框，请选择档案/文件夹保存！");
+    } catch (err) {
+        console.error(err);
+        alert("❌ 导出失败：浏览器权限不足或数据异常");
     }
 }
 
 function restoreBackup(id) {
-    if (!confirm("恢复将覆盖当前数据，确定？")) return;
-    let list = getBackupList();
-    let item = list.find(x => x.id === id);
-    if (!item) return;
-    billList = [...item.billList];
-    localStorage.setItem("billList", JSON.stringify(billList));
-    if (item.title) localStorage.setItem("title", item.title);
-    if (item.avatar) localStorage.setItem("avatar", item.avatar);
-    alert("恢复成功");
-    location.reload();
+    if(!confirm('恢复会覆盖当前所有数据，确定继续？'))return;
+    try{
+        let list = getBackupList();
+        let item = list.find(x=>x.id===id);
+        if(!item)return;
+        billList = JSON.parse(JSON.stringify(item.billList));
+        localStorage.setItem('billList',JSON.stringify(billList));
+        if(item.title)localStorage.setItem('title',item.title);
+        if(item.avatar)localStorage.setItem('avatar',item.avatar);
+        alert('恢复成功，自动刷新页面');
+        location.reload();
+    }catch(e){alert('恢复失败');}
 }
 
 function deleteBackup(id) {
-    if (!confirm("确定删除此备份？")) return;
-    let list = getBackupList();
-    list = list.filter(x => x.id !== id);
+    if(!confirm('确定删除这条备份？'))return;
+    let list = getBackupList().filter(x=>x.id!==id);
     saveBackupList(list);
     renderBackupList();
 }
 
-function openBackupManager() {
+function openBackupManager(){
     document.getElementById("backupManagerPage").classList.add("active");
     renderBackupList();
 }
-function closeBackupManager() {
+function closeBackupManager(){
     document.getElementById("backupManagerPage").classList.remove("active");
 }
-function closeHelp() {
+function closeHelp(){
     document.getElementById("importHelpPage").classList.remove("active");
 }
-
-function triggerImport() {
+function triggerImport(){
     document.getElementById("importFileInput").click();
 }
 
-document.getElementById("importFileInput").addEventListener("change", function (e) {
+document.getElementById("importFileInput").addEventListener("change",function(e){
     let file = e.target.files[0];
-    if (!file) return;
+    if(!file)return;
     let reader = new FileReader();
-    reader.onload = function (ev) {
-        try {
+    reader.onload = function(ev){
+        try{
             let data = JSON.parse(ev.target.result);
-            if (!data.billList || !Array.isArray(data.billList)) {
-                alert("导入失败：非正确备份格式");
-                document.getElementById("importHelpPage").classList.add("active");
-                return;
-            }
+            if(!Array.isArray(data.billList)) throw new Error('格式错误');
             billList = data.billList;
-            localStorage.setItem("billList", JSON.stringify(billList));
-            if (data.title) localStorage.setItem("title", data.title);
-            if (data.avatar) localStorage.setItem("avatar", data.avatar);
-            alert("导入成功！");
+            localStorage.setItem('billList',JSON.stringify(billList));
+            if(data.appTitle)localStorage.setItem('title',data.appTitle);
+            alert('导入成功！');
             location.reload();
-        } catch (err) {
-            alert("导入失败：" + err.message);
+        }catch(err){
+            alert('导入失败');
             document.getElementById("importHelpPage").classList.add("active");
         }
     };
@@ -481,9 +500,9 @@ document.getElementById("importFileInput").addEventListener("change", function (
 
 const dots = document.querySelectorAll('.dot');
 const wrap = document.getElementById('pieSwipeWrap');
-wrap.addEventListener('scroll', ()=>{
+wrap.addEventListener('scroll',()=>{
     let page = Math.round(wrap.scrollLeft / wrap.clientWidth);
-    dots.forEach((d,i)=>d.classList.toggle('active', i===page));
+    dots.forEach((d,i)=>d.classList.toggle('active',i===page));
 });
 
 function initYearSelect(){
@@ -492,34 +511,26 @@ function initYearSelect(){
     sel.innerHTML = '';
     for(let y=nowYear-10;y<=nowYear+2;y++){
         let opt=document.createElement('option');
-        opt.value=y;
-        opt.innerText=y+'年';
-        if(y===nowYear) opt.selected=true;
+        opt.value=y;opt.innerText=y+'年';
+        if(y===nowYear)opt.selected=true;
         sel.appendChild(opt);
     }
 }
-
 function openTrendPage(){
     document.getElementById('trendPage').classList.add('active');
-    initYearSelect();
-    renderYearLineChart();
+    initYearSelect();renderYearLineChart();
 }
 function closeTrendPage(){
     document.getElementById('trendPage').classList.remove('active');
 }
-
 function switchBillTab(tabId){
     document.querySelectorAll('.tab-item').forEach(el=>el.classList.remove('active'));
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
     document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('show'));
     document.getElementById(tabId).classList.add('show');
-    if(tabId==='chartTab') setTimeout(initChartPage,100);
+    if(tabId==='chartTab')setTimeout(initChartPage,100);
 }
-
-function filterBillList(){
-    let key=document.getElementById('billSearchInput').value.trim().toLowerCase();
-    renderAllPop(key);
-}
+function filterBillList(){renderAllPop(document.getElementById('billSearchInput').value.trim().toLowerCase());}
 
 document.getElementById('customTitle').value=localStorage.getItem('title')||'';
 document.getElementById('customTitle').addEventListener('input',e=>{
@@ -532,14 +543,68 @@ document.getElementById('avatarInput').addEventListener('change',e=>{
     let r=new FileReader();
     r.onload=ev=>{
         localStorage.setItem('avatar',ev.target.result);
+        // 【修复】上传后直接设置背景图，文字已透明
+        document.getElementById('avatarBox').style.backgroundImage=`url(${ev.target.result})`;
         alert('头像设置成功');
     };
     r.readAsDataURL(file);
 });
 
+// ========== 核心修复：分类统计改为总和，不再只取第一笔 ==========
+function refreshAll(){
+    let now = new Date();
+    let currMonth = now.toISOString().slice(0,7);
+    let totalIn=0,totalOut=0,totalSave=0;
+
+    const allCate = ['生活费','兼职收入','吃喝','出行','追星','生活','人情往来','杂七杂八','总存款'];
+    // 先全部清零
+    allCate.forEach(name=>{
+        let dom = document.getElementById('cate_'+name);
+        if(dom) dom.innerText = '¥0.00';
+    });
+
+    // 新建分类统计对象
+    let cateSum = {};
+    allCate.forEach(c=>cateSum[c] = 0);
+
+    // 遍历所有当月账单累加
+    billList.forEach(item=>{
+        if(item.date.slice(0,7) !== currMonth) return;
+        let num = Number(item.money);
+        if(isNaN(num) || num <= 0) return;
+
+        if(item.type === 'in'){
+            totalIn += num;
+            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+        }else if(item.type === 'out'){
+            totalOut += num;
+            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+        }else if(item.type === 'save'){
+            totalSave += num;
+            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+        }
+    });
+
+    // 赋值到首页分类卡片
+    for(let c in cateSum){
+        let d = document.getElementById('cate_'+c);
+        if(d) d.innerText = '¥' + cateSum[c].toFixed(2);
+    }
+
+    let balance = totalIn - totalOut - totalSave;
+    document.getElementById('totalIn').innerText = `¥${totalIn.toFixed(2)}`;
+    document.getElementById('totalOut').innerText = `¥${totalOut.toFixed(2)}`;
+    document.getElementById('totalSave').innerText = `¥${totalSave.toFixed(2)}`;
+    document.getElementById('totalBalance').innerText = `¥${balance.toFixed(2)}`;
+}
+
 window.addEventListener('load',()=>{
     let avatar=localStorage.getItem('avatar');
-    if(avatar) document.getElementById('avatarBox').style.backgroundImage=`url(${avatar})`;
+    if(avatar){
+        document.getElementById('avatarBox').style.backgroundImage=`url(${avatar})`;
+        // 【修复】加载时也确保文字透明
+        document.getElementById('avatarBox').style.color='transparent';
+    }
     refreshAll();
 });
 
@@ -550,47 +615,31 @@ function initChartPage(){
     renderYearPie(now.getFullYear());
     renderMonthPie(m);
 }
-
-const pieLabelOption={
-    plugins:{datalabels:{formatter(v){let s=context.dataset.data.reduce((a,b)=>a+b,0);if(!s)return'';return`¥${v}\n${(v/s*100).toFixed(1)}%`},color:'#fff',font:{size:11}}}};
-
+const pieLabelOption={plugins:{datalabels:{formatter(v,c){let s=c.dataset.data.reduce((a,b)=>a+b,0);return s?`¥${v}\n${(v/s*100).toFixed(1)}%`:'';},color:'#fff',font:{size:11}}}};
 function renderYearPie(y){
     let d={};pieCateList.forEach(c=>d[c]=0);
-    billList.forEach(i=>{if(i.date.slice(0,4)==y&&pieCateList.includes(i.cate))d[i.cate]+=i.money;});
+    billList.forEach(i=>{if(i.date.slice(0,4)==y&&pieCateList.includes(i.cate))d[i.cate]+=Number(i.money);});
     let l=[],dd=[],c=[];
     pieCateList.forEach((k,i)=>{if(d[k]>0){l.push(k);dd.push(d[k]);c.push(colorList[i]);}});
     if(yearPieIns)yearPieIns.destroy();
-    yearPieIns=new Chart(document.getElementById('yearPieCanvas').getContext('2d'),{
-        type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}}
-    );
+    yearPieIns=new Chart(document.getElementById('yearPieCanvas').getContext('2d'),{type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}});
 }
-
 function renderMonthPie(m){
     let d={};pieCateList.forEach(c=>d[c]=0);
-    billList.forEach(i=>{if(i.date.slice(0,7)===m&&pieCateList.includes(i.cate))d[i.cate]+=i.money;});
+    billList.forEach(i=>{if(i.date.slice(0,7)===m&&pieCateList.includes(i.cate))d[i.cate]+=Number(i.money);});
     let l=[],dd=[],c=[];
     pieCateList.forEach((k,i)=>{if(d[k]>0){l.push(k);dd.push(d[k]);c.push(colorList[i]);}});
     if(monthPieIns)monthPieIns.destroy();
-    monthPieIns=new Chart(document.getElementById('monthPieCanvas').getContext('2d'),{
-        type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}}
-    );
+    monthPieIns=new Chart(document.getElementById('monthPieCanvas').getContext('2d'),{type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}});
 }
-
 function renderYearLineChart(){
     let y=document.getElementById('trendYearSelect').value;
     let o=Array(12).fill(0),s=Array(12).fill(0);
-    billList.forEach(i=>{if(i.date.slice(0,4)==y){let m=+i.date.slice(5,7)-1;if(i.type==='out')o[m]+=i.money;if(i.type==='save')s[m]+=i.money;}});
+    billList.forEach(i=>{if(i.date.slice(0,4)==y){let m=+i.date.slice(5,7)-1;if(i.type==='out')o[m]+=Number(i.money);if(i.type==='save')s[m]+=Number(i.money);}});
     if(yearLineChartIns)yearLineChartIns.destroy();
-    yearLineChartIns=new Chart(document.getElementById('yearLineCanvas').getContext('2d'),{
-        type:'line',data:{labels:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],datasets:[{label:'支出',data:o,borderColor:'#f53f3f',background:'rgba(245,63,63,0.1)',fill:true,tension:0.3},{label:'存款',data:s,borderColor:'#1890ff',background:'rgba(24,144,255,0.1)',fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'}}}}
-    );
+    yearLineChartIns=new Chart(document.getElementById('yearLineCanvas').getContext('2d'),{type:'line',data:{labels:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],datasets:[{label:'支出',data:o,borderColor:'#f53f3f',backgroundColor:'rgba(245,63,63,0.1)',fill:true,tension:0.3},{label:'存款',data:s,borderColor:'#1890ff',backgroundColor:'rgba(24,144,255,0.1)',fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'}}}});
 }
-
-document.getElementById('searchMonth').addEventListener('change',function(){
-    let v=this.value;if(!v)return;
-    renderYearPie(v.slice(0,4));
-    renderMonthPie(v);
-});
+document.getElementById('searchMonth').addEventListener('change',function(){let v=this.value;if(v){renderYearPie(v.slice(0,4));renderMonthPie(v);}});
 
 function openCatPop(c,t){currCat=c;currType=t;document.getElementById('catPopTitle').innerText=c;document.getElementById('catPopPage').classList.add('active');renderCatPop();}
 function closeCatPop(){document.getElementById('catPopPage').classList.remove('active');}
@@ -615,121 +664,121 @@ function goAdd(c,t,i=null){
     }
     document.getElementById('addPage').classList.add('active');
 }
-
 function closeAdd(){document.getElementById('addPage').classList.remove('active');editId=null;}
 
 function saveBill(){
-    let m=+document.getElementById('addMoney').value;
-    let r=document.getElementById('addRemark').value;
+    let m=Number(document.getElementById('addMoney').value);
+    let r=document.getElementById('addRemark').value.trim();
     let d=currType==='save'?document.getElementById('addMonth').value:document.getElementById('addDate').value;
-    if(!d)return alert('请选择日期');if(!m||m<=0)return alert('请输入正确金额');
+    if(!d)return alert('请选择日期');
+    if(!m||m<=0)return alert('请输入正确金额');
     billList.unshift({id:Date.now(),cate:currCat,type:currType,date:d,money:m,remark:r});
     localStorage.setItem('billList',JSON.stringify(billList));
     closeAdd();renderCatPop();renderAllPop();refreshAll();renderYearLineChart();
 }
-
 function updateBill(){
     if(!editId)return;
-    let m=+document.getElementById('addMoney').value;
-    let r=document.getElementById('addRemark').value;
+    let m=Number(document.getElementById('addMoney').value);
+    let r=document.getElementById('addRemark').value.trim();
     let d=currType==='save'?document.getElementById('addMonth').value:document.getElementById('addDate').value;
-    if(!d)return alert('请选择日期');if(!m||m<=0)return alert('请输入正确金额');
-    let i=billList.find(x=>x.id===editId);
-    if(!i)return;
-    i.cate=currCat;i.type=currType;i.date=d;i.money=m;i.remark=r;
-    localStorage.setItem('billList',JSON.stringify(billList));
+    if(!d||!m||m<=0)return alert('填写完整信息');
+    let idx = billList.findIndex(x=>x.id===editId);
+    if(idx>-1){
+        billList[idx].cate=currCat;
+        billList[idx].type=currType;
+        billList[idx].date=d;
+        billList[idx].money=m;
+        billList[idx].remark=r;
+        localStorage.setItem('billList',JSON.stringify(billList));
+    }
     closeAdd();renderCatPop();renderAllPop();refreshAll();renderYearLineChart();
     alert('修改成功');
 }
 
 function renderCatPop(){
-    let l=billList.filter(x=>x.cate===currCat);
-    let m=new Date().toISOString().slice(0,7);
-    let y=new Date().getFullYear();
-    let mv=0,yv=0;
-    l.forEach(i=>{
-        if(i.date.slice(0,7)===m&&i.type===currType)mv+=i.money;
-        if(i.date.slice(0,4)==''+y&&i.type===currType)yv+=i.money;
+    let list = billList.filter(x=>x.cate===currCat);
+    let now = new Date();
+    let currM = now.toISOString().slice(0,7);
+    let currY = now.getFullYear();
+    let monthNum=0,yearNum=0;
+    list.forEach(i=>{
+        let n = Number(i.money);
+        if(i.type===currType){
+            if(i.date.slice(0,7)===currM)monthNum+=n;
+            if(i.date.slice(0,4)==''+currY)yearNum+=n;
+        }
     });
-    document.getElementById('catMonthIn').style.display='none';
-    document.getElementById('catMonthOut').style.display='none';
-    document.getElementById('catMonthSave').style.display='none';
-    document.getElementById('catYearIn').style.display='none';
-    document.getElementById('catYearOut').style.display='none';
-    document.getElementById('catYearSave').style.display='none';
+    document.querySelectorAll('#catPopPage .stat-item p').forEach(el=>el.style.display='none');
     if(currType==='in'){
-        document.getElementById('catMonthIn').style.display='block';document.getElementById('catMonthIn').innerText=`¥${mv.toFixed(2)}`;
-        document.getElementById('catYearIn').style.display='block';document.getElementById('catYearIn').innerText=`¥${yv.toFixed(2)}`;
+        document.getElementById('catMonthIn').style.display='block';
+        document.getElementById('catMonthIn').innerText=`¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearIn').style.display='block';
+        document.getElementById('catYearIn').innerText=`¥${yearNum.toFixed(2)}`;
     }else if(currType==='out'){
-        document.getElementById('catMonthOut').style.display='block';document.getElementById('catMonthOut').innerText=`¥${mv.toFixed(2)}`;
-        document.getElementById('catYearOut').style.display='block';document.getElementById('catYearOut').innerText=`¥${yv.toFixed(2)}`;
+        document.getElementById('catMonthOut').style.display='block';
+        document.getElementById('catMonthOut').innerText=`¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearOut').style.display='block';
+        document.getElementById('catYearOut').innerText=`¥${yearNum.toFixed(2)}`;
     }else{
-        document.getElementById('catMonthSave').style.display='block';document.getElementById('catMonthSave').innerText=`¥${mv.toFixed(2)}`;
-        document.getElementById('catYearSave').style.display='block';document.getElementById('catYearSave').innerText=`¥${yv.toFixed(2)}`;
+        document.getElementById('catMonthSave').style.display='block';
+        document.getElementById('catMonthSave').innerText=`¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearSave').style.display='block';
+        document.getElementById('catYearSave').innerText=`¥${yearNum.toFixed(2)}`;
     }
-    let g={};l.forEach(i=>{let y=i.date.slice(0,4);if(!g[y])g[y]=[];g[y].push(i);});
-    let ys=Object.keys(g).sort((a,b)=>b-a);
-    let h='';
-    ys.forEach(y=>{
-        h+=`<div class="year-title">${y}年</div>`;
-        let ms=Array.from(new Set(g[y].map(i=>i.date.slice(0,7)))).sort().reverse();
-        ms.forEach(m=>{
-            let items=g[y].filter(i=>i.date.slice(0,7)===m);
-            h+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
-            items.forEach(i=>{
-                let t=i.type==='in'?'+' : i.type==='out'?'-':'=';
-                h+=`<div class="list-row"><div>${i.date} ${i.remark||''}</div><div class="${i.type}">${t}¥${i.money}</div></div>`;
+    let group={};
+    list.forEach(i=>{let y=i.date.slice(0,4);if(!group[y])group[y]=[];group[y].push(i);});
+    let years = Object.keys(group).sort((a,b)=>b-a);
+    let html='';
+    years.forEach(y=>{
+        html+=`<div class="year-title">${y}年</div>`;
+        let months = [...new Set(group[y].map(x=>x.date.slice(0,7)))].sort().reverse();
+        months.forEach(m=>{
+            let arr = group[y].filter(x=>x.date.slice(0,7)===m);
+            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
+            arr.forEach(it=>{
+                let sym = it.type==='in'?'+':it.type==='out'?'-':'=';
+                html+=`<div class="list-row"><div>${it.date} ${it.remark||''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div></div>`;
             });
-            h+=`</div></div>`;
+            html+='</div></div>';
         });
     });
-    document.getElementById('catPopList').innerHTML=h;
+    document.getElementById('catPopList').innerHTML=html||'<div class="empty">暂无记录</div>';
 }
-
 function toggleMonth(m){document.getElementById('mb_'+m).classList.toggle('show');}
-
 function renderAllPop(key=''){
-    let l=billList;
-    if(key){l=l.filter(i=>i.cate.includes(key)||i.remark?.includes(key)||i.money.toString().includes(key));}
-    let y=new Date().getFullYear();
+    let list = billList;
+    if(key) list = list.filter(x=>x.cate.includes(key)||(x.remark&&x.remark.includes(key))||String(x.money).includes(key));
+    let y = new Date().getFullYear();
     let ti=0,to=0,ts=0;
-    l.forEach(i=>{if(i.date.slice(0,4)==''+y){if(i.type==='in')ti+=i.money;else if(i.type==='out')to+=i.money;else ts+=i.money;}});
+    list.forEach(i=>{
+        let n=Number(i.money);
+        if(i.date.slice(0,4)==''+y){
+            if(i.type==='in')ti+=n;
+            else if(i.type==='out')to+=n;
+            else ts+=n;
+        }
+    });
     document.getElementById('allPopIn').innerText=`¥${ti.toFixed(2)}`;
     document.getElementById('allPopOut').innerText=`¥${to.toFixed(2)}`;
     document.getElementById('allPopSave').innerText=`¥${ts.toFixed(2)}`;
-    let g={};l.forEach(i=>{let y=i.date.slice(0,4);if(!g[y])g[y]=[];g[y].push(i);});
-    let ys=Object.keys(g).sort((a,b)=>b-a);
-    let h='';
-    ys.forEach(y=>{
-        h+=`<div class="year-title">${y}年</div>`;
-        let ms=Array.from(new Set(g[y].map(i=>i.date.slice(0,7)))).sort().reverse();
-        ms.forEach(m=>{
-            let items=g[y].filter(i=>i.date.slice(0,7)===m);
-            h+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
-            items.forEach(i=>{
-                let t=i.type==='in'?'+' : i.type==='out'?'-':'=';
-                h+=`<div class="list-row"><div>${i.date} ${i.cate} ${i.remark||''}</div><div class="${i.type}">${t}¥${i.money}</div></div>`;
+    let group={};
+    list.forEach(i=>{let y=i.date.slice(0,4);if(!group[y])group[y]=[];group[y].push(i);});
+    let years = Object.keys(group).sort((a,b)=>b-a);
+    let html='';
+    years.forEach(y=>{
+        html+=`<div class="year-title">${y}年</div>`;
+        let months = [...new Set(group[y].map(x=>x.date.slice(0,7)))].sort().reverse();
+        months.forEach(m=>{
+            let arr = group[y].filter(x=>x.date.slice(0,7)===m);
+            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
+            arr.forEach(it=>{
+                let sym = it.type==='in'?'+':it.type==='out'?'-':'=';
+                html+=`<div class="list-row"><div>${it.date} ${it.cate} ${it.remark||''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div></div>`;
             });
-            h+=`</div></div>`;
+            html+='</div></div>';
         });
     });
-    document.getElementById('allPopList').innerHTML=h;
-}
-
-function refreshAll(){
-    let m=new Date().toISOString().slice(0,7);
-    let ti=0,to=0,ts=0;
-    billList.forEach(i=>{
-        if(i.date.slice(0,7)===m){
-            if(i.type==='in')ti+=i.money;
-            else if(i.type==='out')to+=i.money;
-            else ts+=i.money;
-        }
-    });
-    document.getElementById('totalIn').innerText=`¥${ti.toFixed(2)}`;
-    document.getElementById('totalOut').innerText=`¥${to.toFixed(2)}`;
-    document.getElementById('totalSave').innerText=`¥${ts.toFixed(2)}`;
-    document.getElementById('totalBalance').innerText=`¥${(ti-to-ts).toFixed(2)}`;
+    document.getElementById('allPopList').innerHTML=html||'<div class="empty">暂无账单</div>';
 }
 </script>
 </body>
