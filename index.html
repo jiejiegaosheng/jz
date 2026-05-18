@@ -353,61 +353,89 @@ let yearPieIns = null, monthPieIns = null, yearLineChartIns = null;
 const pieCateList = ["吃喝","出行","追星","生活","人情往来","杂七杂八","总存款"];
 const colorList = ['#ff0000','#90ee90','#00ffff','#ffb366','#fff44f','#999999','#87CEEB'];
 
-try{
-    let localBill = localStorage.getItem('billList');
-    if(localBill) billList = JSON.parse(localBill);
-}catch(e){
-    billList = [];
-    localStorage.setItem('billList','[]');
+// ========== Safari 兼容：localStorage 容错（隐私模式也能存） ==========
+function safeStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {
+        // Safari 隐私模式降级：用 sessionStorage 临时存
+        try {
+            sessionStorage.setItem(key, value);
+        } catch (e2) {
+            console.warn("Safari 存储受限，数据暂存内存");
+        }
+    }
+}
+function safeStorageGet(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        try {
+            return sessionStorage.getItem(key);
+        } catch (e2) {
+            return null;
+        }
+    }
 }
 
+// 加载账单（兼容 Safari 隐私模式）
+try {
+    let localBill = safeStorageGet('billList');
+    if (localBill) billList = JSON.parse(localBill);
+} catch (e) {
+    billList = [];
+    safeStorageSet('billList', '[]');
+}
+
+// ========== 备份列表（Safari 100% 兼容） ==========
 function getBackupList() {
-    try{
-        let res = localStorage.getItem("backupList");
-        if(!res) return [];
+    try {
+        let res = safeStorageGet("backupList");
+        if (!res) return [];
         let list = JSON.parse(res);
-        if(!Array.isArray(list)) throw new Error('非数组');
+        if (!Array.isArray(list)) throw new Error('非数组');
         return list;
-    }catch(e){
-        localStorage.removeItem("backupList");
+    } catch (e) {
+        safeStorageSet("backupList", "[]");
         return [];
     }
 }
 function saveBackupList(arr) {
-    if(!Array.isArray(arr)) arr = [];
-    localStorage.setItem("backupList", JSON.stringify(arr));
+    if (!Array.isArray(arr)) arr = [];
+    safeStorageSet("backupList", JSON.stringify(arr));
 }
 
+// ========== 立即备份（Safari 隐私模式也能保存） ==========
 function backupNow() {
-    try{
+    try {
         let nowTime = new Date();
         let data = {
             id: nowTime.getTime(),
             time: nowTime.toLocaleString(),
             billList: JSON.parse(JSON.stringify(billList)),
-            title: localStorage.getItem('title') || "",
-            avatar: localStorage.getItem('avatar') || ""
+            title: safeStorageGet('title') || "",
+            avatar: safeStorageGet('avatar') || ""
         };
         let list = getBackupList();
         list.unshift(data);
-        if(list.length > 30) list = list.slice(0,30);
+        if (list.length > 30) list = list.slice(0, 30);
         saveBackupList(list);
-        alert('✅ 备份成功！');
+        alert('✅ 备份成功！Safari 已保存');
         renderBackupList();
-    }catch(e){
-        localStorage.removeItem("backupList");
+    } catch (e) {
+        safeStorageSet("backupList", "[]");
         let list = [];
         let nowTime = new Date();
         let data = {
             id: nowTime.getTime(),
             time: nowTime.toLocaleString(),
             billList: JSON.parse(JSON.stringify(billList)),
-            title: localStorage.getItem('title') || "",
-            avatar: localStorage.getItem('avatar') || ""
+            title: safeStorageGet('title') || "",
+            avatar: safeStorageGet('avatar') || ""
         };
         list.unshift(data);
         saveBackupList(list);
-        alert('✅ 备份已修复并成功！');
+        alert('✅ 备份已修复并成功！Safari 兼容');
         renderBackupList();
     }
 }
@@ -415,12 +443,12 @@ function backupNow() {
 function renderBackupList() {
     let list = getBackupList();
     let dom = document.getElementById("backupListView");
-    if(list.length === 0){
+    if (list.length === 0) {
         dom.innerHTML = `<div class="empty">暂无备份记录</div>`;
         return;
     }
     let html = "";
-    list.forEach(b=>{
+    list.forEach(b => {
         html += `
         <div class="list-row">
             <div>${b.time}</div>
@@ -434,7 +462,7 @@ function renderBackupList() {
     dom.innerHTML = html;
 }
 
-// ========== iPhone 专用导出（保存到「文件」App → 下载项） ==========
+// ========== iPhone Safari 专用导出（直接进「文件」App → 下载项） ==========
 function exportBackupFile(id) {
     try {
         let list = getBackupList();
@@ -451,7 +479,7 @@ function exportBackupFile(id) {
         let blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
         let fileName = `账单备份_${new Date(target.id).toLocaleDateString()}.json`;
 
-        // ✅ iPhone Safari 专用：直接触发下载 → 自动进「文件」App
+        // Safari 专属下载触发（必须用 a 标签+download）
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = fileName;
@@ -460,64 +488,64 @@ function exportBackupFile(id) {
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
 
-        // ✅ iPhone 用户提示（最关键）
-        alert("✅ 已保存到 iPhone「文件」App → 下载项！\n打开「文件」→ 浏览 → iCloud云盘/我的iPhone → 下载");
+        // Safari 用户精准提示
+        alert("✅ 已保存到 iPhone「文件」App → 下载项！\n路径：文件 → 浏览 → 下载项");
     } catch (err) {
         console.error(err);
-        alert("❌ 导出失败：请用 Safari 打开，不要用第三方浏览器");
+        alert("❌ 导出失败：请用 Safari 打开，关闭隐私模式");
     }
 }
 
 function restoreBackup(id) {
-    if(!confirm('恢复会覆盖当前所有数据，确定继续？'))return;
-    try{
+    if (!confirm('恢复会覆盖当前所有数据，确定继续？')) return;
+    try {
         let list = getBackupList();
-        let item = list.find(x=>x.id===id);
-        if(!item)return;
+        let item = list.find(x => x.id === id);
+        if (!item) return;
         billList = JSON.parse(JSON.stringify(item.billList));
-        localStorage.setItem('billList',JSON.stringify(billList));
-        if(item.title)localStorage.setItem('title',item.title);
-        if(item.avatar)localStorage.setItem('avatar',item.avatar);
+        safeStorageSet('billList', JSON.stringify(billList));
+        if (item.title) safeStorageSet('title', item.title);
+        if (item.avatar) safeStorageSet('avatar', item.avatar);
         alert('恢复成功，自动刷新页面');
         location.reload();
-    }catch(e){alert('恢复失败');}
+    } catch (e) { alert('恢复失败'); }
 }
 
 function deleteBackup(id) {
-    if(!confirm('确定删除这条备份？'))return;
-    let list = getBackupList().filter(x=>x.id!==id);
+    if (!confirm('确定删除这条备份？')) return;
+    let list = getBackupList().filter(x => x.id !== id);
     saveBackupList(list);
     renderBackupList();
 }
 
-function openBackupManager(){
+function openBackupManager() {
     document.getElementById("backupManagerPage").classList.add("active");
     renderBackupList();
 }
-function closeBackupManager(){
+function closeBackupManager() {
     document.getElementById("backupManagerPage").classList.remove("active");
 }
-function closeHelp(){
+function closeHelp() {
     document.getElementById("importHelpPage").classList.remove("active");
 }
-function triggerImport(){
+function triggerImport() {
     document.getElementById("importFileInput").click();
 }
 
-document.getElementById("importFileInput").addEventListener("change",function(e){
+document.getElementById("importFileInput").addEventListener("change", function (e) {
     let file = e.target.files[0];
-    if(!file)return;
+    if (!file) return;
     let reader = new FileReader();
-    reader.onload = function(ev){
-        try{
+    reader.onload = function (ev) {
+        try {
             let data = JSON.parse(ev.target.result);
-            if(!Array.isArray(data.billList)) throw new Error('格式错误');
+            if (!Array.isArray(data.billList)) throw new Error('格式错误');
             billList = data.billList;
-            localStorage.setItem('billList',JSON.stringify(billList));
-            if(data.appTitle)localStorage.setItem('title',data.appTitle);
+            safeStorageSet('billList', JSON.stringify(billList));
+            if (data.appTitle) safeStorageSet('title', data.appTitle);
             alert('导入成功！');
             location.reload();
-        }catch(err){
+        } catch (err) {
             alert('导入失败');
             document.getElementById("importHelpPage").classList.add("active");
         }
@@ -527,89 +555,89 @@ document.getElementById("importFileInput").addEventListener("change",function(e)
 
 const dots = document.querySelectorAll('.dot');
 const wrap = document.getElementById('pieSwipeWrap');
-wrap.addEventListener('scroll',()=>{
+wrap.addEventListener('scroll', () => {
     let page = Math.round(wrap.scrollLeft / wrap.clientWidth);
-    dots.forEach((d,i)=>d.classList.toggle('active',i===page));
+    dots.forEach((d, i) => d.classList.toggle('active', i === page));
 });
 
-function initYearSelect(){
+function initYearSelect() {
     const nowYear = new Date().getFullYear();
     const sel = document.getElementById('trendYearSelect');
     sel.innerHTML = '';
-    for(let y=nowYear-10;y<=nowYear+2;y++){
-        let opt=document.createElement('option');
-        opt.value=y;opt.innerText=y+'年';
-        if(y===nowYear)opt.selected=true;
+    for (let y = nowYear - 10; y <= nowYear + 2; y++) {
+        let opt = document.createElement('option');
+        opt.value = y; opt.innerText = y + '年';
+        if (y === nowYear) opt.selected = true;
         sel.appendChild(opt);
     }
 }
-function openTrendPage(){
+function openTrendPage() {
     document.getElementById('trendPage').classList.add('active');
-    initYearSelect();renderYearLineChart();
+    initYearSelect(); renderYearLineChart();
 }
-function closeTrendPage(){
+function closeTrendPage() {
     document.getElementById('trendPage').classList.remove('active');
 }
-function switchBillTab(tabId){
-    document.querySelectorAll('.tab-item').forEach(el=>el.classList.remove('active'));
+function switchBillTab(tabId) {
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('show'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('show'));
     document.getElementById(tabId).classList.add('show');
-    if(tabId==='chartTab')setTimeout(initChartPage,100);
+    if (tabId === 'chartTab') setTimeout(initChartPage, 100);
 }
-function filterBillList(){renderAllPop(document.getElementById('billSearchInput').value.trim().toLowerCase());}
+function filterBillList() { renderAllPop(document.getElementById('billSearchInput').value.trim().toLowerCase()); }
 
-document.getElementById('customTitle').value=localStorage.getItem('title')||'';
-document.getElementById('customTitle').addEventListener('input',e=>{
-    localStorage.setItem('title',e.target.value);
+document.getElementById('customTitle').value = safeStorageGet('title') || '';
+document.getElementById('customTitle').addEventListener('input', e => {
+    safeStorageSet('title', e.target.value);
 });
 
-function chooseAvatar(){document.getElementById('avatarInput').click();}
-document.getElementById('avatarInput').addEventListener('change',e=>{
-    let file=e.target.files[0];if(!file)return;
-    let r=new FileReader();
-    r.onload=ev=>{
-        localStorage.setItem('avatar',ev.target.result);
-        document.getElementById('avatarBox').style.backgroundImage=`url(${ev.target.result})`;
+function chooseAvatar() { document.getElementById('avatarInput').click(); }
+document.getElementById('avatarInput').addEventListener('change', e => {
+    let file = e.target.files[0]; if (!file) return;
+    let r = new FileReader();
+    r.onload = ev => {
+        safeStorageSet('avatar', ev.target.result);
+        document.getElementById('avatarBox').style.backgroundImage = `url(${ev.target.result})`;
         alert('头像设置成功');
     };
     r.readAsDataURL(file);
 });
 
-function refreshAll(){
+function refreshAll() {
     let now = new Date();
-    let currMonth = now.toISOString().slice(0,7);
-    let totalIn=0,totalOut=0,totalSave=0;
+    let currMonth = now.toISOString().slice(0, 7);
+    let totalIn = 0, totalOut = 0, totalSave = 0;
 
-    const allCate = ['生活费','兼职收入','吃喝','出行','追星','生活','人情往来','杂七杂八','总存款'];
-    allCate.forEach(name=>{
-        let dom = document.getElementById('cate_'+name);
-        if(dom) dom.innerText = '¥0.00';
+    const allCate = ['生活费', '兼职收入', '吃喝', '出行', '追星', '生活', '人情往来', '杂七杂八', '总存款'];
+    allCate.forEach(name => {
+        let dom = document.getElementById('cate_' + name);
+        if (dom) dom.innerText = '¥0.00';
     });
 
     let cateSum = {};
-    allCate.forEach(c=>cateSum[c] = 0);
+    allCate.forEach(c => cateSum[c] = 0);
 
-    billList.forEach(item=>{
-        if(item.date.slice(0,7) !== currMonth) return;
+    billList.forEach(item => {
+        if (item.date.slice(0, 7) !== currMonth) return;
         let num = Number(item.money);
-        if(isNaN(num) || num <= 0) return;
+        if (isNaN(num) || num <= 0) return;
 
-        if(item.type === 'in'){
+        if (item.type === 'in') {
             totalIn += num;
-            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
-        }else if(item.type === 'out'){
+            if (cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+        } else if (item.type === 'out') {
             totalOut += num;
-            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
-        }else if(item.type === 'save'){
+            if (cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+        } else if (item.type === 'save') {
             totalSave += num;
-            if(cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
+            if (cateSum.hasOwnProperty(item.cate)) cateSum[item.cate] += num;
         }
     });
 
-    for(let c in cateSum){
-        let d = document.getElementById('cate_'+c);
-        if(d) d.innerText = '¥' + cateSum[c].toFixed(2);
+    for (let c in cateSum) {
+        let d = document.getElementById('cate_' + c);
+        if (d) d.innerText = '¥' + cateSum[c].toFixed(2);
     }
 
     let balance = totalIn - totalOut - totalSave;
@@ -619,196 +647,196 @@ function refreshAll(){
     document.getElementById('totalBalance').innerText = `¥${balance.toFixed(2)}`;
 }
 
-window.addEventListener('load',()=>{
-    let avatar=localStorage.getItem('avatar');
-    if(avatar){
-        document.getElementById('avatarBox').style.backgroundImage=`url(${avatar})`;
-        document.getElementById('avatarBox').style.color='transparent';
+window.addEventListener('load', () => {
+    let avatar = safeStorageGet('avatar');
+    if (avatar) {
+        document.getElementById('avatarBox').style.backgroundImage = `url(${avatar})`;
+        document.getElementById('avatarBox').style.color = 'transparent';
     }
     refreshAll();
 });
 
-function initChartPage(){
-    let now=new Date();
-    let m=now.toISOString().slice(0,7);
-    document.getElementById('searchMonth').value=m;
+function initChartPage() {
+    let now = new Date();
+    let m = now.toISOString().slice(0, 7);
+    document.getElementById('searchMonth').value = m;
     renderYearPie(now.getFullYear());
     renderMonthPie(m);
 }
-const pieLabelOption={plugins:{datalabels:{formatter(v,c){let s=c.dataset.data.reduce((a,b)=>a+b,0);return s?`¥${v}\n${(v/s*100).toFixed(1)}%`:'';},color:'#fff',font:{size:11}}}};
-function renderYearPie(y){
-    let d={};pieCateList.forEach(c=>d[c]=0);
-    billList.forEach(i=>{if(i.date.slice(0,4)==y&&pieCateList.includes(i.cate))d[i.cate]+=Number(i.money);});
-    let l=[],dd=[],c=[];
-    pieCateList.forEach((k,i)=>{if(d[k]>0){l.push(k);dd.push(d[k]);c.push(colorList[i]);}});
-    if(yearPieIns)yearPieIns.destroy();
-    yearPieIns=new Chart(document.getElementById('yearPieCanvas').getContext('2d'),{type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}});
+const pieLabelOption = { plugins: { datalabels: { formatter(v, c) { let s = c.dataset.data.reduce((a, b) => a + b, 0); return s ? `¥${v}\n${(v / s * 100).toFixed(1)}%` : ''; }, color: '#fff', font: { size: 11 } } } };
+function renderYearPie(y) {
+    let d = {}; pieCateList.forEach(c => d[c] = 0);
+    billList.forEach(i => { if (i.date.slice(0, 4) == y && pieCateList.includes(i.cate)) d[i.cate] += Number(i.money); });
+    let l = [], dd = [], c = [];
+    pieCateList.forEach((k, i) => { if (d[k] > 0) { l.push(k); dd.push(d[k]); c.push(colorList[i]); } });
+    if (yearPieIns) yearPieIns.destroy();
+    yearPieIns = new Chart(document.getElementById('yearPieCanvas').getContext('2d'), { type: 'pie', data: { labels: l, datasets: [{ data: dd, backgroundColor: c }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' }, ...pieLabelOption } } });
 }
-function renderMonthPie(m){
-    let d={};pieCateList.forEach(c=>d[c]=0);
-    billList.forEach(i=>{if(i.date.slice(0,7)===m&&pieCateList.includes(i.cate))d[i.cate]+=Number(i.money);});
-    let l=[],dd=[],c=[];
-    pieCateList.forEach((k,i)=>{if(d[k]>0){l.push(k);dd.push(d[k]);c.push(colorList[i]);}});
-    if(monthPieIns)monthPieIns.destroy();
-    monthPieIns=new Chart(document.getElementById('monthPieCanvas').getContext('2d'),{type:'pie',data:{labels:l,datasets:[{data:dd,backgroundColor:c}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'},...pieLabelOption}}});
+function renderMonthPie(m) {
+    let d = {}; pieCateList.forEach(c => d[c] = 0);
+    billList.forEach(i => { if (i.date.slice(0, 7) === m && pieCateList.includes(i.cate)) d[i.cate] += Number(i.money); });
+    let l = [], dd = [], c = [];
+    pieCateList.forEach((k, i) => { if (d[k] > 0) { l.push(k); dd.push(d[k]); c.push(colorList[i]); } });
+    if (monthPieIns) monthPieIns.destroy();
+    monthPieIns = new Chart(document.getElementById('monthPieCanvas').getContext('2d'), { type: 'pie', data: { labels: l, datasets: [{ data: dd, backgroundColor: c }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' }, ...pieLabelOption } } });
 }
-function renderYearLineChart(){
-    let y=document.getElementById('trendYearSelect').value;
-    let o=Array(12).fill(0),s=Array(12).fill(0);
-    billList.forEach(i=>{if(i.date.slice(0,4)==y){let m=+i.date.slice(5,7)-1;if(i.type==='out')o[m]+=Number(i.money);if(i.type==='save')s[m]+=Number(i.money);}});
-    if(yearLineChartIns)yearLineChartIns.destroy();
-    yearLineChartIns=new Chart(document.getElementById('yearLineCanvas').getContext('2d'),{type:'line',data:{labels:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],datasets:[{label:'支出',data:o,borderColor:'#f53f3f',backgroundColor:'rgba(245,63,63,0.1)',fill:true,tension:0.3},{label:'存款',data:s,borderColor:'#1890ff',backgroundColor:'rgba(24,144,255,0.1)',fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'}}}});
+function renderYearLineChart() {
+    let y = document.getElementById('trendYearSelect').value;
+    let o = Array(12).fill(0), s = Array(12).fill(0);
+    billList.forEach(i => { if (i.date.slice(0, 4) == y) { let m = +i.date.slice(5, 7) - 1; if (i.type == 'out') o[m] += Number(i.money); if (i.type == 'save') s[m] += Number(i.money); } });
+    if (yearLineChartIns) yearLineChartIns.destroy();
+    yearLineChartIns = new Chart(document.getElementById('yearLineCanvas').getContext('2d'), { type: 'line', data: { labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'], datasets: [{ label: '支出', data: o, borderColor: '#f53f3f', backgroundColor: 'rgba(245,63,63,0.1)', fill: true, tension: 0.3 }, { label: '存款', data: s, borderColor: '#1890ff', backgroundColor: 'rgba(24,144,255,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } } });
 }
-document.getElementById('searchMonth').addEventListener('change',function(){let v=this.value;if(v){renderYearPie(v.slice(0,4));renderMonthPie(v);}});
+document.getElementById('searchMonth').addEventListener('change', function () { let v = this.value; if (v) { renderYearPie(v.slice(0, 4)); renderMonthPie(v); } });
 
-function openCatPop(c,t){currCat=c;currType=t;document.getElementById('catPopTitle').innerText=c;document.getElementById('catPopPage').classList.add('active');renderCatPop();}
-function closeCatPop(){document.getElementById('catPopPage').classList.remove('active');}
-function openAllBillPop(){document.getElementById('allPopPage').classList.add('active');switchBillTab('listTab');renderAllPop();}
-function closeAllPop(){document.getElementById('allPopPage').classList.remove('active');}
-function goAddByCat(){goAdd(currCat,currType);}
+function openCatPop(c, t) { currCat = c; currType = t; document.getElementById('catPopTitle').innerText = c; document.getElementById('catPopPage').classList.add('active'); renderCatPop(); }
+function closeCatPop() { document.getElementById('catPopPage').classList.remove('active'); }
+function openAllBillPop() { document.getElementById('allPopPage').classList.add('active'); switchBillTab('listTab'); renderAllPop(); }
+function closeAllPop() { document.getElementById('allPopPage').classList.remove('active'); }
+function goAddByCat() { goAdd(currCat, currType); }
 
-function goAdd(c,t,i=null){
-    currCat=c;currType=t;editId=i?i.id:null;
-    document.getElementById('addTitle').innerText=i?'修改账单':c;
-    if(t==='save'){document.getElementById('monthArea').style.display='block';document.getElementById('dayArea').style.display='none';}
-    else{document.getElementById('dayArea').style.display='block';document.getElementById('monthArea').style.display='none';}
-    if(i){
-        document.getElementById('saveBtn').style.display='none';document.getElementById('updateBtn').style.display='block';
-        t==='save'?document.getElementById('addMonth').value=i.date:document.getElementById('addDate').value=i.date;
-        document.getElementById('addMoney').value=i.money;
-        document.getElementById('addRemark').value=i.remark||'';
-    }else{
-        document.getElementById('saveBtn').style.display='block';document.getElementById('updateBtn').style.display='none';
-        t==='save'?document.getElementById('addMonth').value=new Date().toISOString().slice(0,7):document.getElementById('addDate').valueAsDate=new Date();
-        document.getElementById('addMoney').value='';document.getElementById('addRemark').value='';
+function goAdd(c, t, i = null) {
+    currCat = c; currType = t; editId = i ? i.id : null;
+    document.getElementById('addTitle').innerText = i ? '修改账单' : c;
+    if (t === 'save') { document.getElementById('monthArea').style.display = 'block'; document.getElementById('dayArea').style.display = 'none'; }
+    else { document.getElementById('dayArea').style.display = 'block'; document.getElementById('monthArea').style.display = 'none'; }
+    if (i) {
+        document.getElementById('saveBtn').style.display = 'none'; document.getElementById('updateBtn').style.display = 'block';
+        t === 'save' ? document.getElementById('addMonth').value = i.date : document.getElementById('addDate').value = i.date;
+        document.getElementById('addMoney').value = i.money;
+        document.getElementById('addRemark').value = i.remark || '';
+    } else {
+        document.getElementById('saveBtn').style.display = 'block'; document.getElementById('updateBtn').style.display = 'none';
+        t === 'save' ? document.getElementById('addMonth').value = new Date().toISOString().slice(0, 7) : document.getElementById('addDate').valueAsDate = new Date();
+        document.getElementById('addMoney').value = ''; document.getElementById('addRemark').value = '';
     }
     document.getElementById('addPage').classList.add('active');
 }
-function closeAdd(){document.getElementById('addPage').classList.remove('active');editId=null;}
+function closeAdd() { document.getElementById('addPage').classList.remove('active'); editId = null; }
 
-function saveBill(){
-    let m=Number(document.getElementById('addMoney').value);
-    let r=document.getElementById('addRemark').value.trim();
-    let d=currType==='save'?document.getElementById('addMonth').value:document.getElementById('addDate').value;
-    if(!d)return alert('请选择日期');
-    if(!m||m<=0)return alert('请输入正确金额');
-    billList.unshift({id:Date.now(),cate:currCat,type:currType,date:d,money:m,remark:r});
-    localStorage.setItem('billList',JSON.stringify(billList));
-    closeAdd();renderCatPop();renderAllPop();refreshAll();renderYearLineChart();
+function saveBill() {
+    let m = Number(document.getElementById('addMoney').value);
+    let r = document.getElementById('addRemark').value.trim();
+    let d = currType === 'save' ? document.getElementById('addMonth').value : document.getElementById('addDate').value;
+    if (!d) return alert('请选择日期');
+    if (!m || m <= 0) return alert('请输入正确金额');
+    billList.unshift({ id: Date.now(), cate: currCat, type: currType, date: d, money: m, remark: r });
+    safeStorageSet('billList', JSON.stringify(billList));
+    closeAdd(); renderCatPop(); renderAllPop(); refreshAll(); renderYearLineChart();
 }
-function updateBill(){
-    if(!editId)return;
-    let m=Number(document.getElementById('addMoney').value);
-    let r=document.getElementById('addRemark').value.trim();
-    let d=currType==='save'?document.getElementById('addMonth').value:document.getElementById('addDate').value;
-    if(!d||!m||m<=0)return alert('填写完整信息');
-    let idx = billList.findIndex(x=>x.id===editId);
-    if(idx>-1){
-        billList[idx].cate=currCat;
-        billList[idx].type=currType;
-        billList[idx].date=d;
-        billList[idx].money=m;
-        billList[idx].remark=r;
-        localStorage.setItem('billList',JSON.stringify(billList));
+function updateBill() {
+    if (!editId) return;
+    let m = Number(document.getElementById('addMoney').value);
+    let r = document.getElementById('addRemark').value.trim();
+    let d = currType === 'save' ? document.getElementById('addMonth').value : document.getElementById('addDate').value;
+    if (!d || !m || m <= 0) return alert('填写完整信息');
+    let idx = billList.findIndex(x => x.id === editId);
+    if (idx > -1) {
+        billList[idx].cate = currCat;
+        billList[idx].type = currType;
+        billList[idx].date = d;
+        billList[idx].money = m;
+        billList[idx].remark = r;
+        safeStorageSet('billList', JSON.stringify(billList));
     }
-    closeAdd();renderCatPop();renderAllPop();refreshAll();renderYearLineChart();
+    closeAdd(); renderCatPop(); renderAllPop(); refreshAll(); renderYearLineChart();
     alert('修改成功');
 }
 
 // ========== 明细列表修复：模块内账目正常显示、可展开、可编辑删除 ==========
-function renderCatPop(){
-    let list = billList.filter(x=>x.cate===currCat);
+function renderCatPop() {
+    let list = billList.filter(x => x.cate === currCat);
     let now = new Date();
-    let currM = now.toISOString().slice(0,7);
+    let currM = now.toISOString().slice(0, 7);
     let currY = now.getFullYear();
-    let monthNum=0,yearNum=0;
-    list.forEach(i=>{
+    let monthNum = 0, yearNum = 0;
+    list.forEach(i => {
         let n = Number(i.money);
-        if(i.type===currType){
-            if(i.date.slice(0,7)===currM)monthNum+=n;
-            if(i.date.slice(0,4)==''+currY)yearNum+=n;
+        if (i.type === currType) {
+            if (i.date.slice(0, 7) === currM) monthNum += n;
+            if (i.date.slice(0, 4) == '' + currY) yearNum += n;
         }
     });
-    document.querySelectorAll('#catPopPage .stat-item p').forEach(el=>el.style.display='none');
-    if(currType==='in'){
-        document.getElementById('catMonthIn').style.display='block';
-        document.getElementById('catMonthIn').innerText=`¥${monthNum.toFixed(2)}`;
-        document.getElementById('catYearIn').style.display='block';
-        document.getElementById('catYearIn').innerText=`¥${yearNum.toFixed(2)}`;
-    }else if(currType==='out'){
-        document.getElementById('catMonthOut').style.display='block';
-        document.getElementById('catMonthOut').innerText=`¥${monthNum.toFixed(2)}`;
-        document.getElementById('catYearOut').style.display='block';
-        document.getElementById('catYearOut').innerText=`¥${yearNum.toFixed(2)}`;
-    }else{
-        document.getElementById('catMonthSave').style.display='block';
-        document.getElementById('catMonthSave').innerText=`¥${monthNum.toFixed(2)}`;
-        document.getElementById('catYearSave').style.display='block';
-        document.getElementById('catYearSave').innerText=`¥${yearNum.toFixed(2)}`;
+    document.querySelectorAll('#catPopPage .stat-item p').forEach(el => el.style.display = 'none');
+    if (currType === 'in') {
+        document.getElementById('catMonthIn').style.display = 'block';
+        document.getElementById('catMonthIn').innerText = `¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearIn').style.display = 'block';
+        document.getElementById('catYearIn').innerText = `¥${yearNum.toFixed(2)}`;
+    } else if (currType === 'out') {
+        document.getElementById('catMonthOut').style.display = 'block';
+        document.getElementById('catMonthOut').innerText = `¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearOut').style.display = 'block';
+        document.getElementById('catYearOut').innerText = `¥${yearNum.toFixed(2)}`;
+    } else {
+        document.getElementById('catMonthSave').style.display = 'block';
+        document.getElementById('catMonthSave').innerText = `¥${monthNum.toFixed(2)}`;
+        document.getElementById('catYearSave').style.display = 'block';
+        document.getElementById('catYearSave').innerText = `¥${yearNum.toFixed(2)}`;
     }
-    let group={};
-    list.forEach(i=>{let y=i.date.slice(0,4);if(!group[y])group[y]=[];group[y].push(i);});
-    let years = Object.keys(group).sort((a,b)=>b-a);
-    let html='';
-    years.forEach(y=>{
-        html+=`<div class="year-title">${y}年</div>`;
-        let months = [...new Set(group[y].map(x=>x.date.slice(0,7)))].sort().reverse();
-        months.forEach(m=>{
-            let arr = group[y].filter(x=>x.date.slice(0,7)===m);
-            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
-            arr.forEach(it=>{
-                let sym = it.type==='in'?'+':it.type==='out'?'-':'=';
-                html+=`<div class="list-row"><div>${it.date} ${it.remark||''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div><div class="btns"><button class="edit-btn" onclick="goAdd('${it.cate}','${it.type}',{id:${it.id}})">编辑</button><button class="del-btn" onclick="delBill(${it.id})">删除</button></div></div>`;
+    let group = {};
+    list.forEach(i => { let y = i.date.slice(0, 4); if (!group[y]) group[y] = []; group[y].push(i); });
+    let years = Object.keys(group).sort((a, b) => b - a);
+    let html = '';
+    years.forEach(y => {
+        html += `<div class="year-title">${y}年</div>`;
+        let months = [...new Set(group[y].map(x => x.date.slice(0, 7)))].sort().reverse();
+        months.forEach(m => {
+            let arr = group[y].filter(x => x.date.slice(0, 7) === m);
+            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-', '年')}月</div><div class="month-body" id="mb_${m}">`;
+            arr.forEach(it => {
+                let sym = it.type === 'in' ? '+' : it.type === 'out' ? '-' : '=';
+                html += `<div class="list-row"><div>${it.date} ${it.remark || ''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div><div class="btns"><button class="edit-btn" onclick="goAdd('${it.cate}','${it.type}',{id:${it.id}})">编辑</button><button class="del-btn" onclick="delBill(${it.id})">删除</button></div></div>`;
             });
-            html+='</div></div>';
+            html += '</div></div>';
         });
     });
-    document.getElementById('catPopList').innerHTML=html||'<div class="empty">暂无记录</div>';
+    document.getElementById('catPopList').innerHTML = html || '<div class="empty">暂无记录</div>';
 }
-function toggleMonth(m){
-    let el = document.getElementById('mb_'+m);
-    if(el) el.classList.toggle('show');
+function toggleMonth(m) {
+    let el = document.getElementById('mb_' + m);
+    if (el) el.classList.toggle('show');
 }
-function delBill(id){
-    if(!confirm('确定删除这条账单？'))return;
-    billList = billList.filter(x=>x.id!==id);
-    localStorage.setItem('billList',JSON.stringify(billList));
-    renderCatPop();renderAllPop();refreshAll();renderYearLineChart();
+function delBill(id) {
+    if (!confirm('确定删除这条账单？')) return;
+    billList = billList.filter(x => x.id !== id);
+    safeStorageSet('billList', JSON.stringify(billList));
+    renderCatPop(); renderAllPop(); refreshAll(); renderYearLineChart();
 }
-function renderAllPop(key=''){
+function renderAllPop(key = '') {
     let list = billList;
-    if(key) list = list.filter(x=>x.cate.includes(key)||(x.remark&&x.remark.includes(key))||String(x.money).includes(key));
+    if (key) list = list.filter(x => x.cate.includes(key) || (x.remark && x.remark.includes(key)) || String(x.money).includes(key));
     let y = new Date().getFullYear();
-    let ti=0,to=0,ts=0;
-    list.forEach(i=>{
-        let n=Number(i.money);
-        if(i.date.slice(0,4)==''+y){
-            if(i.type==='in')ti+=n;
-            else if(i.type==='out')to+=n;
-            else ts+=n;
+    let ti = 0, to = 0, ts = 0;
+    list.forEach(i => {
+        let n = Number(i.money);
+        if (i.date.slice(0, 4) == '' + y) {
+            if (i.type === 'in') ti += n;
+            else if (i.type === 'out') to += n;
+            else ts += n;
         }
     });
-    document.getElementById('allPopIn').innerText=`¥${ti.toFixed(2)}`;
-    document.getElementById('allPopOut').innerText=`¥${to.toFixed(2)}`;
-    document.getElementById('allPopSave').innerText=`¥${ts.toFixed(2)}`;
-    let group={};
-    list.forEach(i=>{let y=i.date.slice(0,4);if(!group[y])group[y]=[];group[y].push(i);});
-    let years = Object.keys(group).sort((a,b)=>b-a);
-    let html='';
-    years.forEach(y=>{
-        html+=`<div class="year-title">${y}年</div>`;
-        let months = [...new Set(group[y].map(x=>x.date.slice(0,7)))].sort().reverse();
-        months.forEach(m=>{
-            let arr = group[y].filter(x=>x.date.slice(0,7)===m);
-            html+=`<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-','年')}月</div><div class="month-body" id="mb_${m}">`;
-            arr.forEach(it=>{
-                let sym = it.type==='in'?'+':it.type==='out'?'-':'=';
-                html+=`<div class="list-row"><div>${it.date} ${it.cate} ${it.remark||''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div><div class="btns"><button class="edit-btn" onclick="goAdd('${it.cate}','${it.type}',{id:${it.id}})">编辑</button><button class="del-btn" onclick="delBill(${it.id})">删除</button></div></div>`;
+    document.getElementById('allPopIn').innerText = `¥${ti.toFixed(2)}`;
+    document.getElementById('allPopOut').innerText = `¥${to.toFixed(2)}`;
+    document.getElementById('allPopSave').innerText = `¥${ts.toFixed(2)}`;
+    let group = {};
+    list.forEach(i => { let y = i.date.slice(0, 4); if (!group[y]) group[y] = []; group[y].push(i); });
+    let years = Object.keys(group).sort((a, b) => b - a);
+    let html = '';
+    years.forEach(y => {
+        html += `<div class="year-title">${y}年</div>`;
+        let months = [...new Set(group[y].map(x => x.date.slice(0, 7)))].sort().reverse();
+        months.forEach(m => {
+            let arr = group[y].filter(x => x.date.slice(0, 7) === m);
+            html += `<div class="month-group"><div class="month-title" onclick="toggleMonth('${m}')">${m.replace('-', '年')}月</div><div class="month-body" id="mb_${m}">`;
+            arr.forEach(it => {
+                let sym = it.type === 'in' ? '+' : it.type === 'out' ? '-' : '=';
+                html += `<div class="list-row"><div>${it.date} ${it.cate} ${it.remark || ''}</div><div class="${it.type}">${sym}¥${Number(it.money).toFixed(2)}</div><div class="btns"><button class="edit-btn" onclick="goAdd('${it.cate}','${it.type}',{id:${it.id}})">编辑</button><button class="del-btn" onclick="delBill(${it.id})">删除</button></div></div>`;
             });
-            html+='</div></div>';
+            html += '</div></div>';
         });
     });
-    document.getElementById('allPopList').innerHTML=html||'<div class="empty">暂无账单</div>';
+    document.getElementById('allPopList').innerHTML = html || '<div class="empty">暂无账单</div>';
 }
 </script>
 </body>
