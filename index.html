@@ -434,7 +434,7 @@ function renderBackupList() {
     dom.innerHTML = html;
 }
 
-// ========== 1. 导出修复：直接下载到手机内存（文件管理→内部存储） ==========
+// ========== iPhone 专用导出（保存到「文件」App → 下载项） ==========
 function exportBackupFile(id) {
     try {
         let list = getBackupList();
@@ -450,7 +450,8 @@ function exportBackupFile(id) {
         let jsonStr = JSON.stringify(exportData, null, 2);
         let blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
         let fileName = `账单备份_${new Date(target.id).toLocaleDateString()}.json`;
-        // 直接触发浏览器下载 → 安卓会进「内部存储/下载」，iOS进「文件」
+
+        // ✅ iPhone Safari 专用：直接触发下载 → 自动进「文件」App
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = fileName;
@@ -458,10 +459,12 @@ function exportBackupFile(id) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-        alert("✅ 已保存到手机内存（下载/文件）！");
+
+        // ✅ iPhone 用户提示（最关键）
+        alert("✅ 已保存到 iPhone「文件」App → 下载项！\n打开「文件」→ 浏览 → iCloud云盘/我的iPhone → 下载");
     } catch (err) {
         console.error(err);
-        alert("❌ 导出失败：浏览器权限不足或数据异常");
+        alert("❌ 导出失败：请用 Safari 打开，不要用第三方浏览器");
     }
 }
 
@@ -712,7 +715,7 @@ function updateBill(){
     alert('修改成功');
 }
 
-// ========== 2. 明细列表修复：模块内账目正常显示、可展开、可编辑删除 ==========
+// ========== 明细列表修复：模块内账目正常显示、可展开、可编辑删除 ==========
 function renderCatPop(){
     let list = billList.filter(x=>x.cate===currCat);
     let now = new Date();
