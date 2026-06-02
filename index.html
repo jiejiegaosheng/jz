@@ -77,19 +77,17 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 /* Transaction List */
 .transaction-list{padding:0 16px;}
-.transaction-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);transition:background .3s;position:relative;overflow:hidden;cursor:pointer;}
-.transaction-item:last-child{border-bottom:none;}
-.transaction-item:active{background:var(--input-bg);}
+.transaction-item{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--border);transition:background .3s;}
 .tx-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .tx-cate{font-size:14px;font-weight:600;}
 .tx-remark{font-size:12px;color:var(--text2);margin-top:2px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tx-date{font-size:11px;color:var(--text2);margin-top:1px;}
-.tx-amount{font-size:16px;font-weight:700;margin-left:auto;white-space:nowrap;}
-.tx-actions{position:absolute;right:-120px;top:0;bottom:0;display:flex;transition:right .25s;}
-.tx-actions button{width:60px;border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;}
-.tx-actions .tx-edit{background:var(--primary);}
-.tx-actions .tx-delete{background:#ff7675;}
-.transaction-item.swiped .tx-actions{right:0;}
+.tx-amount{font-size:15px;font-weight:700;white-space:nowrap;}
+.tx-btn-edit,.tx-btn-del{background:none;border:none;font-size:13px;cursor:pointer;padding:4px 4px;border-radius:6px;line-height:1;flex-shrink:0;opacity:.5;transition:opacity .2s;}
+.tx-btn-edit:hover,.tx-btn-del:hover{opacity:1;}
+.tx-btn-edit{color:var(--primary);}
+.tx-btn-del{color:#ff7675;}
+.tx-item-actions{display:flex;align-items:center;gap:2px;margin-left:4px;flex-shrink:0;}
 
 /* Bottom Nav with FAB */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:var(--nav-bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:4px 0 env(safe-area-inset-bottom,6px);z-index:9999;transition:background .3s;}
@@ -180,6 +178,14 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.15);}
 .toggle-switch.on::after{transform:translateX(20px);}
 
+/* Mood Selector */
+.mood-option{font-size:22px;cursor:pointer;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--input-bg);transition:all .2s;line-height:1;}
+.mood-option:active{transform:scale(.9);}
+.mood-option.active{border-color:var(--primary);background:rgba(108,92,231,.1);transform:scale(1.1);}
+
+/* Challenge */
+.challenge-card{background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border-radius:var(--radius);padding:16px;margin:0 16px 10px;position:relative;overflow:hidden;}
+
 /* Page visibility */
 .page{display:none;}
 .page.active{display:block;animation:pageIn .25s ease;}
@@ -263,8 +269,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <span>支 <b id="yearExpense">¥0</b></span>
     <span class="annual-divider">|</span>
     <span>存 <b id="yearSave">¥0</b></span>
-    <span class="annual-divider">|</span>
-    <span>余 <b id="yearBalance">¥0</b></span>
 </div>
 
 <!-- Quick Actions -->
@@ -281,6 +285,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <span class="more" onclick="switchTab('all')">全部 →</span>
     </div>
     <div id="budgetModuleList"></div>
+    <div style="margin:4px 16px 0;font-size:10px;color:var(--text2);text-align:center;">长按分类模块可单独设置该分类预算</div>
     <div id="dataStatus" style="margin:10px 16px;padding:10px;border-radius:8px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);text-align:center;"></div>
 </div>
 
@@ -337,36 +342,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <div class="transaction-list" id="saveList"></div>
 </div>
 
-<div class="page" id="pageBudget">
-    <div class="section-header"><h2>🍽️ 热量追踪</h2><span class="more" id="dietTotal" style="font-size:12px;font-weight:400;"></span></div>
-    <div class="chart-container" id="dietContent">
-        <div class="chart-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <h3>🔥 今日摄入</h3>
-                <span id="dietTodayCal" style="font-size:20px;font-weight:700;color:var(--out);">0</span>
-            </div>
-            <div style="font-size:12px;color:var(--text2);margin:4px 0 8px;">建议每日 ≤2000 kcal</div>
-            <div class="budget-bar"><div class="budget-fill good" id="dietBar" style="width:0%;"></div></div>
-            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-                <button class="quick-btn expense" style="flex:none;padding:8px 14px;font-size:13px;" onclick="addDietItem()">➕ 添加食物</button>
-                <button class="quick-btn income" style="flex:none;padding:8px 14px;font-size:13px;" onclick="document.getElementById('foodOcrInput').click()">📷 拍照识别食物</button>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h3>📋 今日饮食记录</h3>
-            <div id="dietList"></div>
-        </div>
-        <div class="chart-card">
-            <h3>📈 近7天热量趋势</h3>
-            <div id="dietTrend"></div>
-        </div>
-    </div>
-</div>
 
-<input type="file" id="foodOcrInput" accept="image/*" capture="environment" style="display:none" onchange="handleFoodOCR(this)">
-
-
-<input type="file" id="foodPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleFoodPhoto(this)">
 
 <div class="page" id="pageSettings">
     <div class="section-header"><h2>设置</h2></div>
@@ -395,9 +371,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="setting-left"><span class="setting-icon">🗑️</span><span class="setting-label">清空数据</span></div>
             <div class="setting-right"><span style="color:var(--out);">›</span></div>
         </div>
-        <div class="setting-item" style="justify-content:center;color:var(--text2);font-size:12px;border:none;background:transparent;box-shadow:none;">
-            🍽️ 热量追踪 · 数据保存在本地
-        </div>
+
     </div>
 </div>
 
@@ -443,14 +417,36 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <label>备注</label>
             <input type="text" id="addNote" placeholder="选填" maxlength="50">
         </div>
+        <div style="margin-bottom:12px;">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">今天心情</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="moodSelector">
+                <span class="mood-option" data-mood="😊" onclick="selectMood('😊')">😊</span>
+                <span class="mood-option" data-mood="😢" onclick="selectMood('😢')">😢</span>
+                <span class="mood-option" data-mood="😤" onclick="selectMood('😤')">😤</span>
+                <span class="mood-option" data-mood="😴" onclick="selectMood('😴')">😴</span>
+                <span class="mood-option" data-mood="😐" onclick="selectMood('😐')">😐</span>
+                <span class="mood-option" data-mood="💰" onclick="selectMood('💰')">💰</span>
+                <span class="mood-option" data-mood="🥳" onclick="selectMood('🥳')">🥳</span>
+            </div>
+            <input type="hidden" id="addMood" value="">
+        </div>
         <button class="quick-btn expense" style="width:100%;margin-top:4px;padding:14px;font-size:15px;" onclick="saveTransaction()">✔ 保存</button>
     </div>
+</div>
+
+<div class="page" id="pageReport">
+    <div class="section-header"><h2>📊 年度报告</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
+    <div style="text-align:center;padding:0 16px 10px;">
+        <canvas id="wheelCanvas" width="280" height="280" style="max-width:100%;cursor:pointer;" onclick="spinWheel()"></canvas>
+        <div id="wheelResult" style="margin-top:8px;font-size:14px;font-weight:600;min-height:24px;"></div>
+    </div>
+    <div class="chart-container" id="reportContent"></div>
 </div>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span>首页</span></button>
-    <button class="nav-item" onclick="switchTab('budget')"><span class="nav-icon">🍽️</span><span>饮食</span></button>
+    <button class="nav-item" onclick="switchTab('report')"><span class="nav-icon">📊</span><span>报告</span></button>
     <button class="nav-fab" onclick="openAdd('expense')" title="记一笔">＋</button>
     <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
     <button class="nav-item" onclick="switchTab('all')"><span class="nav-icon">📋</span><span>账单</span></button>
@@ -470,7 +466,8 @@ function normItem(i){
         cate: type==='save' ? '总存款' : (i.cate || '吃喝'),
         amount: i.money ?? i.amount ?? 0,
         date: i.date || new Date().toISOString().slice(0,10),
-        note: i.remark ?? i.note ?? ''
+        note: i.remark ?? i.note ?? '',
+        mood: i.mood || ''
     };
 }
 function loadData(){
@@ -597,7 +594,7 @@ if(!DATA.length){
     const seen = new Set();
     for(let k=0; k<localStorage.length; k++){
         const key = localStorage.key(k);
-        if(key==='jz_data'||key==='jz_data_backup'||key==='jz_budgets'||key==='jz_diet'||key==='jz_diet_photos'||key==='jz_diet_reminder'||key==='jz_food_photos'||key==='jz_food_reminders'||key==='jz_cats'||key==='jz_custom_budget'||key==='jz_dark') continue;
+        if(key==='jz_data'||key==='jz_data_backup'||key==='jz_budgets'||key==='jz_food_photos'||key==='jz_food_reminders'||key==='jz_cats'||key==='jz_custom_budget'||key==='jz_cat_budgets'||key==='jz_dark') continue;
         try {
             const val = JSON.parse(localStorage.getItem(key));
             if(Array.isArray(val) && val.length){
@@ -647,7 +644,7 @@ function refreshAll(){
     document.getElementById('sumIncome').textContent = '¥'+income.toFixed(income%1?2:0);
     document.getElementById('sumExpense').textContent = '¥'+expense.toFixed(expense%1?2:0);
     document.getElementById('sumSave').textContent = '¥'+save.toFixed(save%1?2:0);
-    document.getElementById('sumBalance').textContent = '¥'+(income-expense).toFixed((income-expense)%1?2:0);
+    document.getElementById('sumBalance').textContent = '¥'+(income-expense-save).toFixed((income-expense-save)%1?2:0);
 
     // Yearly totals
     const curYear = CURRENT_MONTH.slice(0,4);
@@ -658,7 +655,6 @@ function refreshAll(){
     document.getElementById('yearIncome').textContent = '¥'+yIn.toFixed(yIn%1?2:0);
     document.getElementById('yearExpense').textContent = '¥'+(yOut).toFixed(yOut%1?2:0);
     document.getElementById('yearSave').textContent = '¥'+ySave.toFixed(ySave%1?2:0);
-    document.getElementById('yearBalance').textContent = '¥'+(yIn-yOut).toFixed((yIn-yOut)%1?2:0);
 
     // Budget health (auto from income, user can override)
     const monthExpense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
@@ -667,6 +663,9 @@ function refreshAll(){
     const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
     const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoBudget;
     const pct = budget>0 ? Math.min(monthExpense/budget*100,100) : 0;
+    // Per-category budgets
+    const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
+    const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
     let bRow = document.getElementById('budgetInfoRow');
     if(!bRow){
         bRow = document.createElement('div');
@@ -696,8 +695,10 @@ function refreshAll(){
         el.innerHTML = cats.map(c=>{
             const spent = catTotals[c.name]||0;
             if(!spent) return '';
-            const pct = budget>0 ? Math.min(spent/budget*100,100) : 0;
-            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')">
+            const catBudget = monthCatBudgets[c.name];
+            const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : (budget>0 ? Math.min(spent/budget*100,100) : 0);
+            const barColor = catBudget>0 ? (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)') : (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)');
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:20px;">${c.icon}</span>
                     <div style="flex:1;">
@@ -705,7 +706,7 @@ function refreshAll(){
                             <span>${c.name}</span>
                             <span style="color:var(--out);">¥${spent.toFixed(0)}</span>
                         </div>
-                        <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)'};"></div></div>
+                        <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
                     </div>
                 </div>
             </div>`;
@@ -715,8 +716,6 @@ function refreshAll(){
     renderAllList();
     renderCateList();
     renderCharts();
-    renderBudgets();
-    renderDiet();
     updateDataStatus();
 }
 
@@ -804,13 +803,13 @@ function renderGroupedList(list, elId){
             if(i.type==='expense'){ sign='-'; bg='rgba(255,118,117,.12)'; color='var(--out)'; }
             else if(i.type==='save'){ sign=''; bg='rgba(108,92,231,.12)'; color='var(--primary)'; }
             const hasPhoto = foodPhotos[i.id];
-            html += `<div class="transaction-item" data-id="${i.id}" ontouchstart="swipeStart(event,${i.id})" ontouchend="swipeEnd(event,${i.id})" onclick="viewItem(${i.id})">
+            html += `<div class="transaction-item">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
-                <div><div class="tx-cate">${i.cate}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                <div class="tx-amount" style="color:${color}">${sign}¥${i.amount.toFixed(i.amount%1?2:0)}</div>
-                <div class="tx-actions">
-                    <button class="tx-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id});document.querySelectorAll('.transaction-item.swiped').forEach(e=>e.classList.remove('swiped'));">✏️<br><span style="font-size:10px;font-weight:400;">编辑</span></button>
-                    <button class="tx-delete" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️<br><span style="font-size:10px;font-weight:400;">删除</span></button>
+                <div><div class="tx-cate">${i.mood||''} ${i.cate}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                <div class="tx-amount" style="color:${color};margin-left:auto;">${sign}¥${i.amount.toFixed(i.amount%1?2:0)}</div>
+                <div class="tx-item-actions">
+                    <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
+                    <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
                 </div>
             </div>`;
         });
@@ -858,7 +857,8 @@ function renderCateList(){
 
 function clearFilter(){
     FILTER_CATE = '';
-    switchTab('home');
+switchTab('home');
+loadTodayChallenge();
 }
 
 // ========== SAVE PAGE ==========
@@ -875,70 +875,8 @@ function renderSavePage(){
     renderGroupedList(sorted, 'saveList');
 }
 
-// ========== SWIPE TO DELETE ==========
-let swipeState = {id:null,startX:0,swiping:false};
-
-function swipeStart(e,id){
-    const t = e.touches[0];
-    swipeState = {id,startX:t.clientX,swiping:true};
-    // reset others
-    document.querySelectorAll('.transaction-item.swiped').forEach(el=>el.classList.remove('swiped'));
-}
-
-function swipeEnd(e,id){
-    if(!swipeState.swiping) return;
-    const t = e.changedTouches[0];
-    const dx = swipeState.startX - t.clientX;
-    if(dx > 40){
-        const el = document.querySelector(`.transaction-item[data-id="${id}"]`);
-        if(el) el.classList.add('swiped');
-    }
-    swipeState.swiping = false;
-}
-
-// close swipe on scroll
-document.addEventListener('scroll',()=>{
-    document.querySelectorAll('.transaction-item.swiped').forEach(el=>el.classList.remove('swiped'));
-}, {passive:true});
-
-// ========== DELETE ==========
-function deleteTx(id){
-    DATA = DATA.filter(i=>i.id!==id);
-    localStorage.setItem('jz_data', JSON.stringify(DATA));
-    // cleanup associated photo & reminder
-    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-    delete photos[id];
-    localStorage.setItem('jz_food_photos', JSON.stringify(photos));
-    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
-    delete reminders[id];
-    localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
-    refreshAll();
-    showToast('已删除');
-}
-
-// ========== VIEW ITEM (tap to close swipe, edit/delete by buttons) ==========
-function viewItem(id){
-    const el = document.querySelector(`.transaction-item[data-id="${id}"]`);
-    if(el && el.classList.contains('swiped')) el.classList.remove('swiped');
-}
-
-// ========== ADD TRANSACTION ==========
-function openAdd(type, editId){
-    EDIT_ID = editId || null;
-    ADD_TYPE = type;
-    const title = type==='income'?'记一笔收入':type==='save'?'记一笔存款':'记一笔支出';
-    document.getElementById('addSheetTitle').textContent = EDIT_ID ? '编辑'+title : title;
-    document.getElementById('addTypeToggle').querySelector('.income').classList.toggle('active',type==='income');
-    document.getElementById('addTypeToggle').querySelector('.expense').classList.toggle('active',type==='expense');
-    document.getElementById('addTypeToggle').querySelector('.save').classList.toggle('active',type==='save');
-    renderCatGrid();
-
-    if(EDIT_ID){
-        const item = DATA.find(d=>d.id===EDIT_ID);
-        if(item){
-            document.getElementById('addAmount').value = item.amount;
-            document.getElementById('addDate').value = item.date;
-            document.getElementById('addNote').value = item.note||'';
+// ========== EDIT / DELETE ==========
+            }
             // select matching category
             document.querySelectorAll('.cat-item').forEach(el=>{
                 el.classList.toggle('active', el.dataset.cat === item.cate);
@@ -948,6 +886,8 @@ function openAdd(type, editId){
         document.getElementById('addAmount').value = '';
         document.getElementById('addDate').valueAsDate = new Date();
         document.getElementById('addNote').value = '';
+        document.getElementById('addMood').value = '';
+        document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('active'));
     }
     document.getElementById('addSheet').classList.add('show');
     document.getElementById('overlay').classList.add('show');
@@ -980,6 +920,12 @@ function selectCat(el, name){
     el.classList.add('active');
 }
 
+function selectMood(mood){
+    document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('addMood').value = mood;
+}
+
 function closeSheet(){
     document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
     // remove dynamically created sheets
@@ -993,13 +939,14 @@ function saveTransaction(){
     const date = document.getElementById('addDate').value;
     if(!date) return showToast('请选择日期');
     const note = document.getElementById('addNote').value.trim();
+    const mood = document.getElementById('addMood').value;
     const selected = document.querySelector('.cat-item.active');
     const cate = selected ? selected.dataset.cat : (CATS[ADD_TYPE]||CATS.expense)[0].name;
     let newId;
     if(EDIT_ID){
         const idx = DATA.findIndex(d=>d.id===EDIT_ID);
         if(idx>=0){
-            DATA[idx] = {...DATA[idx], type:ADD_TYPE, cate, amount:Math.round(amount*100)/100, date, note};
+            DATA[idx] = {...DATA[idx], type:ADD_TYPE, cate, amount:Math.round(amount*100)/100, date, note, mood};
         }
     } else {
         newId = Date.now() + Math.random();
@@ -1009,7 +956,8 @@ function saveTransaction(){
             cate,
             amount: Math.round(amount*100)/100,
             date,
-            note
+            note,
+            mood
         });
     }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
@@ -1286,156 +1234,228 @@ if(savedCats){
     Object.keys(savedCats).forEach(k=>{ if(CATS[k]) CATS[k] = savedCats[k]; });
 }
 
-// ========== (legacy budget stub - empty) ==========
-function renderBudgets(){}
-
-// ========== DIET / CALORIE TRACKER ==========
-const FOOD_DB = {
-    '米饭':116,'面条':110,'馒头':110,'包子':120,'饺子':40,'馄饨':20,'油条':230,'面包':260,'饼干':200,'蛋糕':280,
-    '鸡蛋':70,'鸭蛋':90,'牛奶':65,'酸奶':75,'豆浆':30,'豆腐':80,'豆干':140,'黄豆':360,
-    '猪肉':250,'排骨':230,'猪蹄':200,'牛肉':125,'羊肉':200,'鸡胸肉':130,'鸡腿':180,'鸡翅':210,'鸭肉':200,'火腿':220,'香肠':280,
-    '鱼':100,'虾':90,'蟹':100,'螃蟹':100,'龙虾':90,'蛤蜊':60,'牡蛎':60,'海带':15,'紫菜':20,
-    '白菜':15,'菠菜':20,'油菜':15,'生菜':15,'芹菜':15,'韭菜':25,'豆芽':15,'西兰花':30,'花菜':25,'黄瓜':15,'番茄':18,'茄子':20,
-    '土豆':80,'红薯':85,'山药':55,'玉米':105,'南瓜':25,'胡萝卜':35,'白萝卜':15,'莲藕':70,'竹笋':20,'木耳':25,'香菇':20,
-    '苹果':50,'香蕉':90,'西瓜':30,'葡萄':45,'草莓':30,'橙子':45,'橘子':45,'梨':50,'桃子':40,'芒果':55,'菠萝':40,'猕猴桃':60,
-    '柠檬':25,'榴莲':145,'火龙果':55,'荔枝':65,'龙眼':60,'樱桃':45,'石榴':65,'柿子':70,
-    '可乐':45,'雪碧':45,'果汁':50,'奶茶':60,'咖啡':2,'啤酒':45,'白酒':300,'红酒':80,
-    '薯片':530,'巧克力':540,'糖果':400,'冰淇淋':200,'蛋糕':280,'面包':260,'饼干':200,'月饼':400,'汤圆':230,'粽子':180,
-    '火锅':100,'烧烤':150,'麻辣烫':80,'炸鸡':250,'汉堡':250,'披萨':260,'三明治':200,'寿司':150,'拉面':120,'意面':130,
-    '粥':45,'汤':30,'酸奶':75,'坚果':550,'核桃':650,'杏仁':580,'花生':560,'瓜子':530,
-};
-
-function renderDiet(){
-    const today = new Date().toISOString().slice(0,10);
-    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
-    const todayItems = dietData.filter(d=>d.date===today);
-    const totalCal = todayItems.reduce((s,d)=>s+d.cal,0);
-    const pct = Math.min(totalCal/2000*100,100);
-    const barEl = document.getElementById('dietBar');
-    if(barEl){
-        barEl.style.width = pct+'%';
-        barEl.className = 'budget-fill '+(pct>=100?'over':pct>=80?'warn':'good');
+// ========== ANNUAL REPORT ==========
+function renderReport(){
+    const el = document.getElementById('reportContent');
+    const all = DATA;
+    if(!all.length){
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>还没有数据，记几笔再来看看吧</p></div>';
+        return;
     }
-    const totalEl = document.getElementById('dietTodayCal');
-    if(totalEl) totalEl.textContent = totalCal;
+    const totalInc = all.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const totalExp = all.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const totalSave = all.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const expCount = all.filter(i=>i.type==='expense').length;
+    const maxCate = {};
+    all.filter(i=>i.type==='expense').forEach(i=>{ maxCate[i.cate]=(maxCate[i.cate]||0)+i.amount; });
+    const topCate = Object.entries(maxCate).sort((a,b)=>b[1]-a[1])[0];
+    const topCatePct = topCate ? (topCate[1]/totalExp*100).toFixed(0) : 0;
+    const dates = all.map(i=>i.date).sort();
+    const earliest = dates[0];
+    const latest = dates[dates.length-1];
+    const days = Math.round((new Date(latest)-new Date(earliest))/86400000)+1;
+    // Fun comparisons
+    const hotpot = Math.round(totalExp/80);
+    const milktea = Math.round(totalExp/15);
+    const iphone = Math.round(totalExp/7999);
+    // Mood stats
+    const moodData = {};
+    all.filter(i=>i.mood).forEach(i=>{ moodData[i.mood]=(moodData[i.mood]||0)+1; });
+    const topMood = Object.entries(moodData).sort((a,b)=>b[1]-a[1])[0];
+    // Most expensive day
+    const dayTotals = {};
+    all.filter(i=>i.type==='expense').forEach(i=>{ dayTotals[i.date]=(dayTotals[i.date]||0)+i.amount; });
+    const topDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
+    // Most expensive item
+    const sortedByAmt = [...all].filter(i=>i.type==='expense').sort((a,b)=>b.amount-a.amount);
+    const topItem = sortedByAmt[0];
 
-    // daily list
-    const listEl = document.getElementById('dietList');
-    if(listEl){
-        if(!todayItems.length){
-            listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div><p>今天还没吃东西</p></div>';
-        } else {
-            listEl.innerHTML = todayItems.map((d,i)=>`
-                <div class="transaction-item" onclick="removeDietItem(${i})">
-                    <div class="tx-icon" style="background:rgba(255,118,117,.12);font-size:16px;">🍽️</div>
-                    <div><div class="tx-cate">${d.name}</div><div class="tx-remark">${d.weight||''}</div></div>
-                    <div class="tx-amount" style="color:var(--out);font-size:14px;">${d.cal}kcal</div>
-                </div>
-            `).join('');
-        }
-    }
-    // 7-day trend
-    const trendEl = document.getElementById('dietTrend');
-    if(trendEl){
-        const days = [];
-        for(let i=6;i>=0;i--){
-            const d = new Date(); d.setDate(d.getDate()-i);
-            const ds = d.toISOString().slice(0,10);
-            const cal = dietData.filter(x=>x.date===ds).reduce((s,x)=>s+x.cal,0);
-            days.push({label:i===0?'今':i===1?'昨':['日','一','二','三','四','五','六'][d.getDay()],cal});
-        }
-        const max = Math.max(...days.map(d=>d.cal),200);
-        const bars = days.map((d,i)=>{
-            const h = Math.max(4,(d.cal/max)*90);
-            const color = d.cal>2000?'var(--out)':d.cal>1600?'#fdcb6e':'var(--in)';
-            return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:${color}"></div><div class="bar-label">${d.label}</div><div style="font-size:9px;color:var(--text2);">${d.cal||''}</div></div>`;
-        }).join('');
-        trendEl.innerHTML = `<div class="trend-bars">${bars}</div>`;
-    }
+    el.innerHTML = `
+        <div class="chart-card" style="text-align:center;padding:24px 16px;">
+            <div style="font-size:40px;margin-bottom:8px;">📊</div>
+            <h3 style="font-size:18px;margin-bottom:4px;">${earliest?earliest.slice(0,4):''}年记账报告</h3>
+            <div style="font-size:12px;color:var(--text2);">从 ${earliest||'?'} 到 ${latest||'?'}，共 ${days} 天</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px;margin-bottom:12px;">
+            <div class="chart-card" style="text-align:center;padding:14px 6px;">
+                <div style="font-size:11px;color:var(--text2);">总收入</div>
+                <div style="font-size:16px;font-weight:700;color:var(--in);margin-top:4px;">¥${totalInc.toFixed(0)}</div>
+            </div>
+            <div class="chart-card" style="text-align:center;padding:14px 6px;">
+                <div style="font-size:11px;color:var(--text2);">总支出</div>
+                <div style="font-size:16px;font-weight:700;color:var(--out);margin-top:4px;">¥${totalExp.toFixed(0)}</div>
+            </div>
+            <div class="chart-card" style="text-align:center;padding:14px 6px;">
+                <div style="font-size:11px;color:var(--text2);">笔数</div>
+                <div style="font-size:16px;font-weight:700;color:var(--primary);margin-top:4px;">${expCount}</div>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>🏆 趣味盘点</h3>
+            <div style="font-size:13px;line-height:1.8;">
+                ${topCate?`<p>• 你在 <b>${topCate[0]}</b> 上花了最多钱，占支出 <b>${topCatePct}%</b></p>`:''}
+                ${topItem?`<p>• 单笔最大支出：<b>¥${topItem.amount.toFixed(2)}</b> — ${topItem.cate}${topItem.note?' ('+topItem.note+')':''}</p>`:''}
+                ${topDay?`<p>• 花钱最多的一天是 <b>${topDay[0]}</b>，花了 <b>¥${topDay[1].toFixed(0)}</b></p>`:''}
+                <p>• 总支出相当于吃了 <b>${hotpot}</b> 顿火锅，或 <b>${milktea}</b> 杯奶茶</p>
+                ${iphone>0?`<p>• 省下来能买 <b>${iphone}</b> 个 iPhone 📱</p>`:''}
+                ${totalSave>0?`<p>• 你一共存了 <b>¥${totalSave.toFixed(0)}</b>，太棒了 👏</p>`:''}
+                ${topMood?`<p>• 记账时最常出现的表情是 <b>${topMood[0]}</b>，出现了 ${topMood[1]} 次</p>`:''}
+            </div>
+        </div>
+        <div class="chart-card" style="text-align:center;">
+            <div style="font-size:12px;color:var(--text2);">你已坚持记账</div>
+            <div style="font-size:28px;font-weight:700;color:var(--primary);margin:6px 0;">${days}</div>
+            <div style="font-size:12px;color:var(--text2);">天</div>
+        </div>`;
 }
 
-function addDietItem(name, cal, weight){
-    const foodSheet = document.getElementById('addSheet').cloneNode(true);
-    foodSheet.id = 'dietSheet';
-    foodSheet.innerHTML = `
-    <div class="sheet-handle"></div>
-    <div class="sheet-header"><h2>添加食物</h2><button class="sheet-close" onclick="document.getElementById('dietSheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
-    <div class="sheet-body">
-        <div class="form-group"><label>食物名称</label><input type="text" id="dietName" placeholder="如：米饭" value="${name||''}"></div>
-        <div class="form-group"><label>份量</label><input type="text" id="dietWeight" placeholder="如：1碗/200g" value="${weight||''}"></div>
-        <div class="form-group"><label>热量 (kcal)</label><input type="number" id="dietCal" placeholder="每份热量" value="${cal||''}"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="foodQuickList"></div>
-        <button class="quick-btn expense" style="width:100%;padding:14px;font-size:15px;" onclick="saveDiet()">✔ 保存</button>
-    </div>`;
-    document.body.appendChild(foodSheet);
-    setTimeout(()=>{
-        foodSheet.classList.add('show');
-        document.getElementById('overlay').classList.add('show');
-        const ql = document.getElementById('foodQuickList');
-        if(ql){
-            const sorted = Object.entries(FOOD_DB).sort((a,b)=>b[1]-a[1]);
-            ql.innerHTML = sorted.slice(0,24).map(([f,c])=>`
-                <span style="padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:var(--input-bg);"
-                    onclick="document.getElementById('dietName').value='${f}';document.getElementById('dietCal').value=${c};document.getElementById('dietWeight').value='1份';">${f} ${c}kcal</span>
-            `).join('');
-        }
-    }, 50);
+// ========== RANDOM CHALLENGES (WHEEL) ==========
+const CHALLENGES = [
+    {text:'今天只花 ≤¥20',icon:'💰',color:'#ff7675'},
+    {text:'不喝奶茶/咖啡',icon:'🚫',color:'#fdcb6e'},
+    {text:'记笔¥0.01交易',icon:'✨',color:'#00b894'},
+    {text:'全部用现金',icon:'💵',color:'#0984e3'},
+    {text:'买的东西拍照',icon:'📸',color:'#6c5ce7'},
+    {text:'自己做饭不外卖',icon:'🍳',color:'#e17055'},
+    {text:'写一段备注',icon:'📝',color:'#00cec9'},
+    {text:'步行代替打车',icon:'🚶',color:'#e84393'},
+];
+let wheelAngle = 0, wheelSpinning = false;
+
+function drawWheel(highlight){
+    const c = document.getElementById('wheelCanvas');
+    if(!c) return;
+    const ctx = c.getContext('2d');
+    const cx = 140, cy = 140, r = 130;
+    const n = CHALLENGES.length;
+    const arc = (2*Math.PI)/n;
+    ctx.clearRect(0,0,280,280);
+    CHALLENGES.forEach((ch,i)=>{
+        const start = wheelAngle + i*arc;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r,start,start+arc);
+        ctx.closePath();
+        ctx.fillStyle = ch.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // icon
+        const mid = start + arc/2;
+        const ix = cx + Math.cos(mid)*r*0.65;
+        const iy = cy + Math.sin(mid)*r*0.65;
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ch.icon, ix, iy);
+    });
+    // center circle
+    ctx.beginPath();
+    ctx.arc(cx,cy,28,0,2*Math.PI);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = 'var(--primary)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = 'var(--text)';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SPIN',cx,cy);
+    // pointer
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-r-8);
+    ctx.lineTo(cx-10,cy-r-22);
+    ctx.lineTo(cx+10,cy-r-22);
+    ctx.closePath();
+    ctx.fillStyle = '#ff7675';
+    ctx.fill();
 }
 
-function saveDiet(){
-    const name = document.getElementById('dietName').value.trim();
-    const cal = parseFloat(document.getElementById('dietCal').value);
-    if(!name||!cal) return showToast('请填写食物名称和热量');
-    const weight = document.getElementById('dietWeight').value.trim();
-    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
-    const today = new Date().toISOString().slice(0,10);
-    dietData.push({date:today,name,cal:Math.round(cal),weight,id:Date.now()});
-    localStorage.setItem('jz_diet', JSON.stringify(dietData));
-    document.getElementById('dietSheet').remove();
-    document.getElementById('overlay').classList.remove('show');
-    renderDiet();
-    showToast('✅ 已记录 '+name+' '+Math.round(cal)+'kcal');
-}
-
-function removeDietItem(idx){
-    if(!confirm('删除这条记录？')) return;
-    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
-    const today = new Date().toISOString().slice(0,10);
-    const todayItems = dietData.filter(d=>d.date===today);
-    const item = todayItems[idx];
-    dietData = dietData.filter(d=>!(d.date===today && d.name===item.name && d.cal===item.cal && d.id===item.id));
-    localStorage.setItem('jz_diet', JSON.stringify(dietData));
-    renderDiet();
-}
-
-async function handleFoodOCR(input){
-    const file = input.files[0];
-    if(!file) return;
-    showToast('⏳ 识别食物中...');
-    try {
-        const { data: { text } } = await Tesseract.recognize(file, 'chi_sim+eng', {
-            logger: m => { if(m.status==='recognizing text' && m.progress<1)
-                document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
-        });
-        let found = null;
-        for(const [name, cal] of Object.entries(FOOD_DB)){
-            if(text.includes(name)){
-                found = {name, cal};
-                break;
+function spinWheel(){
+    if(wheelSpinning) return;
+    const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
+    const saved = localStorage.getItem(key);
+    if(saved){
+        try {
+            const chal = JSON.parse(saved);
+            if(chal.done){
+                showToast('✅ 今日挑战已完成！点击文字可取消');
+                // Allow re-spin anyway
             }
-        }
-        if(found){
-            addDietItem(found.name, found.cal, '1份 (识别)');
-            showToast(`✅ 识别到 ${found.name} ${found.cal}kcal`);
-        } else {
-            const calMatch = text.match(/(\d+)\s*(?:kcal|卡|千卡|k)/i);
-            addDietItem('', calMatch ? calMatch[1] : '', '');
-            showToast(calMatch ? '✅ 识别到热量数值' : '⚠️ 未识别到食物，请手动输入');
-        }
-    } catch(e){
-        showToast('❌ 识别失败');
+        } catch(e){}
     }
-    input.value = '';
+    wheelSpinning = true;
+    const spins = 5 + Math.random()*3;
+    const target = Math.random() * 2 * Math.PI;
+    const totalAngle = spins * 2 * Math.PI + target;
+    const startAngle = wheelAngle;
+    const duration = 3000;
+    const startTime = Date.now();
+    function animate(){
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed/duration, 1);
+        const ease = 1 - Math.pow(1-progress, 3);
+        wheelAngle = startAngle + totalAngle * ease;
+        drawWheel();
+        if(progress < 1){
+            requestAnimationFrame(animate);
+        } else {
+            wheelSpinning = false;
+            const normalized = ((wheelAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+            const arc = (2*Math.PI)/CHALLENGES.length;
+            const pointerAngle = (3*Math.PI/2 - normalized + 2*Math.PI) % (2*Math.PI);
+            const idx = Math.floor(pointerAngle / arc) % CHALLENGES.length;
+            const chal = CHALLENGES[idx];
+            const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
+            localStorage.setItem(key, JSON.stringify({...chal, done:false}));
+            const el = document.getElementById('wheelResult');
+            if(el){
+                el.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px;">👆 点此标记完成</div>`;
+                el.style.cursor = 'pointer';
+                el.onclick = function(){ toggleWheelDone(); };
+            }
+            showToast('🎯 今日挑战：'+chal.text);
+        }
+    }
+    animate();
+}
+
+function toggleWheelDone(){
+    const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
+    const saved = localStorage.getItem(key);
+    if(!saved) return;
+    try {
+        const chal = JSON.parse(saved);
+        chal.done = !chal.done;
+        localStorage.setItem(key, JSON.stringify(chal));
+        const el = document.getElementById('wheelResult');
+        if(el){
+            el.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
+                <div style="font-size:12px;color:var(--text2);margin-top:4px;">${chal.done?'✅ 已完成 ✓ 再点取消':'👆 点此标记完成'}</div>`;
+        }
+        showToast(chal.done?'🎉 挑战完成！':'已取消');
+    } catch(e){}
+}
+
+function loadTodayChallenge(){
+    const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
+    const saved = localStorage.getItem(key);
+    if(saved){
+        try {
+            const chal = JSON.parse(saved);
+            const el = document.getElementById('wheelResult');
+            if(el){
+                el.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px;">${chal.done?'✅ 已完成 ✓ 再点取消':'👆 点此标记完成'}</div>`;
+                el.style.cursor = 'pointer';
+                el.onclick = function(){ toggleWheelDone(); };
+            }
+        } catch(e){}
+    }
+    drawWheel();
 }
 
 
@@ -1443,6 +1463,100 @@ async function handleFoodOCR(input){
 function openSearch(){
     switchTab('all');
     document.getElementById('searchInput').focus();
+}
+
+// ========== LONG PRESS ON CATEGORY BUDGET MODULE ==========
+let lpTimer = null, lpCate = '', lpStartY = 0, lpStartX = 0;
+function longPressStart(e, cate){
+    lpCate = cate;
+    const t = e.touches[0];
+    lpStartX = t.clientX;
+    lpStartY = t.clientY;
+    lpTimer = setTimeout(()=>{
+        lpTimer = null;
+        showCategoryBudget(cate);
+    }, 600);
+}
+function longPressEnd(e, cate){
+    if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; }
+}
+function longPressMove(e){
+    if(lpTimer){
+        const t = e.touches[0];
+        if(Math.abs(t.clientX-lpStartX)>10 || Math.abs(t.clientY-lpStartY)>10)
+            { clearTimeout(lpTimer); lpTimer = null; }
+    }
+}
+
+function showCategoryBudget(cate){
+    const monthIncome = getMonthData().filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const autoTotal = Math.round(monthIncome * 0.7);
+    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const totalBudget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoTotal;
+    const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
+    const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
+    const spent = DATA.filter(i=>i.type==='expense'&&i.cate===cate&&i.date.slice(0,7)===CURRENT_MONTH)
+        .reduce((s,i)=>s+i.amount,0);
+    const curCatBudget = monthCatBudgets[cate] || Math.round(totalBudget / CATS.expense.length);
+
+    closeSheet();
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:99999;max-height:85vh;overflow-y:auto;';
+    const cat = CATS.expense.find(c=>c.name===cate)||{icon:'📌'};
+    sheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2>${cat.icon} ${cate} 预算</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
+    <div class="sheet-body">
+        <div style="background:var(--input-bg);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:12px;color:var(--text2);">本月收入</span>
+                <span style="font-weight:700;">¥${monthIncome.toFixed(0)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:12px;color:var(--text2);">建议总预算 (70%)</span>
+                <span style="font-weight:700;color:var(--primary);">¥${autoTotal.toFixed(0)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:12px;color:var(--text2);">当前总预算</span>
+                <span style="font-weight:700;cursor:pointer;" onclick="editBudget()">¥${totalBudget.toFixed(0)} ✏️</span>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;font-size:14px;">
+                <span style="font-weight:600;">${cat.icon} ${cate}</span>
+                <span style="color:var(--out);font-weight:700;">已花 ¥${spent.toFixed(2)}</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>${cate} 分类预算（¥）</label>
+            <input type="number" id="catBudgetInput" value="${curCatBudget}" step="1" min="0" style="font-size:20px;font-weight:700;padding:14px;">
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(totalBudget*0.3)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">30%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(totalBudget*0.3)}</span></button>
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(totalBudget*0.5)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">50%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(totalBudget*0.5)}</span></button>
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(spent+Math.max(100, totalBudget*0.1))})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">余量+<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(spent+Math.max(100, totalBudget*0.1))}</span></button>
+        </div>
+        <button onclick="saveCatBudget('${cate}')" style="width:100%;margin-top:16px;padding:14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">✔ 保存分类预算</button>
+    </div>`;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+
+function setQuickCatBudget(cate, val){
+    document.getElementById('catBudgetInput').value = val;
+}
+
+function saveCatBudget(cate){
+    const val = parseFloat(document.getElementById('catBudgetInput').value);
+    if(isNaN(val) || val<0) return showToast('请输入有效金额');
+    const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
+    if(!catBudgets[CURRENT_MONTH]) catBudgets[CURRENT_MONTH] = {};
+    catBudgets[CURRENT_MONTH][cate] = val;
+    localStorage.setItem('jz_cat_budgets', JSON.stringify(catBudgets));
+    const sheet = document.querySelector('.sheet.show');
+    if(sheet) { sheet.remove(); document.getElementById('overlay').classList.remove('show'); }
+    refreshAll();
+    showToast('✅ '+cate+' 预算已设为 ¥'+val.toFixed(0));
 }
 
 // ========== EDIT BUDGET ==========
@@ -1700,14 +1814,14 @@ function toggleDark(){
 function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',budget:'pageBudget',save:'pageSave',settings:'pageSettings'};
-    const navMap = {home:0,budget:1,save:3,all:4,charts:-1,settings:-1};
+    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport'};
+    const navMap = {home:0,report:1,save:3,all:4,charts:-1,settings:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
     if(tab==='all') renderAllList();
     if(tab==='charts') renderCharts();
-    if(tab==='budget') renderDiet();
     if(tab==='save') renderSavePage();
+    if(tab==='report'){ renderReport(); loadTodayChallenge(); }
 }
 </script>
 </body>
