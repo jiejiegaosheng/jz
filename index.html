@@ -793,7 +793,7 @@ function renderGroupedList(list, elId){
             const icon = findCat(i.type,i.cate).icon;
             let sign = '+', bg = 'rgba(0,184,148,.12)', color = 'var(--in)';
             if(i.type==='expense'){ sign='-'; bg='rgba(255,118,117,.12)'; color='var(--out)'; }
-            else if(i.type==='save'){ sign='→'; bg='rgba(108,92,231,.12)'; color='var(--primary)'; }
+            else if(i.type==='save'){ sign=''; bg='rgba(108,92,231,.12)'; color='var(--primary)'; }
             const hasPhoto = foodPhotos[i.id];
             html += `<div class="transaction-item" data-id="${i.id}" ontouchstart="swipeStart(event,${i.id})" ontouchend="swipeEnd(event,${i.id})" onclick="viewItem(${i.id})">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
