@@ -9,7 +9,7 @@
 :root{--bg:#f5f6fa;--card:#fff;--text:#1a1a2e;--text2:#8e8ea0;--primary:#6c5ce7;--primary2:#a29bfe;--in:#00b894;--out:#ff7675;--save:#6c5ce7;--border:#f0f0f5;--shadow:0 2px 12px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;--nav-bg:#fff;--nav-h:64px;--input-bg:#f5f6fa;}
 .dark{--bg:#0f0f23;--card:#1a1a35;--text:#e8e8f0;--text2:#9e9eb8;--border:#2a2a45;--shadow:0 2px 12px rgba(0,0,0,.3);--nav-bg:#141428;--input-bg:#252545;}
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent;outline:none;}
-body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;max-widt  h:480px;margin:0 auto;min-height:100vh;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + 12px);position:relative;}
+body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;max-width:480px;margin:0 auto;min-height:100vh;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + 12px);position:relative;}
 ::-webkit-scrollbar{width:0;}
 
 /* Header */
@@ -121,6 +121,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .type-btn.active{color:#fff;border-color:transparent;}
 .type-btn.income.active{background:var(--in);}
 .type-btn.expense.active{background:var(--out);}
+.type-btn.save.active{background:var(--primary);color:#fff!important;border-color:var(--primary)!important;}
 
 /* Category Grid */
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
@@ -229,6 +230,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <div class="header-top">
         <h1>记账本</h1>
         <div class="header-actions">
+            <span onclick="switchTab('charts')" title="图表">📊</span>
             <span onclick="openSearch()" title="搜索">🔍</span>
             <span onclick="switchTab('settings')" title="设置">⚙️</span>
         </div>
@@ -265,11 +267,11 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 <!-- Pages -->
 <div class="page active" id="pageHome">
-    <div class="section-header">
-        <h2>最近记录</h2>
-        <span class="more" onclick="switchTab('all')">查看全部 →</span>
+    <div class="section-header" style="padding-bottom:6px;">
+        <h2>预算账本</h2>
+        <span class="more" onclick="switchTab('all')">全部 →</span>
     </div>
-    <div class="transaction-list" id="recentList"></div>
+    <div id="budgetModuleList"></div>
 </div>
 
 <div class="page" id="pageAll">
@@ -306,10 +308,47 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     </div>
 </div>
 
-<div class="page" id="pageBudget">
-    <div class="section-header"><h2>预算管理</h2><span class="more" id="budgetTotal"></span></div>
-    <div class="chart-container" id="budgetList"></div>
+<div class="page" id="pageSave">
+    <div class="section-header"><h2>🏦 存款管理</h2></div>
+    <div class="summary-row" style="padding-top:0;">
+        <div class="summary-card income"><div class="label">总存款</div><div class="value" id="saveTotal" style="color:var(--primary);">¥0</div></div>
+        <div class="summary-card expense"><div class="label">本月存入</div><div class="value" id="saveMonth" style="color:var(--in);">¥0</div></div>
+        <div class="summary-card balance-card"><div class="label">存款笔数</div><div class="value" id="saveCount">0</div></div>
+    </div>
+    <div class="section-header"><h2>存款记录</h2></div>
+    <div class="transaction-list" id="saveList"></div>
 </div>
+
+<div class="page" id="pageBudget">
+    <div class="section-header"><h2>🍽️ 热量追踪</h2><span class="more" id="dietTotal" style="font-size:12px;font-weight:400;"></span></div>
+    <div class="chart-container" id="dietContent">
+        <div class="chart-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <h3>🔥 今日摄入</h3>
+                <span id="dietTodayCal" style="font-size:20px;font-weight:700;color:var(--out);">0</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin:4px 0 8px;">建议每日 ≤2000 kcal</div>
+            <div class="budget-bar"><div class="budget-fill good" id="dietBar" style="width:0%;"></div></div>
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                <button class="quick-btn expense" style="flex:none;padding:8px 14px;font-size:13px;" onclick="addDietItem()">➕ 添加食物</button>
+                <button class="quick-btn income" style="flex:none;padding:8px 14px;font-size:13px;" onclick="document.getElementById('foodOcrInput').click()">📷 拍照识别食物</button>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>📋 今日饮食记录</h3>
+            <div id="dietList"></div>
+        </div>
+        <div class="chart-card">
+            <h3>📈 近7天热量趋势</h3>
+            <div id="dietTrend"></div>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="foodOcrInput" accept="image/*" capture="environment" style="display:none" onchange="handleFoodOCR(this)">
+
+
+<input type="file" id="foodPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleFoodPhoto(this)">
 
 <div class="page" id="pageSettings">
     <div class="section-header"><h2>设置</h2></div>
@@ -318,8 +357,16 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="setting-left"><span class="setting-icon">🌙</span><span class="setting-label">深色模式</span></div>
             <div class="setting-right"><div class="toggle-switch" id="darkToggle" onclick="toggleDark()"></div></div>
         </div>
+        <div class="setting-item" onclick="manageCategories()">
+            <div class="setting-left"><span class="setting-icon">📂</span><span class="setting-label">管理分类</span></div>
+            <div class="setting-right"><span>›</span></div>
+        </div>
         <div class="setting-item" onclick="exportData()">
             <div class="setting-left"><span class="setting-icon">📤</span><span class="setting-label">导出数据 (CSV)</span></div>
+            <div class="setting-right"><span>›</span></div>
+        </div>
+        <div class="setting-item" onclick="showURLGuide()">
+            <div class="setting-left"><span class="setting-icon">🔗</span><span class="setting-label">快捷记账 (URL方案)</span></div>
             <div class="setting-right"><span>›</span></div>
         </div>
         <div class="setting-item" onclick="if(confirm('确定清空所有数据？')){localStorage.clear();location.reload()}">
@@ -327,12 +374,12 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="setting-right"><span style="color:var(--out);">›</span></div>
         </div>
         <div class="setting-item" style="justify-content:center;color:var(--text2);font-size:12px;border:none;background:transparent;box-shadow:none;">
-            记账本 v2.0 · 数据保存在本地
+            🍽️ 热量追踪 · 数据保存在本地
         </div>
     </div>
 </div>
 
-<input type="file" id="ocrInput" accept="image/*" capture="environment" style="display:none" onchange="handleOCR(this)">
+<input type="file" id="ocrInput" accept="image/*" style="display:none" onchange="handleOCR(this)">
 
 <!-- Add Transaction Sheet -->
 <div class="sheet" id="addSheet">
@@ -345,11 +392,25 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <div class="type-toggle" id="addTypeToggle">
             <button class="type-btn expense active" onclick="setAddType('expense')">支出</button>
             <button class="type-btn income" onclick="setAddType('income')">收入</button>
+            <button class="type-btn save" onclick="setAddType('save')" style="border-color:var(--primary);color:var(--primary);">🏦 存款</button>
         </div>
         <div class="amount-wrap" style="position:relative;">
             <span class="currency">¥</span>
             <input type="number" id="addAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-            <button class="ocr-btn" onclick="document.getElementById('ocrInput').click()" title="拍照识别" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:var(--primary);color:#fff;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">📷</button>
+            <button class="ocr-btn" onclick="document.getElementById('ocrInput').click()" title="截图/拍照识别金额" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:var(--primary);color:#fff;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">📷</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px;">
+            <div onclick="document.getElementById('addAmount').value=10" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥10</div>
+            <div onclick="document.getElementById('addAmount').value=20" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥20</div>
+            <div onclick="document.getElementById('addAmount').value=30" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥30</div>
+            <div onclick="document.getElementById('addAmount').value=50" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥50</div>
+            <div onclick="document.getElementById('addAmount').value=100" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥100</div>
+            <div onclick="document.getElementById('addAmount').value=200" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥200</div>
+            <div onclick="document.getElementById('addAmount').value=500" style="padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--input-bg);color:var(--text2);font-weight:500;">¥500</div>
+        </div>
+        <div style="display:flex;gap:6px;margin:0 0 10px;">
+            <button onclick="pasteClipboardImage()" style="flex:1;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:var(--input-bg);color:var(--text2);font-size:11px;cursor:pointer;">📋 粘贴截图</button>
+            <button onclick="document.getElementById('ocrInput').click()" style="flex:1;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:var(--input-bg);color:var(--text2);font-size:11px;cursor:pointer;">📷 选择截图</button>
         </div>
         <div class="cat-grid" id="addCatGrid"></div>
         <div class="form-group">
@@ -367,39 +428,90 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span>首页</span></button>
-    <button class="nav-item" onclick="switchTab('all')"><span class="nav-icon">📋</span><span>账单</span></button>
+    <button class="nav-item" onclick="switchTab('budget')"><span class="nav-icon">🍽️</span><span>饮食</span></button>
     <button class="nav-fab" onclick="openAdd('expense')" title="记一笔">＋</button>
-    <button class="nav-item" onclick="switchTab('charts')"><span class="nav-icon">📊</span><span>图表</span></button>
-    <button class="nav-item" onclick="switchTab('budget')"><span class="nav-icon">🎯</span><span>预算</span></button>
+    <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
+    <button class="nav-item" onclick="switchTab('all')"><span class="nav-icon">📋</span><span>账单</span></button>
 </nav>
 
 <script>
-// ========== DATA ==========
+// ========== DATA MIGRATION (ensure ALL old data moves over) ==========
 let DATA = JSON.parse(localStorage.getItem('jz_data')) || [];
+const oldData = JSON.parse(localStorage.getItem('billList'));
+if(oldData && oldData.length){
+    const oldIds = new Set(DATA.map(d=>d.id));
+    let merged = false;
+    oldData.forEach(i => {
+        const id = i.id || Date.now()+Math.random();
+        if(!oldIds.has(id)){
+            DATA.push({
+                id,
+                type: i.type==='save' ? 'save' : i.type,
+                cate: i.type==='save' ? '总存款' : i.cate,
+                amount: i.money ?? i.amount ?? 0,
+                date: i.date,
+                note: i.remark ?? i.note ?? ''
+            });
+            merged = true;
+        }
+    });
+    if(merged){
+        localStorage.setItem('jz_data', JSON.stringify(DATA));
+        showToast('✅ 已合并旧数据 '+oldData.length+' 条');
+    }
+    localStorage.removeItem('billList');
+}
 let BUDGETS = JSON.parse(localStorage.getItem('jz_budgets')) || {};
 let DARK = localStorage.getItem('jz_dark') === '1';
 let CURRENT_MONTH = new Date().toISOString().slice(0,7);
 let ADD_TYPE = 'expense';
 let CHART_MODE = 'month';
+let EDIT_ID = null;
 
 const CATS = {
     expense: [
-        {icon:'🍔',name:'餐饮'},
-        {icon:'🚇',name:'交通'},
-        {icon:'🛒',name:'购物'},
-        {icon:'🏠',name:'生活'},
-        {icon:'🎮',name:'娱乐'},
-        {icon:'➕',name:'其他'},
+        {icon:'🍔',name:'吃喝'},
+        {icon:'🚇',name:'出行'},
+        {icon:'💫',name:'追星'},
+        {icon:'🛒',name:'生活'},
+        {icon:'💌',name:'人情往来'},
+        {icon:'📦',name:'杂七杂八'},
     ],
     income: [
-        {icon:'💵',name:'工资'},
-        {icon:'💼',name:'兼职'},
-        {icon:'🎁',name:'红包'},
-        {icon:'➕',name:'其他'},
+        {icon:'💵',name:'生活费'},
+        {icon:'💼',name:'兼职收入'},
+    ],
+    save: [
+        {icon:'🏦',name:'总存款'},
     ]
 };
 
 const CAT_COLORS = ['#6c5ce7','#00b894','#ff7675','#fdcb6e','#e17055','#0984e3','#e84393','#00cec9','#636e72','#d63031','#55efc4','#fd79a8','#74b9ff','#a29bfe','#ffeaa7','#fab1a0'];
+
+// ========== URL DEEP LINK (like iCost share extension) ==========
+(function deepLink(){
+    const p = new URLSearchParams(location.search);
+    const amount = parseFloat(p.get('amount') || p.get('a'));
+    if(!(amount>0 && amount<999999)) return;
+    const type = p.get('type') || p.get('t') || 'expense';
+    const cate = p.get('cate') || p.get('c') || '';
+    const note = p.get('note') || p.get('n') || '';
+    // defer until all functions are defined
+    setTimeout(function runDeepLink(){
+        if(typeof openAdd !== 'function') return setTimeout(runDeepLink, 50);
+        openAdd(type);
+        setTimeout(()=>{
+            document.getElementById('addAmount').value = amount;
+            if(cate){
+                document.querySelectorAll('.cat-item').forEach(el=>{
+                    if(el.dataset.cat===cate) el.click();
+                });
+            }
+            if(note) document.getElementById('addNote').value = decodeURIComponent(note);
+            showToast('🔗 快速记账 ¥'+amount);
+        },500);
+    }, 100);
+})();
 
 // ========== INIT ==========
 if(DARK) document.body.classList.add('dark');
@@ -430,27 +542,77 @@ function refreshAll(){
     const list = getMonthData();
     const income = list.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const expense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const save = list.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
     document.getElementById('sumIncome').textContent = '¥'+income.toFixed(income%1?2:0);
-    document.getElementById('sumExpense').textContent = '¥'+expense.toFixed(expense%1?2:0);
-    document.getElementById('sumBalance').textContent = '¥'+(income-expense).toFixed((income-expense)%1?2:0);
+    document.getElementById('sumExpense').textContent = '¥'+(expense+save).toFixed((expense+save)%1?2:0);
+    document.getElementById('sumBalance').textContent = '¥'+(income-expense-save).toFixed((income-expense-save)%1?2:0);
 
     // Yearly totals
     const curYear = CURRENT_MONTH.slice(0,4);
     const yearData = DATA.filter(i=>i.date.slice(0,4)===curYear);
     const yIn = yearData.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const yOut = yearData.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const ySave = yearData.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
     document.getElementById('yearIncome').textContent = '¥'+yIn.toFixed(yIn%1?2:0);
-    document.getElementById('yearExpense').textContent = '¥'+yOut.toFixed(yOut%1?2:0);
-    document.getElementById('yearBalance').textContent = '¥'+(yIn-yOut).toFixed((yIn-yOut)%1?2:0);
+    document.getElementById('yearExpense').textContent = '¥'+(yOut+ySave).toFixed((yOut+ySave)%1?2:0);
+    document.getElementById('yearBalance').textContent = '¥'+(yIn-yOut-ySave).toFixed((yIn-yOut-ySave)%1?2:0);
 
-    // Recent transactions grouped by date
-    const allSorted = [...DATA].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
-    const recent = allSorted.slice(0,30);
-    renderGroupedList(recent, 'recentList');
+    // Budget health (auto from income, user can override)
+    const monthExpense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const monthIncome = income;
+    const autoBudget = Math.round(monthIncome * 0.7);
+    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoBudget;
+    const pct = budget>0 ? Math.min(monthExpense/budget*100,100) : 0;
+    let bRow = document.getElementById('budgetInfoRow');
+    if(!bRow){
+        bRow = document.createElement('div');
+        bRow.id = 'budgetInfoRow';
+        bRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 16px 4px;font-size:11px;color:var(--text2);';
+        const header = document.querySelector('.quick-actions');
+        header.parentNode.insertBefore(bRow, header.nextSibling);
+    }
+    bRow.innerHTML = `
+        <div class="budget-bar" style="flex:none;width:50px;height:5px;"><div class="budget-fill good" style="width:${pct}%;background:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};"></div></div>
+        <span>收<b style="color:var(--in);margin-left:2px;">¥${monthIncome.toFixed(0)}</b></span>
+        <span>支<b style="color:var(--out);margin-left:2px;">¥${monthExpense.toFixed(0)}</b></span>
+        <span style="cursor:pointer;" onclick="editBudget()">预算<b style="color:var(--primary);margin-left:2px;">¥${budget.toFixed(0)}</b>✏️</span>
+        <span style="margin-left:auto;">${pct>=100?'⚠️超支':pct>=80?'⚡警戒':'✅健康'}</span>
+    `;
+    
+    // Budget account: show each expense category as a module
+    const monthExpenses = DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH);
+    const catTotals = {};
+    monthExpenses.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+    const cats = CATS.expense;
+    const el = document.getElementById('budgetModuleList');
+    if(!el) return;
+    if(!monthExpenses.length){
+        el.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">📊</div><p>本月暂无支出</p></div>';
+    } else {
+        el.innerHTML = cats.map(c=>{
+            const spent = catTotals[c.name]||0;
+            if(!spent) return '';
+            const pct = budget>0 ? Math.min(spent/budget*100,100) : 0;
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="switchTab('all')">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:20px;">${c.icon}</span>
+                    <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
+                            <span>${c.name}</span>
+                            <span style="color:var(--out);">¥${spent.toFixed(0)}</span>
+                        </div>
+                        <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)'};"></div></div>
+                    </div>
+                </div>
+            </div>`;
+        }).filter(Boolean).join('');
+    }
 
     renderAllList();
     renderCharts();
     renderBudgets();
+    renderDiet();
 }
 
 function getDateLabel(dateStr){
@@ -492,9 +654,10 @@ function renderGroupedList(list, elId){
     const monthStats = {};
     sortedDates.forEach(date=>{
         const ym = date.slice(0,7);
-        if(!monthStats[ym]) monthStats[ym] = {inc:0,exp:0};
+        if(!monthStats[ym]) monthStats[ym] = {inc:0,exp:0,save:0};
         groups[date].forEach(i=>{
             if(i.type==='income') monthStats[ym].inc += i.amount;
+            else if(i.type==='save') monthStats[ym].save += i.amount;
             else monthStats[ym].exp += i.amount;
         });
     });
@@ -513,29 +676,32 @@ function renderGroupedList(list, elId){
             if(curMonth) html += `</div></div>`; // close prev month
             curMonth = ym;
             const ms = monthStats[ym];
-            const net = ms.inc - ms.exp;
+            const net = ms.inc - ms.exp - ms.save;
             html += `<div class="month-group"><div class="month-title open" onclick="toggleMonthBody('${ym}',this)">
                 ${ym.replace('-','年')+'月'}
-                <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:8px;">收${ms.inc.toFixed(0)} 支${ms.exp.toFixed(0)}</span>
+                <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:8px;">收${ms.inc.toFixed(0)} 支${ms.exp.toFixed(0)}${ms.save?' 存'+ms.save.toFixed(0):''}</span>
                 <span style="margin-left:auto;font-size:12px;font-weight:600;color:${net>=0?'var(--in)':'var(--out)'}">${net>=0?'+':''}¥${net.toFixed(0)}</span>
                 <span class="month-arrow">▾</span>
             </div><div class="month-body show" id="mb_${ym}">`;
         }
         const label = getDateLabel(date);
-        const dayTotal = groups[date].reduce((s,i)=>s+i.amount*(i.type==='income'?1:-1),0);
+        const dayTotal = groups[date].reduce((s,i)=>s+i.amount*(i.type==='income'?1:i.type==='save'?-1:-1),0);
         html += `<div class="date-group${di===0?'':' fade-in'}">
             <div class="date-group-header">
                 <span class="date-dot"></span>
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
                 <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(0)}</span>
             </div>`;
+        const foodPhotos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
         groups[date].forEach(i=>{
             const icon = findCat(i.type,i.cate).icon;
-            const sign = i.type==='income'?'+':'-';
-            const color = i.type==='income'?'var(--in)':'var(--out)';
+            let sign = '+', bg = 'rgba(0,184,148,.12)', color = 'var(--in)';
+            if(i.type==='expense'){ sign='-'; bg='rgba(255,118,117,.12)'; color='var(--out)'; }
+            else if(i.type==='save'){ sign='→'; bg='rgba(108,92,231,.12)'; color='var(--primary)'; }
+            const hasPhoto = foodPhotos[i.id];
             html += `<div class="transaction-item" data-id="${i.id}" ontouchstart="swipeStart(event,${i.id})" ontouchend="swipeEnd(event,${i.id})" onclick="viewItem(${i.id})">
-                <div class="tx-icon" style="background:${i.type==='income'?'rgba(0,184,148,.12)':'rgba(255,118,117,.12)'}">${icon}</div>
-                <div><div class="tx-cate">${i.cate}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                <div class="tx-icon" style="background:${bg}">${icon}</div>
+                <div><div class="tx-cate">${i.cate}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
                 <div class="tx-amount" style="color:${color}">${sign}¥${i.amount.toFixed(i.amount%1?2:0)}</div>
                 <button class="tx-delete" onclick="event.stopPropagation();deleteTx(${i.id})">✕</button>
             </div>`;
@@ -560,6 +726,20 @@ function renderAllList(){
     if(keyword) filtered = filtered.filter(i=>i.cate.includes(keyword)||(i.note||'').toLowerCase().includes(keyword));
     filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
     renderGroupedList(filtered, 'allList');
+}
+
+// ========== SAVE PAGE ==========
+function renderSavePage(){
+    const saves = DATA.filter(i=>i.type==='save');
+    const total = saves.reduce((s,i)=>s+i.amount,0);
+    const curMonth = CURRENT_MONTH.slice(0,7);
+    const monthSaves = saves.filter(i=>i.date.slice(0,7)===curMonth);
+    const monthTotal = monthSaves.reduce((s,i)=>s+i.amount,0);
+    document.getElementById('saveTotal').textContent = '¥'+total.toFixed(total%1?2:0);
+    document.getElementById('saveMonth').textContent = '¥'+monthTotal.toFixed(monthTotal%1?2:0);
+    document.getElementById('saveCount').textContent = saves.length;
+    const sorted = [...saves].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+    renderGroupedList(sorted, 'saveList');
 }
 
 // ========== SWIPE TO DELETE ==========
@@ -592,32 +772,70 @@ document.addEventListener('scroll',()=>{
 function deleteTx(id){
     DATA = DATA.filter(i=>i.id!==id);
     localStorage.setItem('jz_data', JSON.stringify(DATA));
+    // cleanup associated photo & reminder
+    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+    delete photos[id];
+    localStorage.setItem('jz_food_photos', JSON.stringify(photos));
+    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
+    delete reminders[id];
+    localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
     refreshAll();
     showToast('已删除');
 }
 
-// ========== VIEW ITEM (click to open edit/delete) ==========
+// ========== VIEW ITEM (click to edit/delete) ==========
 function viewItem(id){
     const i = DATA.find(d=>d.id===id);
     if(!i) return;
-    if(confirm(`金额: ¥${i.amount.toFixed(2)}\n分类: ${i.cate}\n日期: ${i.date}\n备注: ${i.note||'无'}\n\n确定删除这条记录？`)){
-        deleteTx(id);
+    const el = document.querySelector(`.transaction-item[data-id="${id}"]`);
+    if(el && el.classList.contains('swiped')) return;
+    const action = confirm(`💰 ¥${i.amount.toFixed(2)} · ${i.cate}${i.note?' · '+i.note:''}\n📅 ${i.date}\n\n点「确定」编辑 | 点「取消」删除`);
+    if(action){
+        openAdd(i.type, i.id);
+    } else {
+        if(confirm(`确定删除这条记录？`)) deleteTx(id);
     }
 }
 
 // ========== ADD TRANSACTION ==========
-function openAdd(type){
+function openAdd(type, editId){
+    EDIT_ID = editId || null;
     ADD_TYPE = type;
-    document.getElementById('addSheetTitle').textContent = type==='income'?'记一笔收入':'记一笔支出';
+    const title = type==='income'?'记一笔收入':type==='save'?'记一笔存款':'记一笔支出';
+    document.getElementById('addSheetTitle').textContent = EDIT_ID ? '编辑'+title : title;
     document.getElementById('addTypeToggle').querySelector('.income').classList.toggle('active',type==='income');
     document.getElementById('addTypeToggle').querySelector('.expense').classList.toggle('active',type==='expense');
-    document.getElementById('addAmount').value = '';
-    document.getElementById('addDate').valueAsDate = new Date();
-    document.getElementById('addNote').value = '';
+    document.getElementById('addTypeToggle').querySelector('.save').classList.toggle('active',type==='save');
     renderCatGrid();
+
+    if(EDIT_ID){
+        const item = DATA.find(d=>d.id===EDIT_ID);
+        if(item){
+            document.getElementById('addAmount').value = item.amount;
+            document.getElementById('addDate').value = item.date;
+            document.getElementById('addNote').value = item.note||'';
+            // select matching category
+            document.querySelectorAll('.cat-item').forEach(el=>{
+                el.classList.toggle('active', el.dataset.cat === item.cate);
+            });
+        }
+    } else {
+        document.getElementById('addAmount').value = '';
+        document.getElementById('addDate').valueAsDate = new Date();
+        document.getElementById('addNote').value = '';
+    }
     document.getElementById('addSheet').classList.add('show');
     document.getElementById('overlay').classList.add('show');
     setTimeout(()=>document.getElementById('addAmount').focus(), 400);
+}
+
+function setAddType(type){
+    ADD_TYPE = type;
+    const title = type==='income'?'记一笔收入':type==='save'?'记一笔存款':'记一笔支出';
+    document.getElementById('addSheetTitle').textContent = EDIT_ID ? '编辑'+title : title;
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('addTypeToggle').querySelector('.'+type).classList.add('active');
+    renderCatGrid();
 }
 
 function setAddType(type){
@@ -646,7 +864,9 @@ function selectCat(el, name){
 }
 
 function closeSheet(){
-    document.getElementById('addSheet').classList.remove('show');
+    document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
+    // remove dynamically created sheets
+    document.querySelectorAll('.sheet[style*="z-index"]').forEach(s=>s.remove());
     document.getElementById('overlay').classList.remove('show');
 }
 
@@ -657,20 +877,131 @@ function saveTransaction(){
     if(!date) return showToast('请选择日期');
     const note = document.getElementById('addNote').value.trim();
     const selected = document.querySelector('.cat-item.active');
-    const cate = selected ? selected.dataset.cat : (CATS[ADD_TYPE][0]||{name:'其他'}).name;
-    DATA.push({
-        id: Date.now(),
-        type: ADD_TYPE,
-        cate,
-        amount: Math.round(amount*100)/100,
-        date,
-        note
-    });
+    const cate = selected ? selected.dataset.cat : (CATS[ADD_TYPE]||CATS.expense)[0].name;
+    let newId;
+    if(EDIT_ID){
+        const idx = DATA.findIndex(d=>d.id===EDIT_ID);
+        if(idx>=0){
+            DATA[idx] = {...DATA[idx], type:ADD_TYPE, cate, amount:Math.round(amount*100)/100, date, note};
+        }
+    } else {
+        newId = Date.now() + Math.random();
+        DATA.push({
+            id: newId,
+            type: ADD_TYPE,
+            cate,
+            amount: Math.round(amount*100)/100,
+            date,
+            note
+        });
+    }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
+    EDIT_ID = null;
     closeSheet();
     refreshAll();
     showToast('保存成功 ✨');
+    // 吃喝交易 → 拍照提醒
+    if(ADD_TYPE==='expense' && cate==='吃喝' && newId){
+        setTimeout(()=>showFoodPhotoPrompt(newId), 600);
+    }
 }
+
+// ========== EXPENSE FOOD PHOTO ==========
+function viewFoodPhoto(txId, e){
+    if(e) e.stopPropagation();
+    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+    const dataUrl = photos[txId];
+    if(!dataUrl) return;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:10003;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    overlay.onclick = function(){ this.remove(); };
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.style.cssText = 'max-width:90%;max-height:80%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.4);';
+    overlay.appendChild(img);
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '🗑️ 删除照片';
+    delBtn.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);padding:12px 24px;border:none;border-radius:12px;background:var(--out);color:#fff;font-size:15px;font-weight:600;cursor:pointer;';
+    delBtn.onclick = function(e){
+        e.stopPropagation();
+        delete photos[txId];
+        localStorage.setItem('jz_food_photos', JSON.stringify(photos));
+        overlay.remove();
+        refreshAll();
+        showToast('照片已删除');
+    };
+    overlay.appendChild(delBtn);
+    document.body.appendChild(overlay);
+}
+function showFoodPhotoPrompt(txId){
+    if(!txId) return;
+    const existing = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+    if(existing[txId]) return; // already has photo
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.id = 'foodPhotoPrompt';
+    sheet.style.zIndex = '10002';
+    sheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2>📸 拍下食物照片</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
+    <div class="sheet-body">
+        <div style="text-align:center;font-size:14px;color:var(--text2);margin-bottom:16px;">记录这笔 ${'吃喝'} 的实物照片</div>
+        <button onclick="document.getElementById('foodPhotoInput').click();document.getElementById('foodPhotoInput').dataset.txid='${txId}';this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');"
+            style="width:100%;padding:18px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:12px;">📸 立即拍照</button>
+        <button onclick="setFoodReminder('${txId}');this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');"
+            style="width:100%;padding:18px;border:1.5px solid var(--border);border-radius:12px;background:var(--input-bg);color:var(--text);font-size:16px;font-weight:600;cursor:pointer;">⏰ 10分钟后提醒</button>
+    </div>`;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+
+function handleFoodPhoto(input){
+    const file = input.files[0];
+    const txId = input.dataset.txid;
+    if(!file || !txId) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+        photos[txId] = e.target.result;
+        localStorage.setItem('jz_food_photos', JSON.stringify(photos));
+        showToast('✅ 食物照片已保存');
+        refreshAll();
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+}
+
+function setFoodReminder(txId){
+    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
+    reminders[txId] = Date.now() + 10*60*1000;
+    localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
+    if('Notification' in window && Notification.permission === 'default'){
+        Notification.requestPermission();
+    }
+    showToast('⏰ 已设置10分钟拍照提醒');
+}
+
+function checkFoodReminders(){
+    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
+    const now = Date.now();
+    for(const [txId, time] of Object.entries(reminders)){
+        if(time <= now){
+            delete reminders[txId];
+            localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
+            // show reminder
+            const tx = DATA.find(d=>d.id==parseFloat(txId));
+            if(tx) showFoodPhotoPrompt(txId);
+            return;
+        }
+    }
+}
+
+// Check food reminders on page focus
+document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') checkFoodReminders();
+});
+// Also check on load
+setTimeout(checkFoodReminders, 1000);
 
 function findCat(type,name){
     const cats = CATS[type]||CATS.expense;
@@ -678,10 +1009,72 @@ function findCat(type,name){
 }
 
 // ========== OCR RECOGNITION ==========
+// ========== CLIPBOARD IMAGE PASTE (read clipboard directly) ==========
+function showAddSheet(){
+    const sheet = document.getElementById('addSheet');
+    if(!sheet.classList.contains('show')){
+        openAdd('expense');
+        return new Promise(r=>setTimeout(r,400));
+    }
+    return Promise.resolve();
+}
+async function pasteClipboardImage(){
+    try {
+        const items = await navigator.clipboard.read();
+        let imgBlob = null;
+        for(const item of items){
+            if(item.types.some(t=>t.startsWith('image/'))){
+                imgBlob = await item.getType(item.types.find(t=>t.startsWith('image/')));
+                break;
+            }
+        }
+        if(!imgBlob) return showToast('⚠️ 剪贴板中没有截图');
+        await showAddSheet();
+        showToast('⏳ 识别截图金额...');
+        const { data: { text } } = await Tesseract.recognize(imgBlob, 'chi_sim+eng', {
+            logger: m => { if(m.status==='recognizing text' && m.progress<1)
+                document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
+        });
+        applyOCRResult(text);
+    } catch(e){
+        if(e.name==='NotAllowedError') showToast('⚠️ 需要粘贴权限，请在地址栏允许');
+        else if(e.name==='NotFoundError') showToast('⚠️ 剪贴板中没有截图');
+        else { showToast('❌ 读取失败'); console.error(e); }
+    }
+}
+function applyOCRResult(text){
+    const amt = text.match(/[¥￥]\s*(\d{1,8}(?:[.,]\d{3})*(?:[.]\d{1,2})?)/)
+        || text.match(/(?:总计|合计|金额|实付|消费|支付|total)[：:\s]*[¥￥]?\s*(\d{1,8}(?:[.,]\d{3})*(?:[.]\d{1,2})?)/)
+        || text.match(/(\d+[.]\d{2})\s*(?:元)/);
+    if(amt){
+        const val = parseFloat(amt[1].replace(/,/g,''));
+        if(!isNaN(val)) {
+            document.getElementById('addAmount').value = val;
+            showToast('✅ 识别金额 ¥'+val);
+        }
+    }
+    // auto-match category
+    const keywordMap = {
+        '餐饮|饭|吃|餐厅|外卖|咖啡|奶茶|美食|麦当劳|肯德基|食堂|早餐|午餐|晚餐|火锅|烧烤|吃喝': '吃喝',
+        '交通|地铁|公交|打车|滴滴|加油|停车|高铁|机票|火车|共享单车|出行': '出行',
+        '追星|明星|演唱会|专辑|周边|粉丝': '追星',
+        '购物|超市|商场|淘宝|京东|拼多多|商店|零售|便利店|买|水电|物业|燃气|房租|话费|网费|理发|洗衣|家政|生活': '生活',
+        '人情|礼金|红包|随礼|请客|送礼|聚会': '人情往来',
+    };
+    for(const [pattern, cate] of Object.entries(keywordMap)){
+        if(new RegExp(pattern,'i').test(text)){
+            document.querySelectorAll('.cat-item').forEach(el=>{
+                if(el.dataset.cat === cate) el.click();
+            });
+            break;
+        }
+    }
+    if(!amt) showToast('⚠️ 未识别到金额，请手动输入');
+}
+
 async function handleOCR(input){
     const file = input.files[0];
     if(!file) return;
-    // Ensure expense type selected
     setAddType('expense');
     showToast('⏳ 识别中...');
     try {
@@ -691,32 +1084,7 @@ async function handleOCR(input){
                     document.getElementById('toast').textContent = `⏳ 识别中 ${Math.round(m.progress*100)}%`;
             }
         });
-        // Extract amount: ¥123.45 / 实付123.45 / total 123.45
-        const amountMatch = text.match(/[¥￥]\s*(\d{1,8}(?:[.,]\d{3})*(?:[.]\d{1,2})?)/);
-        const amountMatch2 = text.match(/(?:总计|合计|金额|实付|消费|支付|total)[：:\s]*[¥￥]?\s*(\d{1,8}(?:[.,]\d{3})*(?:[.]\d{1,2})?)/);
-        const amountMatch3 = text.match(/(\d+[.]\d{2})\s*(?:元)/);
-        const amt = amountMatch || amountMatch2 || amountMatch3;
-        if(amt){
-            const val = parseFloat(amt[1].replace(/,/g,''));
-            if(!isNaN(val)) document.getElementById('addAmount').value = val;
-        }
-        // Extract category keywords
-        const keywordMap = {
-            '餐饮|饭|吃|餐厅|外卖|咖啡|奶茶|美食|麦当劳|肯德基|食堂|早餐|午餐|晚餐|火锅|烧烤': '餐饮',
-            '交通|地铁|公交|打车|滴滴|加油|停车|高铁|机票|火车|共享单车': '交通',
-            '购物|超市|商场|淘宝|京东|拼多多|商店|零售|便利店|买': '购物',
-            '生活|水电|物业|燃气|房租|话费|网费|理发|洗衣|家政': '生活',
-            '娱乐|电影|游戏|KTV|旅游|酒店|门票|健身|运动|酒吧': '娱乐',
-        };
-        for(const [pattern, cate] of Object.entries(keywordMap)){
-            if(new RegExp(pattern,'i').test(text)){
-                document.querySelectorAll('.cat-item').forEach(el=>{
-                    if(el.dataset.cat === cate) el.click();
-                });
-                break;
-            }
-        }
-        showToast('✅ 识别完成，请确认金额和分类');
+        applyOCRResult(text);
     } catch(e){
         showToast('❌ 识别失败，请手动输入');
         console.error('OCR error:', e);
@@ -724,213 +1092,234 @@ async function handleOCR(input){
     input.value = '';
 }
 
-// ========== CHARTS ==========
-function setChartMode(mode){
-    CHART_MODE = mode;
-    const mb = document.getElementById('chartModeMonth');
-    const yb = document.getElementById('chartModeYear');
-    if(mode==='month'){ mb.classList.add('active'); yb.classList.remove('active'); }
-    else{ yb.classList.add('active'); mb.classList.remove('active'); }
-    renderCharts();
+// ========== CLIPBOARD / QUICK PASTE ==========
+document.addEventListener('paste', e=>{
+    const cd = e.clipboardData || window.clipboardData;
+    // Check for image paste (mobile screenshots often go to clipboard)
+    if(cd.files && cd.files.length>0){
+        const imgFile = cd.files[0];
+        if(imgFile.type.startsWith('image/')){
+            e.preventDefault();
+            if(!document.getElementById('addSheet').classList.contains('show'))
+                openAdd('expense');
+            setTimeout(async ()=>{
+                showToast('⏳ 识别截图金额...');
+                try{
+                    const { data: { text } } = await Tesseract.recognize(imgFile, 'chi_sim+eng', {
+                        logger: m => { if(m.status==='recognizing text' && m.progress<1)
+                            document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
+                    });
+                    applyOCRResult(text);
+                } catch(e){
+                    showToast('❌ 截图识别失败');
+                    console.error('paste OCR error:', e);
+                }
+            }, 500);
+            return;
+        }
+    }
+    // Text paste
+    const text = cd.getData('text');
+    if(!text) return;
+    const amountMatch = text.match(/[¥￥]?\s*(\d{1,8}(?:[.,]\d{3})*(?:[.]\d{1,2})?)/);
+    if(amountMatch){
+        const val = parseFloat(amountMatch[1].replace(/,/g,''));
+        if(val>0 && val<999999){
+            const sheet = document.getElementById('addSheet');
+            if(sheet.classList.contains('show')){
+                document.getElementById('addAmount').value = val;
+                showToast('📋 已粘贴金额 ¥'+val);
+            } else {
+                openAdd('expense');
+                setTimeout(()=>{
+                    document.getElementById('addAmount').value = val;
+                    showToast('📋 已粘贴金额 ¥'+val);
+                }, 500);
+            }
+        }
+    }
+});
+
+// restore custom categories
+const savedCats = JSON.parse(localStorage.getItem('jz_cats'));
+if(savedCats){
+    Object.keys(savedCats).forEach(k=>{ if(CATS[k]) CATS[k] = savedCats[k]; });
 }
 
-function renderCharts(){
-    const expenseList = DATA.filter(i=>i.type==='expense');
-    renderPieChart(expenseList);
-    renderTrend(expenseList);
-    // Also render annual summary card
-    renderAnnualChartCard(expenseList);
-}
+// ========== (legacy budget stub - empty) ==========
+function renderBudgets(){}
 
-function renderAnnualChartCard(list){
-    const curYear = CURRENT_MONTH.slice(0,4);
-    const yearList = list.filter(i=>i.date.slice(0,4)===curYear);
-    const monthList = list.filter(i=>i.date.slice(0,7)===CURRENT_MONTH);
-    const target = CHART_MODE==='year' ? yearList : monthList;
-    const yIn = DATA.filter(i=>i.type==='income'&&i.date.slice(0,4)===curYear).reduce((s,i)=>s+i.amount,0);
-    const yOut = yearList.reduce((s,i)=>s+i.amount,0);
-    const mIn = DATA.filter(i=>i.type==='income'&&i.date.slice(0,7)===CURRENT_MONTH).reduce((s,i)=>s+i.amount,0);
-    const mOut = monthList.reduce((s,i)=>s+i.amount,0);
-    const inc = CHART_MODE==='year'?yIn:mIn;
-    const out = CHART_MODE==='year'?yOut:mOut;
+// ========== DIET / CALORIE TRACKER ==========
+const FOOD_DB = {
+    '米饭':116,'面条':110,'馒头':110,'包子':120,'饺子':40,'馄饨':20,'油条':230,'面包':260,'饼干':200,'蛋糕':280,
+    '鸡蛋':70,'鸭蛋':90,'牛奶':65,'酸奶':75,'豆浆':30,'豆腐':80,'豆干':140,'黄豆':360,
+    '猪肉':250,'排骨':230,'猪蹄':200,'牛肉':125,'羊肉':200,'鸡胸肉':130,'鸡腿':180,'鸡翅':210,'鸭肉':200,'火腿':220,'香肠':280,
+    '鱼':100,'虾':90,'蟹':100,'螃蟹':100,'龙虾':90,'蛤蜊':60,'牡蛎':60,'海带':15,'紫菜':20,
+    '白菜':15,'菠菜':20,'油菜':15,'生菜':15,'芹菜':15,'韭菜':25,'豆芽':15,'西兰花':30,'花菜':25,'黄瓜':15,'番茄':18,'茄子':20,
+    '土豆':80,'红薯':85,'山药':55,'玉米':105,'南瓜':25,'胡萝卜':35,'白萝卜':15,'莲藕':70,'竹笋':20,'木耳':25,'香菇':20,
+    '苹果':50,'香蕉':90,'西瓜':30,'葡萄':45,'草莓':30,'橙子':45,'橘子':45,'梨':50,'桃子':40,'芒果':55,'菠萝':40,'猕猴桃':60,
+    '柠檬':25,'榴莲':145,'火龙果':55,'荔枝':65,'龙眼':60,'樱桃':45,'石榴':65,'柿子':70,
+    '可乐':45,'雪碧':45,'果汁':50,'奶茶':60,'咖啡':2,'啤酒':45,'白酒':300,'红酒':80,
+    '薯片':530,'巧克力':540,'糖果':400,'冰淇淋':200,'蛋糕':280,'面包':260,'饼干':200,'月饼':400,'汤圆':230,'粽子':180,
+    '火锅':100,'烧烤':150,'麻辣烫':80,'炸鸡':250,'汉堡':250,'披萨':260,'三明治':200,'寿司':150,'拉面':120,'意面':130,
+    '粥':45,'汤':30,'酸奶':75,'坚果':550,'核桃':650,'杏仁':580,'花生':560,'瓜子':530,
+};
 
-    const prefix = CHART_MODE==='year' ? curYear+'年' : CURRENT_MONTH.replace('-','年')+'月';
-    // inject summary card
-    const header = document.querySelector('#pageCharts .section-header');
-    if(header){
-        const existing = document.getElementById('chartSummaryCard');
-        if(!existing){
-            const div = document.createElement('div');
-            div.id = 'chartSummaryCard';
-            div.className = 'summary-row';
-            div.style.paddingTop = '0';
-            div.innerHTML = `
-                <div class="summary-card income"><div class="label">${prefix}收入</div><div class="value" id="chartSumIn">¥${inc.toFixed(inc%1?2:0)}</div></div>
-                <div class="summary-card expense"><div class="label">${prefix}支出</div><div class="value" id="chartSumOut">¥${out.toFixed(out%1?2:0)}</div></div>
-                <div class="summary-card balance-card"><div class="label">${prefix}结余</div><div class="value" id="chartSumBal">¥${(inc-out).toFixed((inc-out)%1?2:0)}</div></div>`;
-            header.after(div);
+function renderDiet(){
+    const today = new Date().toISOString().slice(0,10);
+    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
+    const todayItems = dietData.filter(d=>d.date===today);
+    const totalCal = todayItems.reduce((s,d)=>s+d.cal,0);
+    const pct = Math.min(totalCal/2000*100,100);
+    const barEl = document.getElementById('dietBar');
+    if(barEl){
+        barEl.style.width = pct+'%';
+        barEl.className = 'budget-fill '+(pct>=100?'over':pct>=80?'warn':'good');
+    }
+    const totalEl = document.getElementById('dietTodayCal');
+    if(totalEl) totalEl.textContent = totalCal;
+
+    // daily list
+    const listEl = document.getElementById('dietList');
+    if(listEl){
+        if(!todayItems.length){
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div><p>今天还没吃东西</p></div>';
         } else {
-            existing.querySelector('#chartSumIn').textContent = '¥'+inc.toFixed(inc%1?2:0);
-            existing.querySelector('#chartSumOut').textContent = '¥'+out.toFixed(out%1?2:0);
-            existing.querySelector('#chartSumBal').textContent = '¥'+(inc-out).toFixed((inc-out)%1?2:0);
-            existing.querySelectorAll('.label').forEach(l=>l.textContent = prefix+(l.textContent.includes('收入')?'收入':l.textContent.includes('支出')?'支出':'结余'));
+            listEl.innerHTML = todayItems.map((d,i)=>`
+                <div class="transaction-item" onclick="removeDietItem(${i})">
+                    <div class="tx-icon" style="background:rgba(255,118,117,.12);font-size:16px;">🍽️</div>
+                    <div><div class="tx-cate">${d.name}</div><div class="tx-remark">${d.weight||''}</div></div>
+                    <div class="tx-amount" style="color:var(--out);font-size:14px;">${d.cal}kcal</div>
+                </div>
+            `).join('');
         }
     }
-}
-
-function renderPieChart(list){
-    const section = document.getElementById('pieSection');
-    if(!list.length){
-        section.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><p>暂无支出数据</p></div>';
-        return;
-    }
-    const curYear = CURRENT_MONTH.slice(0,4);
-    const cur = CHART_MODE==='year'
-        ? list.filter(i=>i.date.slice(0,4)===curYear)
-        : list.filter(i=>i.date.slice(0,7)===CURRENT_MONTH);
-    if(!cur.length){
-        const emptyMsg = CHART_MODE==='year' ? `${curYear}年暂无支出` : '本月暂无支出';
-        section.innerHTML = `<div class="empty-state"><div class="empty-icon">📈</div><p>${emptyMsg}</p></div>`;
-        return;
-    }
-    const grouped = {};
-    cur.forEach(i=>{grouped[i.cate]=(grouped[i.cate]||0)+i.amount});
-    const entries = Object.entries(grouped).sort((a,b)=>b[1]-a[1]);
-    const total = entries.reduce((s,e)=>s+e[1],0);
-
-    const colors = entries.map((_,i)=>CAT_COLORS[i%CAT_COLORS.length]);
-    const svgW = 140, svgH = 140, cx = svgW/2, cy = svgH/2, r = 58;
-
-    let pathD = '';
-    let cumulative = 0;
-    entries.forEach(([name,val],i)=>{
-        const pct = val/total;
-        const angle = pct*360;
-        const startAngle = cumulative;
-        cumulative += angle;
-        const sr = startAngle-90, er = cumulative-90;
-        const sra = sr*Math.PI/180, era = er*Math.PI/180;
-        const x1 = cx + r*Math.cos(sra), y1 = cy + r*Math.sin(sra);
-        const x2 = cx + r*Math.cos(era), y2 = cy + r*Math.sin(era);
-        const large = angle>180?1:0;
-        pathD += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${colors[i]}"/>`;
-    });
-
-    const innerR = 38;
-    const label = CHART_MODE==='year' ? CURRENT_MONTH.slice(0,4)+'年' : '本月';
-    pathD += `<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--card)"/>`;
-    pathD += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="20" font-weight="bold" fill="var(--text)">¥${total.toFixed(total%1?2:0)}</text>`;
-    pathD += `<text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="11" fill="var(--text2)">${label}支出</text>`;
-
-    let legendHtml = entries.map(([name,val],i)=>{
-        const pct = (val/total*100).toFixed(1);
-        return `<div class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span><span class="legend-label">${name}</span><span class="legend-value" style="color:var(--text)">¥${val.toFixed(0)} (${pct}%)</span></div>`;
-    }).join('');
-
-    section.innerHTML = `<div class="pie-wrapper">
-        <div class="pie-chart"><svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">${pathD}</svg></div>
-        <div class="pie-legend">${legendHtml}</div>
-    </div>`;
-}
-
-function renderTrend(list){
-    const section = document.getElementById('trendSection');
-    const now = new Date();
-    const curYear = parseInt(CURRENT_MONTH.slice(0,4));
-
-    if(CHART_MODE==='year'){
-        // Show monthly breakdown of the selected year
-        const months = [];
-        for(let m=1;m<=12;m++){
-            const ym = `${curYear}-${String(m).padStart(2,'0')}`;
-            months.push(ym);
+    // 7-day trend
+    const trendEl = document.getElementById('dietTrend');
+    if(trendEl){
+        const days = [];
+        for(let i=6;i>=0;i--){
+            const d = new Date(); d.setDate(d.getDate()-i);
+            const ds = d.toISOString().slice(0,10);
+            const cal = dietData.filter(x=>x.date===ds).reduce((s,x)=>s+x.cal,0);
+            days.push({label:i===0?'今':i===1?'昨':['日','一','二','三','四','五','六'][d.getDay()],cal});
         }
-        const data = months.map(ym=>{
-            const total = list.filter(i=>i.date.slice(0,7)===ym).reduce((s,i)=>s+i.amount,0);
-            return {month:ym,total};
-        });
-        const max = Math.max(...data.map(d=>d.total),1);
-        const bars = data.map((d,i)=>{
-            const h = Math.max(4, (d.total/max)*90);
-            const color = d.total>0 ? CAT_COLORS[i%CAT_COLORS.length] : 'var(--border)';
-            return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:${color}"></div><div class="bar-label">${i+1}月</div></div>`;
+        const max = Math.max(...days.map(d=>d.cal),200);
+        const bars = days.map((d,i)=>{
+            const h = Math.max(4,(d.cal/max)*90);
+            const color = d.cal>2000?'var(--out)':d.cal>1600?'#fdcb6e':'var(--in)';
+            return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:${color}"></div><div class="bar-label">${d.label}</div><div style="font-size:9px;color:var(--text2);">${d.cal||''}</div></div>`;
         }).join('');
-        section.innerHTML = `<div style="padding:4px 0;">
-            <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">${curYear}年 各月支出</div>
-            <div class="trend-bars">${bars}</div>
-        </div>`;
-        return;
+        trendEl.innerHTML = `<div class="trend-bars">${bars}</div>`;
     }
+}
 
-    // Month mode: show last 6 months
-    const months = [];
-    for(let i=5;i>=0;i--){
-        const d = new Date(now.getFullYear(),now.getMonth()-i,1);
-        months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-    }
-    const data = months.map(m=>{
-        const total = list.filter(i=>i.date.slice(0,7)===m).reduce((s,i)=>s+i.amount,0);
-        return {month:m,total};
-    });
-    const max = Math.max(...data.map(d=>d.total),1);
-    const bars = data.map((d,i)=>{
-        const h = Math.max(4, (d.total/max)*90);
-        const color = d.total>0 ? CAT_COLORS[i%CAT_COLORS.length] : 'var(--border)';
-        const p = d.month.split('-');
-        return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:${color}"></div><div class="bar-label">${p[1]}月</div></div>`;
-    }).join('');
-    section.innerHTML = `<div style="padding:4px 0;">
-        <div class="trend-bars">${bars}</div>
+function addDietItem(name, cal, weight){
+    const foodSheet = document.getElementById('addSheet').cloneNode(true);
+    foodSheet.id = 'dietSheet';
+    foodSheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2>添加食物</h2><button class="sheet-close" onclick="document.getElementById('dietSheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
+    <div class="sheet-body">
+        <div class="form-group"><label>食物名称</label><input type="text" id="dietName" placeholder="如：米饭" value="${name||''}"></div>
+        <div class="form-group"><label>份量</label><input type="text" id="dietWeight" placeholder="如：1碗/200g" value="${weight||''}"></div>
+        <div class="form-group"><label>热量 (kcal)</label><input type="number" id="dietCal" placeholder="每份热量" value="${cal||''}"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="foodQuickList"></div>
+        <button class="quick-btn expense" style="width:100%;padding:14px;font-size:15px;" onclick="saveDiet()">✔ 保存</button>
     </div>`;
+    document.body.appendChild(foodSheet);
+    setTimeout(()=>{
+        foodSheet.classList.add('show');
+        document.getElementById('overlay').classList.add('show');
+        const ql = document.getElementById('foodQuickList');
+        if(ql){
+            const sorted = Object.entries(FOOD_DB).sort((a,b)=>b[1]-a[1]);
+            ql.innerHTML = sorted.slice(0,24).map(([f,c])=>`
+                <span style="padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:var(--input-bg);"
+                    onclick="document.getElementById('dietName').value='${f}';document.getElementById('dietCal').value=${c};document.getElementById('dietWeight').value='1份';">${f} ${c}kcal</span>
+            `).join('');
+        }
+    }, 50);
 }
 
-// ========== BUDGET ==========
-function renderBudgets(){
-    const el = document.getElementById('budgetList');
-    const expenseCats = CATS.expense.map(c=>c.name);
-    const monthExpense = DATA.filter(i=>i.type==='expense'&&i.date.slice(0,7)===CURRENT_MONTH);
-    const grouped = {};
-    monthExpense.forEach(i=>{grouped[i.cate]=(grouped[i.cate]||0)+i.amount});
-    const totalBudget = Object.values(BUDGETS).reduce((s,v)=>s+v,0);
-    const totalSpent = monthExpense.reduce((s,i)=>s+i.amount,0);
-    document.getElementById('budgetTotal').textContent = totalBudget?`¥${totalSpent.toFixed(0)}/¥${totalBudget.toFixed(0)}`:'';
-
-    let html = expenseCats.map(cate=>{
-        const spent = grouped[cate]||0;
-        const budget = BUDGETS[cate]||0;
-        const pct = budget>0?Math.min(spent/budget*100,100):0;
-        const cls = pct>=100?'over':pct>=80?'warn':'good';
-        const barStyle = budget>0?`width:${pct}%`:'width:0';
-        const remain = budget-spent;
-        return `<div class="budget-card">
-            <div class="budget-header">
-                <div class="budget-cate"><span class="cat-icon">${findCat('expense',cate).icon}</span>${cate}</div>
-                <div class="budget-nums">${budget?`¥${spent.toFixed(0)}/¥${budget.toFixed(0)}`:'未设置预算'}</div>
-            </div>
-            <div class="budget-bar"><div class="budget-fill ${cls}" style="${barStyle}"></div></div>
-            <div class="budget-input-row">
-                <input type="number" placeholder="月预算 (¥)" value="${budget||''}" id="budgetInput_${cate}" min="0">
-                <button onclick="setBudget('${cate}')">设置</button>
-            </div>
-            ${budget>0?`<div style="font-size:11px;color:var(--text2);margin-top:4px;">${remain>=0?`剩余 ¥${remain.toFixed(0)}`:`超支 ¥${Math.abs(remain).toFixed(0)}`}</div>`:''}
-        </div>`;
-    }).join('');
-    el.innerHTML = html || '<div class="empty-state"><div class="empty-icon">🎯</div><p>暂无支出分类</p></div>';
+function saveDiet(){
+    const name = document.getElementById('dietName').value.trim();
+    const cal = parseFloat(document.getElementById('dietCal').value);
+    if(!name||!cal) return showToast('请填写食物名称和热量');
+    const weight = document.getElementById('dietWeight').value.trim();
+    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
+    const today = new Date().toISOString().slice(0,10);
+    dietData.push({date:today,name,cal:Math.round(cal),weight,id:Date.now()});
+    localStorage.setItem('jz_diet', JSON.stringify(dietData));
+    document.getElementById('dietSheet').remove();
+    document.getElementById('overlay').classList.remove('show');
+    renderDiet();
+    showToast('✅ 已记录 '+name+' '+Math.round(cal)+'kcal');
 }
 
-function setBudget(cate){
-    const val = parseFloat(document.getElementById(`budgetInput_${cate}`).value);
-    if(!val||val<0) return showToast('请输入有效预算');
-    BUDGETS[cate] = val;
-    localStorage.setItem('jz_budgets', JSON.stringify(BUDGETS));
-    renderBudgets();
-    showToast(`✅ ${cate} 预算已设置`);
+function removeDietItem(idx){
+    if(!confirm('删除这条记录？')) return;
+    let dietData = JSON.parse(localStorage.getItem('jz_diet')) || [];
+    const today = new Date().toISOString().slice(0,10);
+    const todayItems = dietData.filter(d=>d.date===today);
+    const item = todayItems[idx];
+    dietData = dietData.filter(d=>!(d.date===today && d.name===item.name && d.cal===item.cal && d.id===item.id));
+    localStorage.setItem('jz_diet', JSON.stringify(dietData));
+    renderDiet();
 }
+
+async function handleFoodOCR(input){
+    const file = input.files[0];
+    if(!file) return;
+    showToast('⏳ 识别食物中...');
+    try {
+        const { data: { text } } = await Tesseract.recognize(file, 'chi_sim+eng', {
+            logger: m => { if(m.status==='recognizing text' && m.progress<1)
+                document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
+        });
+        let found = null;
+        for(const [name, cal] of Object.entries(FOOD_DB)){
+            if(text.includes(name)){
+                found = {name, cal};
+                break;
+            }
+        }
+        if(found){
+            addDietItem(found.name, found.cal, '1份 (识别)');
+            showToast(`✅ 识别到 ${found.name} ${found.cal}kcal`);
+        } else {
+            const calMatch = text.match(/(\d+)\s*(?:kcal|卡|千卡|k)/i);
+            addDietItem('', calMatch ? calMatch[1] : '', '');
+            showToast(calMatch ? '✅ 识别到热量数值' : '⚠️ 未识别到食物，请手动输入');
+        }
+    } catch(e){
+        showToast('❌ 识别失败');
+    }
+    input.value = '';
+}
+
 
 // ========== SEARCH ==========
 function openSearch(){
     switchTab('all');
     document.getElementById('searchInput').focus();
+}
+
+// ========== EDIT BUDGET ==========
+function editBudget(){
+    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const current = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : 0;
+    const input = prompt('修改本月预算金额（¥）：', current||'');
+    if(input===null) return;
+    const val = parseFloat(input);
+    if(isNaN(val) || val<0) return showToast('请输入有效金额');
+    if(val===0){
+        localStorage.removeItem('jz_custom_budget');
+    } else {
+        localStorage.setItem('jz_custom_budget', JSON.stringify({month: CURRENT_MONTH, amount: val}));
+    }
+    refreshAll();
+    showToast('✅ 预算已更新 ¥'+val.toFixed(0));
 }
 
 // ========== EXPORT ==========
@@ -948,6 +1337,42 @@ function exportData(){
     link.click();
     URL.revokeObjectURL(link.href);
     showToast('✅ 导出成功');
+}
+
+function showURLGuide(){
+    const base = location.href.split('?')[0].split('#')[0];
+    const u1 = `${base}?amount=25&cate=吃喝&note=午餐`;
+    const u2 = `${base}?a=15.5&t=expense&c=出行&n=地铁`;
+    closeSheet();
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.id = 'urlGuideSheet';
+    sheet.style.zIndex = '10002';
+    sheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2>🔗 快捷记账 (URL方案)</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
+    <div class="sheet-body" style="font-size:13px;line-height:1.6;color:var(--text);">
+        <p style="margin-bottom:10px;">配合 iOS「快捷指令」、Android「Tasker」等自动化工具，在支付页面一键打开记账本并预填数据。</p>
+        <div style="background:var(--input-bg);border-radius:8px;padding:12px;margin:10px 0;">
+            <code style="font-size:12px;word-break:break-all;">${u1}</code>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+            <tr><td style="padding:4px 8px;border:1px solid var(--border);font-weight:600;">参数</td><td style="padding:4px 8px;border:1px solid var(--border);font-weight:600;">简写</td><td style="padding:4px 8px;border:1px solid var(--border);font-weight:600;">说明</td></tr>
+            <tr><td style="padding:4px 8px;border:1px solid var(--border);">amount</td><td style="padding:4px 8px;border:1px solid var(--border);">a</td><td style="padding:4px 8px;border:1px solid var(--border);">金额</td></tr>
+            <tr><td style="padding:4px 8px;border:1px solid var(--border);">type</td><td style="padding:4px 8px;border:1px solid var(--border);">t</td><td style="padding:4px 8px;border:1px solid var(--border);">类型: expense/income/save</td></tr>
+            <tr><td style="padding:4px 8px;border:1px solid var(--border);">cate</td><td style="padding:4px 8px;border:1px solid var(--border);">c</td><td style="padding:4px 8px;border:1px solid var(--border);">分类名 (如: 吃喝)</td></tr>
+            <tr><td style="padding:4px 8px;border:1px solid var(--border);">note</td><td style="padding:4px 8px;border:1px solid var(--border);">n</td><td style="padding:4px 8px;border:1px solid var(--border);">备注</td></tr>
+        </table>
+        <p><b>示例：</b></p>
+        <div style="background:var(--input-bg);border-radius:8px;padding:12px;margin:8px 0;">
+            <code style="font-size:12px;word-break:break-all;">${u2}</code>
+        </div>
+        <p style="margin-top:10px;color:var(--text2);">📱 <b>Android</b>: 创建主屏幕书签 + URL参数，或使用 Tasker 自动化。<br>
+        🍎 <b>iOS</b>: 用「快捷指令」→「打开URL」填入上方链接。</p>
+        <button class="quick-btn expense" style="width:100%;margin-top:14px;padding:12px;" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">知道了</button>
+    </div>`;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
 }
 
 function showToast(msg){
@@ -970,13 +1395,14 @@ function toggleDark(){
 function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',budget:'pageBudget',settings:'pageSettings'};
-    const navMap = {home:0,all:1,charts:3,budget:4,settings:-1};
+    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',budget:'pageBudget',save:'pageSave',settings:'pageSettings'};
+    const navMap = {home:0,budget:1,save:3,all:4,charts:-1,settings:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
     if(tab==='all') renderAllList();
     if(tab==='charts') renderCharts();
-    if(tab==='budget') renderBudgets();
+    if(tab==='budget') renderDiet();
+    if(tab==='save') renderSavePage();
 }
 </script>
 </body>
