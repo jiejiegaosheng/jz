@@ -287,7 +287,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <div class="page" id="pageAll">
     <div class="section-header">
         <h2 id="pageAllTitle">全部记录</h2>
-        <span class="more" onclick="clearFilter()">← 返回</span>
+        <span class="more" onclick="switchTab('home')">← 返回</span>
     </div>
     <div class="filter-bar">
         <input type="text" id="searchInput" placeholder="搜索备注、分类..." oninput="renderAllList()">
@@ -298,6 +298,14 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         </select>
     </div>
     <div class="transaction-list" id="allList"></div>
+</div>
+
+<div class="page" id="pageCate">
+    <div class="section-header">
+        <h2 id="pageCateTitle">分类明细</h2>
+        <span class="more" onclick="switchTab('home')">← 返回</span>
+    </div>
+    <div class="transaction-list" id="cateList"></div>
 </div>
 
 <div class="page" id="pageCharts">
@@ -705,6 +713,7 @@ function refreshAll(){
     }
 
     renderAllList();
+    renderCateList();
     renderCharts();
     renderBudgets();
     renderDiet();
@@ -833,14 +842,22 @@ function renderAllList(){
 
 function filterCategory(cate){
     FILTER_CATE = cate;
-    document.getElementById('filterType').value = 'all';
-    document.getElementById('searchInput').value = '';
-    switchTab('all');
+    renderCateList();
+    document.getElementById('pageCateTitle').textContent = `${cate} 明细`;
+    // show page
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('pageCate').classList.add('active');
+}
+
+function renderCateList(){
+    if(!FILTER_CATE) return;
+    let filtered = DATA.filter(i=>i.cate===FILTER_CATE);
+    filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+    renderGroupedList(filtered, 'cateList');
 }
 
 function clearFilter(){
     FILTER_CATE = '';
-    document.getElementById('filterType').value = 'all';
     switchTab('home');
 }
 
