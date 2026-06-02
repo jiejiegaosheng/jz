@@ -361,6 +361,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="setting-left"><span class="setting-icon">📂</span><span class="setting-label">管理分类</span></div>
             <div class="setting-right"><span>›</span></div>
         </div>
+        <div class="setting-item" onclick="recoverData()">
+            <div class="setting-left"><span class="setting-icon">🔄</span><span class="setting-label">数据恢复</span></div>
+            <div class="setting-right"><span>›</span></div>
+        </div>
         <div class="setting-item" onclick="exportData()">
             <div class="setting-left"><span class="setting-icon">📤</span><span class="setting-label">导出数据 (CSV)</span></div>
             <div class="setting-right"><span>›</span></div>
@@ -435,31 +439,42 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 </nav>
 
 <script>
-// ========== DATA MIGRATION (ensure ALL old data moves over) ==========
-let DATA = JSON.parse(localStorage.getItem('jz_data')) || [];
-const oldData = JSON.parse(localStorage.getItem('billList'));
-if(oldData && oldData.length){
-    const oldIds = new Set(DATA.map(d=>d.id));
-    let merged = false;
+// ========== DATA MIGRATION (backup old data first, never delete) ==========
+let DATA = [];
+// Try to load from jz_data first
+try { DATA = JSON.parse(localStorage.getItem('jz_data')) || []; } catch(e) { DATA = []; }
+// Look for data in any known old key
+['billList','jz_data_backup'].forEach(key => {
+    let oldData;
+    try { oldData = JSON.parse(localStorage.getItem(key)); } catch(e) { return; }
+    if(!oldData || !oldData.length) return;
+    const oldIds = new Set(DATA.map(d=>String(d.id)));
     oldData.forEach(i => {
         const id = i.id || Date.now()+Math.random();
-        if(!oldIds.has(id)){
+        if(!oldIds.has(String(id))){
             DATA.push({
                 id,
-                type: i.type==='save' ? 'save' : i.type,
-                cate: i.type==='save' ? '总存款' : i.cate,
+                type: i.type==='save' ? 'save' : (i.type || 'expense'),
+                cate: i.type==='save' ? '总存款' : (i.cate || '吃喝'),
                 amount: i.money ?? i.amount ?? 0,
-                date: i.date,
+                date: i.date || new Date().toISOString().slice(0,10),
                 note: i.remark ?? i.note ?? ''
             });
-            merged = true;
+            oldIds.add(String(id));
         }
     });
-    if(merged){
+    if(DATA.length){
         localStorage.setItem('jz_data', JSON.stringify(DATA));
-        showToast('✅ 已合并旧数据 '+oldData.length+' 条');
+        // Create backup before deleting
+        localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     }
-    localStorage.removeItem('billList');
+});
+// Also try loading from backup if DATA is still empty
+if(!DATA.length){
+    try {
+        const backup = JSON.parse(localStorage.getItem('jz_data_backup'));
+        if(backup && backup.length){ DATA = backup; }
+    } catch(e){}
 }
 let BUDGETS = JSON.parse(localStorage.getItem('jz_budgets')) || {};
 let DARK = localStorage.getItem('jz_dark') === '1';
@@ -1320,6 +1335,51 @@ function editBudget(){
     }
     refreshAll();
     showToast('✅ 预算已更新 ¥'+val.toFixed(0));
+}
+
+// ========== DATA RECOVERY ==========
+function recoverData(){
+    const allKeys = [];
+    for(let i=0; i<localStorage.length; i++){
+        const key = localStorage.key(i);
+        try{
+            const val = JSON.parse(localStorage.getItem(key));
+            if(Array.isArray(val) && val.length) allKeys.push(key);
+        }catch(e){}
+    }
+    if(!allKeys.length) return showToast('未找到可恢复的数据');
+    const msg = '找到可能包含数据的 key：\n'+allKeys.join('\n')+'\n\n确定尝试恢复吗？';
+    if(!confirm(msg)) return;
+    let restored = 0;
+    allKeys.forEach(key => {
+        let arr;
+        try { arr = JSON.parse(localStorage.getItem(key)); } catch(e) { return; }
+        if(!Array.isArray(arr)) return;
+        const ids = new Set(DATA.map(d=>String(d.id)));
+        arr.forEach(i => {
+            const id = i.id || Date.now()+Math.random();
+            if(!ids.has(String(id))){
+                DATA.push({
+                    id,
+                    type: i.type==='save' ? 'save' : (i.type || 'expense'),
+                    cate: i.type==='save' ? '总存款' : (i.cate || '吃喝'),
+                    amount: i.money ?? i.amount ?? 0,
+                    date: i.date || new Date().toISOString().slice(0,10),
+                    note: i.remark ?? i.note ?? ''
+                });
+                ids.add(String(id));
+                restored++;
+            }
+        });
+    });
+    if(restored){
+        localStorage.setItem('jz_data', JSON.stringify(DATA));
+        localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+        refreshAll();
+        showToast('✅ 已恢复 '+restored+' 条数据');
+    } else {
+        showToast('未找到新数据');
+    }
 }
 
 // ========== EXPORT ==========
