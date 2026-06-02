@@ -272,6 +272,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <span class="more" onclick="switchTab('all')">全部 →</span>
     </div>
     <div id="budgetModuleList"></div>
+    <div id="dataStatus" style="margin:10px 16px;padding:10px;border-radius:8px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);text-align:center;"></div>
 </div>
 
 <div class="page" id="pageAll">
@@ -439,47 +440,71 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 </nav>
 
 <script>
-// ========== DATA MIGRATION (backup old data first, never delete) ==========
-let DATA = [];
-// Try to load from jz_data first
-try { DATA = JSON.parse(localStorage.getItem('jz_data')) || []; } catch(e) { DATA = []; }
-// Look for data in any known old key
-['billList','jz_data_backup'].forEach(key => {
-    let oldData;
-    try { oldData = JSON.parse(localStorage.getItem(key)); } catch(e) { return; }
-    if(!oldData || !oldData.length) return;
-    const oldIds = new Set(DATA.map(d=>String(d.id)));
-    oldData.forEach(i => {
-        const id = i.id || Date.now()+Math.random();
-        if(!oldIds.has(String(id))){
-            DATA.push({
-                id,
-                type: i.type==='save' ? 'save' : (i.type || 'expense'),
-                cate: i.type==='save' ? '总存款' : (i.cate || '吃喝'),
-                amount: i.money ?? i.amount ?? 0,
-                date: i.date || new Date().toISOString().slice(0,10),
-                note: i.remark ?? i.note ?? ''
-            });
-            oldIds.add(String(id));
-        }
-    });
-    if(DATA.length){
-        localStorage.setItem('jz_data', JSON.stringify(DATA));
-        // Create backup before deleting
-        localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
-    }
-});
-// Also try loading from backup if DATA is still empty
-if(!DATA.length){
-    try {
-        const backup = JSON.parse(localStorage.getItem('jz_data_backup'));
-        if(backup && backup.length){ DATA = backup; }
-    } catch(e){}
+// ========== NORMALIZE DATA ==========
+function normItem(i){
+    let type = i.type || '';
+    if(type==='支出'||type==='expense'||type==='out') type = 'expense';
+    else if(type==='收入'||type==='income'||type==='in') type = 'income';
+    else if(type==='存款'||type==='save'||type==='saving') type = 'save';
+    else type = 'expense';
+    return {
+        id: i.id || Date.now()+Math.random(),
+        type,
+        cate: type==='save' ? '总存款' : (i.cate || '吃喝'),
+        amount: i.money ?? i.amount ?? 0,
+        date: i.date || new Date().toISOString().slice(0,10),
+        note: i.remark ?? i.note ?? ''
+    };
 }
+function loadData(){
+    let d = [];
+    try { d = JSON.parse(localStorage.getItem('jz_data')); } catch(e){}
+    if(!Array.isArray(d)) d = [];
+    d = d.map(normItem);
+    // Deduplicate by id
+    const seen = new Set();
+    d = d.filter(i=>{ const k=String(i.id); if(seen.has(k)) return false; seen.add(k); return true; });
+    // Try old keys
+    ['billList','jz_data_backup'].forEach(key => {
+        let old;
+        try { old = JSON.parse(localStorage.getItem(key)); } catch(e){ return; }
+        if(!Array.isArray(old) || !old.length) return;
+        old.forEach(i => {
+            const item = normItem(i);
+            if(!seen.has(String(item.id))){ d.push(item); seen.add(String(item.id)); }
+        });
+    });
+    // If still empty, try backup
+    if(!d.length){
+        try {
+            const b = JSON.parse(localStorage.getItem('jz_data_backup'));
+            if(Array.isArray(b) && b.length) d = b.map(normItem);
+        } catch(e){}
+    }
+    // Final dedupe
+    const seen2 = new Set();
+    d = d.filter(i=>{ const k=String(i.id); if(seen2.has(k)) return false; seen2.add(k); return true; });
+    // Fix: if cate was not normalized for save type
+    d.forEach(i => { if(i.type==='save' && i.cate!=='总存款') i.cate = '总存款'; });
+    if(d.length){
+        localStorage.setItem('jz_data', JSON.stringify(d));
+        localStorage.setItem('jz_data_backup', JSON.stringify(d));
+    }
+    return d;
+}
+let DATA = loadData();
 let BUDGETS = JSON.parse(localStorage.getItem('jz_budgets')) || {};
 let DARK = localStorage.getItem('jz_dark') === '1';
 let CURRENT_MONTH = new Date().toISOString().slice(0,7);
 let ADD_TYPE = 'expense';
+// Debug localStorage state
+(function(){
+    const keys = [];
+    for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+    console.log('📦 localStorage keys:', keys);
+    console.log('📊 DATA records:', DATA.length);
+    if(!DATA.length && keys.length) console.log('💡 设置 → 数据恢复 可尝试找回');
+})();
 let CHART_MODE = 'month';
 let EDIT_ID = null;
 
@@ -528,7 +553,39 @@ const CAT_COLORS = ['#6c5ce7','#00b894','#ff7675','#fdcb6e','#e17055','#0984e3',
     }, 100);
 })();
 
+// ========== SHOW DATA STATUS ==========
+function updateDataStatus(){
+    const el = document.getElementById('dataStatus');
+    if(!el) return;
+    const keys = [];
+    for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+    el.innerHTML = `📊 账本数据: ${DATA.length} 条 &nbsp;|&nbsp; localStorage keys: ${keys.join(', ')||'无'}`
+        + (DATA.length ? '' : ' ❌ 无数据 - <span style="color:var(--primary);cursor:pointer;" onclick="recoverData()">点此恢复</span>');
+}
 // ========== INIT ==========
+// Auto-recovery: scan ALL localStorage keys for array data if DATA is empty
+if(!DATA.length){
+    const seen = new Set();
+    for(let k=0; k<localStorage.length; k++){
+        const key = localStorage.key(k);
+        if(key==='jz_data'||key==='jz_data_backup'||key==='jz_budgets'||key==='jz_diet'||key==='jz_diet_photos'||key==='jz_diet_reminder'||key==='jz_food_photos'||key==='jz_food_reminders'||key==='jz_cats'||key==='jz_custom_budget'||key==='jz_dark') continue;
+        try {
+            const val = JSON.parse(localStorage.getItem(key));
+            if(Array.isArray(val) && val.length){
+                val.forEach(i => {
+                    if(i.amount || i.money){
+                        const item = normItem(i);
+                        if(!seen.has(String(item.id))){ DATA.push(item); seen.add(String(item.id)); }
+                    }
+                });
+            }
+        } catch(e){}
+    }
+    if(DATA.length){
+        localStorage.setItem('jz_data', JSON.stringify(DATA));
+        localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    }
+}
 if(DARK) document.body.classList.add('dark');
 document.getElementById('darkToggle').classList.toggle('on', DARK);
 renderMonth();
@@ -628,6 +685,7 @@ function refreshAll(){
     renderCharts();
     renderBudgets();
     renderDiet();
+    updateDataStatus();
 }
 
 function getDateLabel(dateStr){
@@ -1357,17 +1415,10 @@ function recoverData(){
         if(!Array.isArray(arr)) return;
         const ids = new Set(DATA.map(d=>String(d.id)));
         arr.forEach(i => {
-            const id = i.id || Date.now()+Math.random();
-            if(!ids.has(String(id))){
-                DATA.push({
-                    id,
-                    type: i.type==='save' ? 'save' : (i.type || 'expense'),
-                    cate: i.type==='save' ? '总存款' : (i.cate || '吃喝'),
-                    amount: i.money ?? i.amount ?? 0,
-                    date: i.date || new Date().toISOString().slice(0,10),
-                    note: i.remark ?? i.note ?? ''
-                });
-                ids.add(String(id));
+            const item = normItem(i);
+            if(!ids.has(String(item.id))){
+                DATA.push(item);
+                ids.add(String(item.id));
                 restored++;
             }
         });
