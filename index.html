@@ -236,50 +236,42 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <!-- Overlay -->
 <div class="overlay" id="overlay" onclick="closeSheet()"></div>
 
-<!-- Header -->
-<div class="header">
-    <div class="header-top">
-        <h1>记账本</h1>
-        <div class="header-actions">
-            <span onclick="switchTab('charts')" title="图表">📊</span>
-            <span onclick="openSearch()" title="搜索">🔍</span>
-            <span onclick="switchTab('settings')" title="设置">⚙️</span>
-        </div>
-    </div>
-    <div class="month-nav">
-        <button onclick="changeMonth(-1)">‹</button>
-        <span class="cur-month" id="curMonth"></span>
-        <button onclick="changeMonth(1)">›</button>
-    </div>
-</div>
-
-<!-- Summary -->
-<div class="summary-row">
-    <div class="summary-card income"><div class="label">收入</div><div class="value" id="sumIncome">¥0</div></div>
-    <div class="summary-card expense"><div class="label">支出</div><div class="value" id="sumExpense">¥0</div></div>
-    <div class="summary-card save"><div class="label">存款</div><div class="value" id="sumSave">¥0</div></div>
-    <div class="summary-card balance-card"><div class="label">余钱</div><div class="value" id="sumBalance">¥0</div></div>
-</div>
-
-<!-- Annual Summary -->
-<div class="annual-bar">
-    <span class="annual-label">📅 本年</span>
-    <span>收 <b id="yearIncome">¥0</b></span>
-    <span class="annual-divider">|</span>
-    <span>支 <b id="yearExpense">¥0</b></span>
-    <span class="annual-divider">|</span>
-    <span>存 <b id="yearSave">¥0</b></span>
-</div>
-
-<!-- Quick Actions -->
-<div class="quick-actions">
-    <button class="quick-btn income" onclick="openAdd('income')">➕ 记一笔收入</button>
-    <button class="quick-btn expense" onclick="openAdd('expense')">➖ 记一笔支出</button>
-    <button class="quick-btn save" onclick="openAdd('save')">🏦 记一笔存款</button>
-</div>
-
 <!-- Pages -->
 <div class="page active" id="pageHome">
+    <div class="header">
+        <div class="header-top">
+            <h1>记账本</h1>
+            <div class="header-actions">
+                <span onclick="switchTab('charts')" title="图表">📊</span>
+                <span onclick="openSearch()" title="搜索">🔍</span>
+                <span onclick="switchTab('settings')" title="设置">⚙️</span>
+            </div>
+        </div>
+        <div class="month-nav">
+            <button onclick="changeMonth(-1)">‹</button>
+            <span class="cur-month" id="curMonth"></span>
+            <button onclick="changeMonth(1)">›</button>
+        </div>
+    </div>
+    <div class="summary-row">
+        <div class="summary-card income"><div class="label">收入</div><div class="value" id="sumIncome">¥0</div></div>
+        <div class="summary-card expense"><div class="label">支出</div><div class="value" id="sumExpense">¥0</div></div>
+        <div class="summary-card save"><div class="label">存款</div><div class="value" id="sumSave">¥0</div></div>
+        <div class="summary-card balance-card"><div class="label">余钱</div><div class="value" id="sumBalance">¥0</div></div>
+    </div>
+    <div class="annual-bar">
+        <span class="annual-label">📅 本年</span>
+        <span>收 <b id="yearIncome">¥0</b></span>
+        <span class="annual-divider">|</span>
+        <span>支 <b id="yearExpense">¥0</b></span>
+        <span class="annual-divider">|</span>
+        <span>存 <b id="yearSave">¥0</b></span>
+    </div>
+    <div class="quick-actions">
+        <button class="quick-btn income" onclick="openAdd('income')">➕ 记一笔收入</button>
+        <button class="quick-btn expense" onclick="openAdd('expense')">➖ 记一笔支出</button>
+        <button class="quick-btn save" onclick="openAdd('save')">🏦 记一笔存款</button>
+    </div>
     <div class="section-header" style="padding-bottom:6px;">
         <h2>预算账本</h2>
         <span class="more" onclick="switchTab('all')">全部 →</span>
@@ -437,7 +429,13 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <div class="page" id="pageReport">
     <div class="section-header"><h2>📊 年度报告</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
     <div style="text-align:center;padding:0 16px 10px;">
-        <canvas id="wheelCanvas" width="280" height="280" style="max-width:100%;cursor:pointer;" onclick="spinWheel()"></canvas>
+        <div style="position:relative;width:280px;height:300px;margin:0 auto;">
+            <div id="wheelOuter" style="position:absolute;top:10px;left:0;width:280px;height:280px;border-radius:50%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);cursor:pointer;background:#f0f0f5;" onclick="spinWheel()">
+                <div id="wheelInner" style="width:100%;height:100%;border-radius:50%;transition:transform 3s cubic-bezier(.17,.67,.12,.99);"></div>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#1a1a2e;box-shadow:0 2px 8px rgba(0,0,0,.15);pointer-events:none;border:3px solid #6c5ce7;z-index:3;">SPIN</div>
+            </div>
+            <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:16px solid #ff7675;pointer-events:none;z-index:2;"></div>
+        </div>
         <div id="wheelResult" style="margin-top:8px;font-size:14px;font-weight:600;min-height:24px;"></div>
     </div>
     <div class="chart-container" id="reportContent"></div>
@@ -698,7 +696,7 @@ function refreshAll(){
             const catBudget = monthCatBudgets[c.name];
             const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : (budget>0 ? Math.min(spent/budget*100,100) : 0);
             const barColor = catBudget>0 ? (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)') : (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)');
-            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:20px;">${c.icon}</span>
                     <div style="flex:1;">
@@ -875,13 +873,26 @@ function renderSavePage(){
     renderGroupedList(sorted, 'saveList');
 }
 
-// ========== EDIT / DELETE ==========
-            }
-            // select matching category
-            document.querySelectorAll('.cat-item').forEach(el=>{
-                el.classList.toggle('active', el.dataset.cat === item.cate);
-            });
-        }
+// ========== ADD / EDIT TRANSACTION ==========
+function openAdd(type, id){
+    EDIT_ID = id || null;
+    ADD_TYPE = type;
+    const title = type==='income'?'记一笔收入':type==='save'?'记一笔存款':'记一笔支出';
+    document.getElementById('addSheetTitle').textContent = EDIT_ID ? '编辑'+title : title;
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('addTypeToggle').querySelector('.'+type)?.classList.add('active');
+    renderCatGrid();
+    const item = id ? DATA.find(i=>i.id===id) : null;
+    if(item){
+        document.getElementById('addAmount').value = item.amount;
+        document.getElementById('addDate').value = item.date;
+        document.getElementById('addNote').value = item.note||'';
+        document.getElementById('addMood').value = item.mood||'';
+        document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('active'));
+        if(item.mood) document.querySelector(`.mood-option[data-mood="${item.mood}"]`)?.classList.add('active');
+        document.querySelectorAll('.cat-item').forEach(el=>{
+            el.classList.toggle('active', el.dataset.cat === item.cate);
+        });
     } else {
         document.getElementById('addAmount').value = '';
         document.getElementById('addDate').valueAsDate = new Date();
@@ -928,9 +939,24 @@ function selectMood(mood){
 
 function closeSheet(){
     document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
-    // remove dynamically created sheets
     document.querySelectorAll('.sheet[style*="z-index"]').forEach(s=>s.remove());
     document.getElementById('overlay').classList.remove('show');
+}
+
+function deleteTx(id){
+    if(!confirm('确定删除这条记录吗？')) return;
+    DATA = DATA.filter(i=>i.id!==id);
+    localStorage.setItem('jz_data', JSON.stringify(DATA));
+    // Clean up photo
+    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+    delete photos[id];
+    localStorage.setItem('jz_food_photos', JSON.stringify(photos));
+    // Clean up reminder
+    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
+    delete reminders[id];
+    localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
+    refreshAll();
+    showToast('已删除');
 }
 
 function saveTransaction(){
@@ -1234,6 +1260,87 @@ if(savedCats){
     Object.keys(savedCats).forEach(k=>{ if(CATS[k]) CATS[k] = savedCats[k]; });
 }
 
+// ========== EXPENSE ANALYSIS (CHARTS) ==========
+function setChartMode(mode){
+    CHART_MODE = mode;
+    document.querySelectorAll('.chart-mode-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('chartMode'+(mode==='month'?'Month':'Year')).classList.add('active');
+    renderCharts();
+}
+function renderCharts(){
+    const pieEl = document.getElementById('pieSection');
+    const trendEl = document.getElementById('trendSection');
+    if(!pieEl || !trendEl) return;
+    const data = CHART_MODE==='month'
+        ? DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH)
+        : DATA.filter(i=>i.type==='expense' && i.date.slice(0,4)===CURRENT_MONTH.slice(0,4));
+    if(!data.length){
+        pieEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><p>暂无支出数据</p></div>';
+        trendEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📉</div><p>暂无数据</p></div>';
+        return;
+    }
+    // Pie chart
+    const catTotals = {};
+    data.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+    const entries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    const total = entries.reduce((s,e)=>s+e[1],0);
+    const cats = CATS.expense;
+    const catColors = {};
+    cats.forEach((c,i)=>{ catColors[c.name] = CAT_COLORS[i%CAT_COLORS.length]; });
+    const otherColor = '#b2bec3';
+    const canvas = document.createElement('canvas');
+    canvas.width = 120; canvas.height = 120;
+    canvas.style.cssText = 'width:120px;height:120px;';
+    const ctx = canvas.getContext('2d');
+    const cx = 60, cy = 60, r = 50;
+    let startAngle = -Math.PI/2;
+    entries.forEach(([cate,amt])=>{
+        const slice = (amt/total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r,startAngle,startAngle+slice);
+        ctx.closePath();
+        ctx.fillStyle = catColors[cate] || otherColor;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        startAngle += slice;
+    });
+    // fill remaining if any
+    if(startAngle < 3*Math.PI/2){
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r,startAngle,3*Math.PI/2);
+        ctx.closePath();
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fill();
+    }
+    const legend = entries.map(([cate,amt])=>{
+        const pct = (amt/total*100).toFixed(1);
+        return `<div class="legend-item"><span class="legend-dot" style="background:${catColors[cate]||otherColor}"></span><span class="legend-label">${cate}</span><span class="legend-value">¥${amt.toFixed(0)} (${pct}%)</span></div>`;
+    }).join('');
+    pieEl.innerHTML = `<div class="pie-wrapper"><div class="pie-chart"></div><div class="pie-legend">${legend}</div></div>`;
+    pieEl.querySelector('.pie-chart').appendChild(canvas);
+
+    // Trend bars
+    const grouped = {};
+    const labels = CHART_MODE==='month' ? [] : [];
+    data.forEach(i=>{
+        const key = CHART_MODE==='month' ? i.date.slice(0,10) : i.date.slice(0,7);
+        grouped[key] = (grouped[key]||0) + i.amount;
+    });
+    const sortedKeys = Object.keys(grouped).sort();
+    const maxVal = Math.max(...Object.values(grouped), 1);
+    const bars = sortedKeys.map(key=>{
+        const val = grouped[key];
+        const h = Math.max(4, (val/maxVal)*90);
+        const label = CHART_MODE==='month' ? key.slice(5) : key.replace('-','.');
+        return `<div class="bar-wrap"><div class="bar" style="height:${h}px;background:var(--primary);"></div><div class="bar-label">${label}</div></div>`;
+    }).join('');
+    trendEl.innerHTML = `<div class="trend-bars">${bars}</div>`;
+}
+
 // ========== ANNUAL REPORT ==========
 function renderReport(){
     const el = document.getElementById('reportContent');
@@ -1311,66 +1418,46 @@ function renderReport(){
 
 // ========== RANDOM CHALLENGES (WHEEL) ==========
 const CHALLENGES = [
-    {text:'今天只花 ≤¥20',icon:'💰',color:'#ff7675'},
-    {text:'不喝奶茶/咖啡',icon:'🚫',color:'#fdcb6e'},
-    {text:'记笔¥0.01交易',icon:'✨',color:'#00b894'},
-    {text:'全部用现金',icon:'💵',color:'#0984e3'},
-    {text:'买的东西拍照',icon:'📸',color:'#6c5ce7'},
-    {text:'自己做饭不外卖',icon:'🍳',color:'#e17055'},
-    {text:'写一段备注',icon:'📝',color:'#00cec9'},
-    {text:'步行代替打车',icon:'🚶',color:'#e84393'},
+    {text:'今天食堂吃饭≤¥15',icon:'🍱',color:'#ff7675'},
+    {text:'不喝奶茶/饮料',icon:'🧋',color:'#fdcb6e'},
+    {text:'去图书馆学2小时',icon:'📚',color:'#00b894'},
+    {text:'不点外卖',icon:'🍔',color:'#0984e3'},
+    {text:'步行/骑行出行',icon:'🚲',color:'#6c5ce7'},
+    {text:'存¥10到存款',icon:'🐷',color:'#e17055'},
+    {text:'给爸妈打个电话',icon:'📞',color:'#00cec9'},
+    {text:'断舍离一件物品',icon:'🧹',color:'#e84393'},
 ];
 let wheelAngle = 0, wheelSpinning = false;
 
-function drawWheel(highlight){
-    const c = document.getElementById('wheelCanvas');
-    if(!c) return;
-    const ctx = c.getContext('2d');
-    const cx = 140, cy = 140, r = 130;
+function drawWheel(){
     const n = CHALLENGES.length;
-    const arc = (2*Math.PI)/n;
-    ctx.clearRect(0,0,280,280);
-    CHALLENGES.forEach((ch,i)=>{
-        const start = wheelAngle + i*arc;
-        ctx.beginPath();
-        ctx.moveTo(cx,cy);
-        ctx.arc(cx,cy,r,start,start+arc);
-        ctx.closePath();
-        ctx.fillStyle = ch.color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // icon
-        const mid = start + arc/2;
-        const ix = cx + Math.cos(mid)*r*0.65;
-        const iy = cy + Math.sin(mid)*r*0.65;
-        ctx.font = '24px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(ch.icon, ix, iy);
-    });
-    // center circle
-    ctx.beginPath();
-    ctx.arc(cx,cy,28,0,2*Math.PI);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.strokeStyle = 'var(--primary)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.fillStyle = 'var(--text)';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('SPIN',cx,cy);
-    // pointer
-    ctx.beginPath();
-    ctx.moveTo(cx,cy-r-8);
-    ctx.lineTo(cx-10,cy-r-22);
-    ctx.lineTo(cx+10,cy-r-22);
-    ctx.closePath();
-    ctx.fillStyle = '#ff7675';
-    ctx.fill();
+    const degPer = 360 / n;
+    const stops = CHALLENGES.map((ch,i)=>{
+        const start = i * degPer;
+        const end = (i+1) * degPer;
+        return `${ch.color} ${start}deg ${end}deg`;
+    }).join(',');
+    const el = document.getElementById('wheelInner');
+    if(!el) return;
+    el.style.background = `conic-gradient(from ${wheelAngle}deg, ${stops})`;
+    // Draw icons as overlay (positions in the div)
+    let iconHtml = CHALLENGES.map((ch,i)=>{
+        const angle = i * degPer + degPer/2 + wheelAngle;
+        const rad = (angle * Math.PI) / 180;
+        const r = 36; // percent from center
+        const x = 50 + r * Math.cos(rad);
+        const y = 50 + r * Math.sin(rad);
+        return `<span style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);font-size:22px;pointer-events:none;z-index:2;">${ch.icon}</span>`;
+    }).join('');
+    // Add icons (only once)
+    let iconContainer = el.querySelector('.wheel-icons');
+    if(!iconContainer){
+        iconContainer = document.createElement('div');
+        iconContainer.className = 'wheel-icons';
+        iconContainer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+        el.appendChild(iconContainer);
+    }
+    iconContainer.innerHTML = iconHtml;
 }
 
 function spinWheel(){
@@ -1380,47 +1467,45 @@ function spinWheel(){
     if(saved){
         try {
             const chal = JSON.parse(saved);
-            if(chal.done){
-                showToast('✅ 今日挑战已完成！点击文字可取消');
-                // Allow re-spin anyway
-            }
+            if(chal.done) showToast('✅ 今日挑战已完成！点击文字可取消');
         } catch(e){}
     }
     wheelSpinning = true;
-    const spins = 5 + Math.random()*3;
-    const target = Math.random() * 2 * Math.PI;
-    const totalAngle = spins * 2 * Math.PI + target;
-    const startAngle = wheelAngle;
-    const duration = 3000;
-    const startTime = Date.now();
-    function animate(){
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed/duration, 1);
-        const ease = 1 - Math.pow(1-progress, 3);
-        wheelAngle = startAngle + totalAngle * ease;
+    const el = document.getElementById('wheelInner');
+    if(!el) return;
+    const n = CHALLENGES.length;
+    const degPer = 360 / n;
+    const spins = 5 + Math.floor(Math.random()*3);
+    const targetSeg = Math.floor(Math.random() * n);
+    const targetAngle = ((360 - targetSeg * degPer - degPer/2) % 360 + 360) % 360;
+    const currentMod = ((wheelAngle % 360) + 360) % 360;
+    let delta = ((targetAngle - currentMod) % 360 + 360) % 360;
+    if(delta < 1) delta = 360; // ensure at least some visible movement
+    const totalDeg = delta + spins * 360;
+    // Animate: reset, force reflow, then spin
+    el.style.transition = 'none';
+    el.style.transform = 'rotate(0deg)';
+    void el.offsetHeight;
+    el.style.transition = 'transform 3s cubic-bezier(.17,.67,.12,.99)';
+    el.style.transform = `rotate(${totalDeg}deg)`;
+    setTimeout(()=>{
+        wheelSpinning = false;
+        wheelAngle = targetAngle;
+        el.style.transition = 'none';
+        el.style.transform = 'rotate(0deg)';
         drawWheel();
-        if(progress < 1){
-            requestAnimationFrame(animate);
-        } else {
-            wheelSpinning = false;
-            const normalized = ((wheelAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
-            const arc = (2*Math.PI)/CHALLENGES.length;
-            const pointerAngle = (3*Math.PI/2 - normalized + 2*Math.PI) % (2*Math.PI);
-            const idx = Math.floor(pointerAngle / arc) % CHALLENGES.length;
-            const chal = CHALLENGES[idx];
-            const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
-            localStorage.setItem(key, JSON.stringify({...chal, done:false}));
-            const el = document.getElementById('wheelResult');
-            if(el){
-                el.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
-                    <div style="font-size:12px;color:var(--text2);margin-top:4px;">👆 点此标记完成</div>`;
-                el.style.cursor = 'pointer';
-                el.onclick = function(){ toggleWheelDone(); };
-            }
-            showToast('🎯 今日挑战：'+chal.text);
+        const chal = CHALLENGES[targetSeg];
+        const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
+        localStorage.setItem(key, JSON.stringify({...chal, done:false}));
+        const res = document.getElementById('wheelResult');
+        if(res){
+            res.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
+                <div style="font-size:12px;color:var(--text2);margin-top:4px;">👆 点此标记完成</div>`;
+            res.style.cursor = 'pointer';
+            res.onclick = function(){ toggleWheelDone(); };
         }
-    }
-    animate();
+        showToast('🎯 今日挑战：'+chal.text);
+    }, 3200);
 }
 
 function toggleWheelDone(){
@@ -1443,10 +1528,10 @@ function toggleWheelDone(){
 function loadTodayChallenge(){
     const key = 'jz_challenge_'+new Date().toISOString().slice(0,10);
     const saved = localStorage.getItem(key);
+    const el = document.getElementById('wheelResult');
     if(saved){
         try {
             const chal = JSON.parse(saved);
-            const el = document.getElementById('wheelResult');
             if(el){
                 el.innerHTML = `<span style="font-size:20px;">${chal.icon}</span> ${chal.text}
                     <div style="font-size:12px;color:var(--text2);margin-top:4px;">${chal.done?'✅ 已完成 ✓ 再点取消':'👆 点此标记完成'}</div>`;
@@ -1454,6 +1539,10 @@ function loadTodayChallenge(){
                 el.onclick = function(){ toggleWheelDone(); };
             }
         } catch(e){}
+    } else if(el){
+        el.innerHTML = '<div style="font-size:12px;color:var(--text2);">🎯 点击转盘抽取今日挑战</div>';
+        el.style.cursor = 'default';
+        el.onclick = null;
     }
     drawWheel();
 }
@@ -1469,7 +1558,7 @@ function openSearch(){
 let lpTimer = null, lpCate = '', lpStartY = 0, lpStartX = 0;
 function longPressStart(e, cate){
     lpCate = cate;
-    const t = e.touches[0];
+    const t = e.touches ? e.touches[0] : e;
     lpStartX = t.clientX;
     lpStartY = t.clientY;
     lpTimer = setTimeout(()=>{
@@ -1482,7 +1571,7 @@ function longPressEnd(e, cate){
 }
 function longPressMove(e){
     if(lpTimer){
-        const t = e.touches[0];
+        const t = e.touches ? e.touches[0] : e;
         if(Math.abs(t.clientX-lpStartX)>10 || Math.abs(t.clientY-lpStartY)>10)
             { clearTimeout(lpTimer); lpTimer = null; }
     }
@@ -1821,7 +1910,7 @@ function switchTab(tab){
     if(tab==='all') renderAllList();
     if(tab==='charts') renderCharts();
     if(tab==='save') renderSavePage();
-    if(tab==='report'){ renderReport(); loadTodayChallenge(); }
+    if(tab==='report'){ renderReport(); setTimeout(loadTodayChallenge, 50); }
 }
 </script>
 </body>
