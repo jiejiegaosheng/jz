@@ -541,42 +541,6 @@ const CATS = {
 
 const CAT_COLORS = ['#6c5ce7','#00b894','#ff7675','#fdcb6e','#e17055','#0984e3','#e84393','#00cec9','#636e72','#d63031','#55efc4','#fd79a8','#74b9ff','#a29bfe','#ffeaa7','#fab1a0'];
 
-// ========== URL DEEP LINK (like iCost share extension) ==========
-(function deepLink(){
-    const p = new URLSearchParams(location.search);
-    const rawAmount = p.get('amount') || p.get('a') || '';
-    const amount = parseFloat(rawAmount.replace(/[¥￥,，\s]/g,''));
-    if(!(amount>0 && amount<999999)) return;
-    const type = p.get('type') || p.get('t') || 'expense';
-    const cate = p.get('cate') || p.get('c') || '';
-    const note = p.get('note') || p.get('n') || '';
-    function fillDeepLink(retries){
-        if(typeof openAdd !== 'function') return retries>0 && setTimeout(()=>fillDeepLink(retries-1), 100);
-        openAdd(type);
-        let waited = 0;
-        function tryFill(){
-            const el = document.getElementById('addAmount');
-            if(el && document.getElementById('addSheet').classList.contains('show')){
-                el.value = amount;
-                if(cate){
-                    document.querySelectorAll('.cat-item').forEach(el2=>{
-                        if(el2.dataset.cat===cate) el2.click();
-                    });
-                }
-                if(note) document.getElementById('addNote').value = decodeURIComponent(note);
-                showToast('🔗 快速记账 ¥'+amount);
-            } else if(waited<20){
-                waited++;
-                setTimeout(tryFill, 250);
-            }
-        }
-        setTimeout(tryFill, 300);
-    }
-    fillDeepLink(5);
-    // clean URL params after processing
-    if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
-})();
-
 // ========== SHOW DATA STATUS ==========
 function updateDataStatus(){
     const el = document.getElementById('dataStatus');
@@ -687,29 +651,24 @@ function refreshAll(){
     const cats = CATS.expense;
     const el = document.getElementById('budgetModuleList');
     if(!el) return;
-    if(!monthExpenses.length){
-        el.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">📊</div><p>本月暂无支出</p></div>';
-    } else {
-        el.innerHTML = cats.map(c=>{
-            const spent = catTotals[c.name]||0;
-            if(!spent) return '';
-            const catBudget = monthCatBudgets[c.name];
-            const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : (budget>0 ? Math.min(spent/budget*100,100) : 0);
-            const barColor = catBudget>0 ? (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)') : (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)');
-            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:20px;">${c.icon}</span>
-                    <div style="flex:1;">
-                        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
-                            <span>${c.name}</span>
-                            <span style="color:var(--out);">¥${spent.toFixed(0)}</span>
-                        </div>
-                        <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
+    el.innerHTML = cats.map(c=>{
+        const spent = catTotals[c.name]||0;
+        const catBudget = monthCatBudgets[c.name] || Math.round(budget / cats.length);
+        const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : (budget>0 ? Math.min(spent/budget*100,100) : 0);
+        const barColor = catBudget>0 ? (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)') : (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)');
+        return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:20px;">${c.icon}</span>
+                <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
+                        <span>${c.name}</span>
+                        <span>¥${spent.toFixed(0)} / ¥${catBudget.toFixed(0)}</span>
                     </div>
+                    <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
                 </div>
-            </div>`;
-        }).filter(Boolean).join('');
-    }
+            </div>
+        </div>`;
+    }).join('');
 
     renderAllList();
     renderCateList();
@@ -1872,7 +1831,7 @@ function showURLGuide(){
         <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
             • 可将多种常用链接（午餐、咖啡、地铁、存款）分别保存为桌面快捷方式<br>
             • 短链接格式：<code style="font-size:11px;">${base}?a=25&c=吃喝&n=午餐</code> 更简洁<br>
-            • 打开后金额自动填入，点「✔ 保存」即可完成记账<br>
+            • 打开链接后自动记账，无需打开页面即可记录<br>
             • URL 参数会在页面加载后自动清理，不会残留<br>
             • 所有数据仅保存在本地，链接不会上传任何信息
         </div>
@@ -1912,6 +1871,38 @@ function switchTab(tab){
     if(tab==='save') renderSavePage();
     if(tab==='report'){ renderReport(); setTimeout(loadTodayChallenge, 50); }
 }
+
+// ========== URL DEEP LINK (like iCost share extension) ==========
+(function deepLink(){
+    const p = new URLSearchParams(location.search);
+    const rawAmount = p.get('amount') || p.get('a') || '';
+    const amount = parseFloat(rawAmount.replace(/[¥￥,，\s]/g,''));
+    if(!(amount>0 && amount<999999)) return;
+    const type = p.get('type') || p.get('t') || 'expense';
+    let cate = p.get('cate') || p.get('c') || '';
+    const note = p.get('note') || p.get('n') || '';
+    if(!cate){
+        if(type==='income') cate = '生活费';
+        else if(type==='save') cate = '总存款';
+        else cate = '吃喝';
+    }
+    const cats = CATS[type]||CATS.expense;
+    if(!cats.find(c=>c.name===cate)) cate = cats[0].name;
+    const newId = Date.now() + Math.random();
+    DATA.push({
+        id: newId,
+        type,
+        cate,
+        amount: Math.round(amount*100)/100,
+        date: new Date().toISOString().slice(0,10),
+        note,
+        mood: ''
+    });
+    localStorage.setItem('jz_data', JSON.stringify(DATA));
+    refreshAll();
+    showToast('🔗 快速记账 ¥'+amount+' → '+cate);
+    if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
+})();
 </script>
 </body>
 </html>
