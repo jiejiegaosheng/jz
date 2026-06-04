@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>记账本</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{--bg:#f5f6fa;--card:#fff;--text:#1a1a2e;--text2:#8e8ea0;--primary:#6c5ce7;--primary2:#a29bfe;--in:#00b894;--out:#ff7675;--save:#6c5ce7;--border:#f0f0f5;--shadow:0 2px 12px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;--nav-bg:#fff;--nav-h:64px;--input-bg:#f5f6fa;}
@@ -165,6 +166,27 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .budget-input-row button{padding:8px 14px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;}
 .budget-input-row button:active{opacity:.85;}
 
+/* Friend */
+.task-suggest{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--input-bg);color:var(--text);font-size:12px;cursor:pointer;transition:all .2s;}
+.task-suggest:active{background:var(--primary);color:#fff;border-color:var(--primary);}
+#friendStatus a{color:var(--primary);cursor:pointer;text-decoration:underline;}
+
+/* Task Notification Popup */
+#taskPopupOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);z-index:100009;display:none;align-items:center;justify-content:center;animation:fadeIn .3s ease;}
+#taskPopupOverlay.show{display:flex;}
+#taskPopupBox{background:linear-gradient(145deg,#fff,#f8f0ff);border-radius:24px;padding:32px 24px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(108,92,231,.25);animation:popIn .4s cubic-bezier(.175,.885,.32,1.275);position:relative;}
+.dark #taskPopupBox{background:linear-gradient(145deg,#1a1a35,#2a1a45);box-shadow:0 20px 60px rgba(0,0,0,.4);}
+#taskPopupBox .popup-icon{font-size:48px;margin-bottom:8px;display:block;animation:bounce 1s ease infinite;}
+#taskPopupBox h3{font-size:18px;font-weight:700;color:var(--primary);margin-bottom:6px;}
+#taskPopupBox .popup-from{font-size:12px;color:var(--text2);margin-bottom:12px;}
+#taskPopupBox .popup-task{padding:14px;background:rgba(108,92,231,.08);border-radius:12px;font-size:16px;font-weight:600;color:var(--text);margin-bottom:18px;border:1.5px solid rgba(108,92,231,.15);}
+#taskPopupBox .popup-btn{padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:transform .2s;box-shadow:0 4px 16px rgba(108,92,231,.3);}
+#taskPopupBox .popup-btn:active{transform:scale(.95);}
+#taskPopupBox .popup-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;color:var(--text2);cursor:pointer;padding:4px;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
 /* Settings */
 .settings-list{padding:0 16px;}
 .setting-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow);transition:background .3s;border:1px solid var(--border);cursor:pointer;}
@@ -245,6 +267,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
                 <span onclick="switchTab('charts')" title="图表">📊</span>
                 <span onclick="openSearch()" title="搜索">🔍</span>
                 <span onclick="switchTab('settings')" title="设置">⚙️</span>
+                <span onclick="switchTab('friend')" title="交友">🤝</span>
             </div>
         </div>
         <div class="month-nav">
@@ -439,6 +462,62 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <div id="wheelResult" style="margin-top:8px;font-size:14px;font-weight:600;min-height:24px;"></div>
     </div>
     <div class="chart-container" id="reportContent"></div>
+</div>
+
+<div class="page" id="pageFriend">
+    <div class="section-header"><h2>🤝 交友</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
+    <div id="friendStatus" style="margin:10px 16px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;"></div>
+    <div id="friendConnect" style="display:none;margin:0 16px 10px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;">
+        <div style="margin-bottom:10px;font-weight:600;">你的好友码</div>
+        <div id="myFriendCode" style="font-size:22px;font-weight:700;color:var(--primary);text-align:center;padding:8px;background:var(--input-bg);border-radius:8px;letter-spacing:2px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;">
+            <input type="text" id="friendCodeInput" placeholder="输入对方好友码" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);">
+            <button onclick="connectFriend()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">🔗 添加</button>
+        </div>
+    </div>
+    <div id="friendTaskSection" style="display:none;">
+        <div id="friendInfo" style="margin:0 16px 8px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;"></div>
+        <div id="taskToday" style="margin:0 16px 8px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">📋 今日任务</div>
+            <div id="taskFromFriend" style="font-size:16px;padding:8px 12px;background:var(--input-bg);border-radius:8px;margin-bottom:8px;min-height:40px;display:flex;align-items:center;gap:8px;"></div>
+            <div id="taskAction" style="display:flex;gap:8px;"></div>
+            <div id="taskDoneMsg" style="display:none;font-size:13px;color:var(--in);font-weight:600;text-align:center;padding:8px;"></div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);text-align:center;">连续打卡: <b id="streakCount" style="color:var(--primary);">0</b> 天 🔥</div>
+        </div>
+        <div id="taskSetSection" style="margin:0 16px 8px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">🎯 给他/她布置任务</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                <button class="task-suggest" onclick="pickSuggest(this)">🚶 走8000步</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">📚 学习1小时</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">💧 喝8杯水</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🧘 冥想10分钟</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">📖 读20页书</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🏃 跑步2公里</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🧹 整理书桌</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🌅 看日出/日落</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🎨 画一张小画</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🎵 学一首新歌</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">📝 写日记</button>
+                <button class="task-suggest" onclick="pickSuggest(this)">🌱 给植物浇水</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="taskSetInput" placeholder="自定义任务..." style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);">
+                <button onclick="setTaskForFriend()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">📤 发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Notification Popup -->
+<div id="taskPopupOverlay">
+    <div id="taskPopupBox">
+        <button class="popup-close" onclick="dismissTaskPopup()">✕</button>
+        <span class="popup-icon">🎯</span>
+        <h3>好友挑战</h3>
+        <div class="popup-from" id="popupFrom"></div>
+        <div class="popup-task" id="popupTask"></div>
+        <button class="popup-btn" onclick="goToFriendPage()">💪 去看看</button>
+    </div>
 </div>
 
 <!-- Bottom Nav -->
@@ -1862,16 +1941,294 @@ function toggleDark(){
 function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport'};
-    const navMap = {home:0,report:1,save:3,all:4,charts:-1,settings:-1};
+    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport',friend:'pageFriend'};
+    const navMap = {home:0,report:1,save:3,all:4,charts:-1,settings:-1,friend:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
     if(tab==='all') renderAllList();
     if(tab==='charts') renderCharts();
     if(tab==='save') renderSavePage();
     if(tab==='report'){ renderReport(); setTimeout(loadTodayChallenge, 50); }
+    if(tab==='friend') renderFriendPage();
 }
 
+// ========== PEERJS FRIEND SYSTEM ==========
+let PEER = null;
+let PEER_CONN = null;
+let FRIEND_ID = null;
+let FRIEND_TASKS = {};
+let PEER_STATUS = 'disconnected';
+
+function getUID(){
+    let uid = localStorage.getItem('jz_uid');
+    if(!uid){ uid = Math.random().toString(36).slice(2,10); localStorage.setItem('jz_uid', uid); }
+    return uid;
+}
+
+function initPeer(){
+    if(PEER) return true;
+    try{
+        PEER = new Peer(getUID(), {debug:0});
+        PEER.on('open', id=>{
+            PEER_STATUS = 'ready';
+            // Try reconnecting to friend if we have one
+            const fid = localStorage.getItem('jz_friend_id');
+            if(fid) tryConnectFriend(fid);
+        });
+        PEER.on('connection', conn=>{
+            PEER_CONN = conn;
+            PEER_STATUS = 'connected';
+            conn.on('data', handlePeerData);
+            conn.on('close', ()=>{ PEER_STATUS = 'disconnected'; PEER_CONN = null; });
+            conn.on('error', ()=>{});
+            // Send pending tasks
+            sendPendingTasks();
+        });
+        PEER.on('error', ()=>{});
+        PEER.on('disconnected', ()=>{ PEER_STATUS = 'disconnected'; });
+        return true;
+    } catch(e){ return false; }
+}
+
+function tryConnectFriend(fid){
+    if(PEER_CONN && PEER_CONN.peer === fid) return;
+    if(!PEER) return;
+    FRIEND_ID = fid;
+    try{
+        const conn = PEER.connect(fid, {reliable:true});
+        conn.on('open', ()=>{
+            PEER_CONN = conn;
+            PEER_STATUS = 'connected';
+            conn.on('data', handlePeerData);
+            conn.on('close', ()=>{ PEER_STATUS = 'disconnected'; PEER_CONN = null; });
+            conn.on('error', ()=>{});
+            sendPendingTasks();
+        });
+        conn.on('error', ()=>{});
+    } catch(e){}
+}
+
+function handlePeerData(data){
+    if(data.type === 'task'){
+        const today = new Date().toISOString().slice(0,10);
+        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if(!tasks[today]) tasks[today] = {};
+        if(data.task && !tasks[today].fromFriend){
+            tasks[today] = {fromFriend: data.task, done: tasks[today]?.done || false};
+            localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
+            showTaskPopup(data.task);
+        }
+    }
+}
+
+function sendPendingTasks(){
+    if(!PEER_CONN || PEER_STATUS !== 'connected') return;
+    const today = new Date().toISOString().slice(0,10);
+    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    const myTask = tasks[today]?.myTask;
+    if(myTask){
+        PEER_CONN.send({type:'task', task: myTask, from: getUID()});
+    }
+}
+
+function loadTodayFriendTask(){
+    const today = new Date().toISOString().slice(0,10);
+    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    return tasks[today] || {fromFriend: '', done: false};
+}
+
+function saveTodayFriendTask(taskText){
+    const today = new Date().toISOString().slice(0,10);
+    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    if(!tasks[today]) tasks[today] = {};
+    tasks[today].myTask = taskText;
+    localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
+}
+
+function markTodayTaskDone(){
+    const today = new Date().toISOString().slice(0,10);
+    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    if(!tasks[today]) tasks[today] = {};
+    tasks[today].done = true;
+    localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
+}
+
+function renderFriendPage(){
+    initPeer();
+    const uid = getUID();
+    document.getElementById('myFriendCode').textContent = uid;
+    
+    const fid = localStorage.getItem('jz_friend_id');
+    if(fid){
+        FRIEND_ID = fid;
+        document.getElementById('friendConnect').style.display = 'none';
+        document.getElementById('friendTaskSection').style.display = 'block';
+        document.getElementById('friendInfo').innerHTML = '🧑‍🤝‍🧑 已配对好友码: <b style="color:var(--primary);letter-spacing:1px;">'+fid+'</b>';
+        document.getElementById('friendStatus').innerHTML = PEER_STATUS==='connected' ? '🟢 好友在线' : '🟡 等待好友上线...';
+        if(PEER_STATUS !== 'connected') tryConnectFriend(fid);
+        updateTaskUI();
+    } else {
+        document.getElementById('friendStatus').innerHTML = '😴 还没有好友，输入对方的好友码开始配对';
+        document.getElementById('friendConnect').style.display = 'block';
+        document.getElementById('friendTaskSection').style.display = 'none';
+    }
+}
+
+function updateTaskUI(){
+    const data = loadTodayFriendTask();
+    const friendTask = document.getElementById('taskFromFriend');
+    const action = document.getElementById('taskAction');
+    const doneMsg = document.getElementById('taskDoneMsg');
+    
+    if(data.fromFriend){
+        friendTask.innerHTML = '🎯 <span style="flex:1;">'+data.fromFriend+'</span>';
+        if(data.done){
+            action.innerHTML = '';
+            doneMsg.style.display = 'block';
+            doneMsg.textContent = '✅ 已完成！太棒了！🎉';
+            friendTask.style.opacity = '0.6';
+        } else {
+            doneMsg.style.display = 'none';
+            action.innerHTML = '<button onclick="doTaskDone()" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--in);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 完成任务</button>';
+            friendTask.style.opacity = '1';
+        }
+    } else {
+        friendTask.innerHTML = '💤 他/她还没给你布置任务哦';
+        action.innerHTML = '';
+        doneMsg.style.display = 'none';
+        friendTask.style.opacity = '1';
+    }
+    
+    const setInput = document.getElementById('taskSetInput');
+    if(data.myTask) setInput.value = data.myTask;
+    
+    // Streak count
+    let streak = 0;
+    for(let i=0; i<30; i++){
+        const d = new Date(); d.setDate(d.getDate()-i);
+        const ds = d.toISOString().slice(0,10);
+        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if(tasks[ds]?.done) streak++; else if(i>0) break;
+    }
+    document.getElementById('streakCount').textContent = streak;
+}
+
+function connectFriend(){
+    const code = document.getElementById('friendCodeInput').value.trim();
+    if(!code) return showToast('请输入好友码');
+    if(code===getUID()) return showToast('不能添加自己');
+    localStorage.setItem('jz_friend_id', code);
+    FRIEND_ID = code;
+    initPeer();
+    tryConnectFriend(code);
+    showToast('✅ 配对成功！');
+    renderFriendPage();
+}
+
+function doTaskDone(){
+    markTodayTaskDone();
+    // Notify friend
+    if(PEER_CONN && PEER_STATUS==='connected'){
+        PEER_CONN.send({type:'done', from: getUID()});
+    }
+    showToast('🎉 任务完成！');
+    updateTaskUI();
+}
+
+function setTaskForFriend(){
+    const task = document.getElementById('taskSetInput').value.trim();
+    if(!task) return showToast('请输入任务内容');
+    if(task.length>100) return showToast('任务内容最多100字');
+    saveTodayFriendTask(task);
+    // Send via PeerJS
+    if(PEER_CONN && PEER_STATUS==='connected'){
+        PEER_CONN.send({type:'task', task, from: getUID()});
+        showToast('📤 任务已发送！');
+    } else {
+        // Generate share URL as fallback
+        const url = location.href.split('#')[0].split('?')[0] + '#task=' + encodeURIComponent(task) + '&from=' + getUID();
+        showToast('好友不在线，点 ❓ 查看分享方式');
+        document.getElementById('taskSetInput').value = task;
+        // Show share hint
+        const hint = document.createElement('div');
+        hint.style.cssText = 'margin-top:8px;padding:10px;background:var(--input-bg);border-radius:8px;font-size:12px;text-align:center;';
+        hint.innerHTML = '📤 好友不在线，<a onclick="copyTaskLink()" style="color:var(--primary);cursor:pointer;">点此复制分享链接</a> 发给好友';
+        document.getElementById('taskSetSection').appendChild(hint);
+    }
+    updateTaskUI();
+}
+
+function copyTaskLink(){
+    const task = document.getElementById('taskSetInput').value.trim();
+    if(!task) return;
+    const url = location.href.split('#')[0].split('?')[0] + '#task=' + encodeURIComponent(task) + '&from=' + getUID();
+    navigator.clipboard.writeText(url).then(()=>{
+        showToast('✅ 链接已复制，发给好友即可');
+    }).catch(()=>{
+        showToast('请手动复制: '+url);
+    });
+}
+
+// ========== URL HASH TASK SHARING ==========
+(function checkHashTask(){
+    const hash = location.hash;
+    if(!hash || !hash.includes('task=')) return;
+    const params = new URLSearchParams(hash.slice(1));
+    const task = params.get('task');
+    const from = params.get('from') || '好友';
+    if(task){
+        const today = new Date().toISOString().slice(0,10);
+        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if(!tasks[today]) tasks[today] = {};
+        tasks[today].fromFriend = task;
+        tasks[today].done = false;
+        localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
+        showTaskPopup(task);
+        if(from && from!==getUID() && !localStorage.getItem('jz_friend_id')){
+            localStorage.setItem('jz_friend_id', from);
+            FRIEND_ID = from;
+        }
+        if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
+    }
+})();
+
+function pickSuggest(el){
+    document.getElementById('taskSetInput').value = el.textContent;
+}
+
+function showTaskPopup(text){
+    const overlay = document.getElementById('taskPopupOverlay');
+    document.getElementById('popupTask').textContent = text;
+    document.getElementById('popupFrom').textContent = '来自好友 · ' + new Date().toLocaleDateString('zh-CN');
+    overlay.classList.add('show');
+}
+
+function dismissTaskPopup(){
+    document.getElementById('taskPopupOverlay').classList.remove('show');
+}
+
+function goToFriendPage(){
+    document.getElementById('taskPopupOverlay').classList.remove('show');
+    switchTab('friend');
+}
+
+// Periodic background check for friend tasks
+setInterval(()=>{
+    const fid = localStorage.getItem('jz_friend_id');
+    if(!fid) return;
+    if(PEER_STATUS !== 'connected'){
+        tryConnectFriend(fid);
+    }
+    const overlay = document.getElementById('taskPopupOverlay');
+    if(!overlay.classList.contains('show')){
+        const data = loadTodayFriendTask();
+        if(data.fromFriend && !data.done && !localStorage.getItem('jz_dismissed_'+new Date().toISOString().slice(0,10))){
+            showTaskPopup(data.fromFriend);
+        }
+    }
+}, 10000);
+
+// ========== URL DEEP LINK (like iCost share extension) ==========
 // ========== URL DEEP LINK (like iCost share extension) ==========
 (function deepLink(){
     const p = new URLSearchParams(location.search);
@@ -1903,6 +2260,20 @@ function switchTab(tab){
     showToast('🔗 快速记账 ¥'+amount+' → '+cate);
     if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
 })();
+
+// Startup friend check
+setTimeout(()=>{
+    const fid = localStorage.getItem('jz_friend_id');
+    if(fid && getUID()){
+        FRIEND_ID = fid;
+        initPeer();
+        // Show popup if there's an unseen task
+        const data = loadTodayFriendTask();
+        if(data.fromFriend && !data.done){
+            showTaskPopup(data.fromFriend);
+        }
+    }
+}, 2000);
 </script>
 </body>
 </html>
