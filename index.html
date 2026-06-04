@@ -467,7 +467,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <div class="page" id="pageFriend">
     <div class="section-header"><h2>🤝 交友</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
     <div id="friendStatus" style="margin:10px 16px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;"></div>
-    <div id="friendConnect" style="display:none;margin:0 16px 10px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;">
+    <div id="friendConnect" style="margin:0 16px 10px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;">
         <div style="margin-bottom:10px;font-weight:600;">你的好友码</div>
         <div id="myFriendCode" style="font-size:22px;font-weight:700;color:var(--primary);text-align:center;padding:8px;background:var(--input-bg);border-radius:8px;letter-spacing:2px;margin-bottom:12px;"></div>
         <div style="display:flex;gap:8px;">
@@ -475,37 +475,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <button onclick="connectFriend()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">🔗 添加</button>
         </div>
     </div>
-    <div id="friendTaskSection" style="display:none;">
-        <div id="friendInfo" style="margin:0 16px 8px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;"></div>
-        <div id="taskToday" style="margin:0 16px 8px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">
-            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">📋 今日任务</div>
-            <div id="taskFromFriend" style="font-size:16px;padding:8px 12px;background:var(--input-bg);border-radius:8px;margin-bottom:8px;min-height:40px;display:flex;align-items:center;gap:8px;"></div>
-            <div id="taskAction" style="display:flex;gap:8px;"></div>
-            <div id="taskDoneMsg" style="display:none;font-size:13px;color:var(--in);font-weight:600;text-align:center;padding:8px;"></div>
-            <div style="margin-top:10px;font-size:12px;color:var(--text2);text-align:center;">连续打卡: <b id="streakCount" style="color:var(--primary);">0</b> 天 🔥</div>
-        </div>
-        <div id="taskSetSection" style="margin:0 16px 8px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">
-            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">🎯 给他/她布置任务</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
-                <button class="task-suggest" onclick="pickSuggest(this)">🚶 走8000步</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">📚 学习1小时</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">💧 喝8杯水</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🧘 冥想10分钟</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">📖 读20页书</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🏃 跑步2公里</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🧹 整理书桌</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🌅 看日出/日落</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🎨 画一张小画</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🎵 学一首新歌</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">📝 写日记</button>
-                <button class="task-suggest" onclick="pickSuggest(this)">🌱 给植物浇水</button>
-            </div>
-            <div style="display:flex;gap:8px;">
-                <input type="text" id="taskSetInput" placeholder="自定义任务..." style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);">
-                <button onclick="setTaskForFriend()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">📤 发送</button>
-            </div>
-        </div>
-    </div>
+    <div id="friendList"></div>
 </div>
 
 <!-- Task Notification Popup -->
@@ -697,16 +667,27 @@ function refreshAll(){
     document.getElementById('yearExpense').textContent = '¥'+(yOut).toFixed(yOut%1?2:0);
     document.getElementById('yearSave').textContent = '¥'+ySave.toFixed(ySave%1?2:0);
 
-    // Budget health (auto from income, user can override)
+    // Budget health - total budget = sum of individual category budgets
     const monthExpense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
     const monthIncome = income;
     const autoBudget = Math.round(monthIncome * 0.7);
     const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
     const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoBudget;
-    const pct = budget>0 ? Math.min(monthExpense/budget*100,100) : 0;
-    // Per-category budgets
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
     const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
+    
+    const monthExpenses = DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH);
+    const catTotals = {};
+    monthExpenses.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+    const cats = CATS.expense;
+    // Compute each cat's effective budget, then sum for total
+    const catEffectiveBudgets = {};
+    cats.forEach(c => {
+        catEffectiveBudgets[c.name] = monthCatBudgets[c.name] || Math.round(budget / cats.length);
+    });
+    const totalCatBudget = Object.values(catEffectiveBudgets).reduce((s,v)=>s+v, 0);
+    const pct = totalCatBudget>0 ? Math.min(monthExpense/totalCatBudget*100,100) : 0;
+    
     let bRow = document.getElementById('budgetInfoRow');
     if(!bRow){
         bRow = document.createElement('div');
@@ -719,22 +700,17 @@ function refreshAll(){
         <div class="budget-bar" style="flex:none;width:50px;height:5px;"><div class="budget-fill good" style="width:${pct}%;background:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};"></div></div>
         <span>收<b style="color:var(--in);margin-left:2px;">¥${monthIncome.toFixed(0)}</b></span>
         <span>支<b style="color:var(--out);margin-left:2px;">¥${monthExpense.toFixed(0)}</b></span>
-        <span style="cursor:pointer;" onclick="editBudget()">预算<b style="color:var(--primary);margin-left:2px;">¥${budget.toFixed(0)}</b>✏️</span>
+        <span style="cursor:pointer;" onclick="editBudget()">预算<b style="color:var(--primary);margin-left:2px;">¥${totalCatBudget.toFixed(0)}</b>✏️</span>
         <span style="margin-left:auto;">${pct>=100?'⚠️超支':pct>=80?'⚡警戒':'✅健康'}</span>
     `;
     
-    // Budget account: show each expense category as a module
-    const monthExpenses = DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH);
-    const catTotals = {};
-    monthExpenses.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
-    const cats = CATS.expense;
     const el = document.getElementById('budgetModuleList');
     if(!el) return;
     el.innerHTML = cats.map(c=>{
         const spent = catTotals[c.name]||0;
-        const catBudget = monthCatBudgets[c.name] || Math.round(budget / cats.length);
-        const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : (budget>0 ? Math.min(spent/budget*100,100) : 0);
-        const barColor = catBudget>0 ? (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)') : (pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)');
+        const catBudget = catEffectiveBudgets[c.name];
+        const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : 0;
+        const barColor = pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)';
         return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
             <div style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:20px;">${c.icon}</span>
@@ -1619,12 +1595,16 @@ function showCategoryBudget(cate){
     const monthIncome = getMonthData().filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const autoTotal = Math.round(monthIncome * 0.7);
     const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
-    const totalBudget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoTotal;
+    const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoTotal;
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
     const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
     const spent = DATA.filter(i=>i.type==='expense'&&i.cate===cate&&i.date.slice(0,7)===CURRENT_MONTH)
         .reduce((s,i)=>s+i.amount,0);
-    const curCatBudget = monthCatBudgets[cate] || Math.round(totalBudget / CATS.expense.length);
+    const curCatBudget = monthCatBudgets[cate] || Math.round(budget / CATS.expense.length);
+    // Compute total of all category budgets
+    const totalCatBudget = CATS.expense.reduce((sum, c) => {
+        return sum + (monthCatBudgets[c.name] || Math.round(budget / CATS.expense.length));
+    }, 0);
 
     closeSheet();
     const sheet = document.createElement('div');
@@ -1641,12 +1621,8 @@ function showCategoryBudget(cate){
                 <span style="font-weight:700;">¥${monthIncome.toFixed(0)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-                <span style="font-size:12px;color:var(--text2);">建议总预算 (70%)</span>
-                <span style="font-weight:700;color:var(--primary);">¥${autoTotal.toFixed(0)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-                <span style="font-size:12px;color:var(--text2);">当前总预算</span>
-                <span style="font-weight:700;cursor:pointer;" onclick="editBudget()">¥${totalBudget.toFixed(0)} ✏️</span>
+                <span style="font-size:12px;color:var(--text2);">各模块预算合计</span>
+                <span style="font-weight:700;color:var(--primary);">¥${totalCatBudget.toFixed(0)}</span>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
             <div style="display:flex;justify-content:space-between;font-size:14px;">
@@ -1659,9 +1635,9 @@ function showCategoryBudget(cate){
             <input type="number" id="catBudgetInput" value="${curCatBudget}" step="1" min="0" style="font-size:20px;font-weight:700;padding:14px;">
         </div>
         <div style="display:flex;gap:10px;">
-            <button onclick="setQuickCatBudget('${cate}',${Math.round(totalBudget*0.3)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">30%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(totalBudget*0.3)}</span></button>
-            <button onclick="setQuickCatBudget('${cate}',${Math.round(totalBudget*0.5)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">50%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(totalBudget*0.5)}</span></button>
-            <button onclick="setQuickCatBudget('${cate}',${Math.round(spent+Math.max(100, totalBudget*0.1))})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">余量+<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(spent+Math.max(100, totalBudget*0.1))}</span></button>
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(budget*0.3)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">30%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(budget*0.3)}</span></button>
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(budget*0.5)})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">50%<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(budget*0.5)}</span></button>
+            <button onclick="setQuickCatBudget('${cate}',${Math.round(spent+Math.max(100, budget*0.1))})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">余量+<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(spent+Math.max(100, budget*0.1))}</span></button>
         </div>
         <button onclick="saveCatBudget('${cate}')" style="width:100%;margin-top:16px;padding:14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">✔ 保存分类预算</button>
     </div>`;
@@ -1954,9 +1930,7 @@ function switchTab(tab){
 
 // ========== PEERJS FRIEND SYSTEM ==========
 let PEER = null;
-let PEER_CONN = null;
-let FRIEND_ID = null;
-let FRIEND_TASKS = {};
+let PEER_CONNS = {};
 let PEER_STATUS = 'disconnected';
 
 function getUID(){
@@ -1965,92 +1939,129 @@ function getUID(){
     return uid;
 }
 
+function getFriends() {
+    let friends = [];
+    try { friends = JSON.parse(localStorage.getItem('jz_friends')); } catch(e) {}
+    if (!Array.isArray(friends)) friends = [];
+    const oldFid = localStorage.getItem('jz_friend_id');
+    if (oldFid && !friends.find(f => f.id === oldFid)) {
+        friends.push({ id: oldFid, name: '' });
+        localStorage.setItem('jz_friends', JSON.stringify(friends));
+    }
+    return friends;
+}
+
+function saveFriends(friends) {
+    localStorage.setItem('jz_friends', JSON.stringify(friends));
+}
+
+function getFriendTask(date, friendId) {
+    const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    if (!all[date]) return { fromFriend: '', myTask: '', done: false, friendDone: false };
+    return all[date][friendId] || { fromFriend: '', myTask: '', done: false, friendDone: false };
+}
+
+function saveFriendTask(date, friendId, data) {
+    const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    if (!all[date]) all[date] = {};
+    if (!all[date][friendId]) all[date][friendId] = { fromFriend: '', myTask: '', done: false, friendDone: false };
+    Object.assign(all[date][friendId], data);
+    localStorage.setItem('jz_friend_tasks', JSON.stringify(all));
+}
+
+(function migrateFriendTasks(){
+    const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    let changed = false;
+    for (const [date, data] of Object.entries(all)) {
+        if (data.fromFriend !== undefined || data.myTask !== undefined) {
+            const friends = getFriends();
+            if (friends.length > 0 && (!all[date][friends[0].id] || !all[date][friends[0].id].fromFriend)) {
+                all[date][friends[0].id] = {
+                    fromFriend: data.fromFriend || '',
+                    myTask: data.myTask || '',
+                    done: data.done || false,
+                    friendDone: data.friendDone || false
+                };
+                delete all[date].fromFriend;
+                delete all[date].myTask;
+                delete all[date].done;
+                changed = true;
+            }
+        }
+    }
+    if (changed) localStorage.setItem('jz_friend_tasks', JSON.stringify(all));
+})();
+
 function initPeer(){
     if(PEER) return true;
     try{
         PEER = new Peer(getUID(), {debug:0});
         PEER.on('open', id=>{
             PEER_STATUS = 'ready';
-            // Try reconnecting to friend if we have one
-            const fid = localStorage.getItem('jz_friend_id');
-            if(fid) tryConnectFriend(fid);
+            const friends = getFriends();
+            friends.forEach(f => tryConnectFriend(f.id));
         });
         PEER.on('connection', conn=>{
-            PEER_CONN = conn;
+            const fromId = conn.peer;
+            PEER_CONNS[fromId] = conn;
             PEER_STATUS = 'connected';
-            conn.on('data', handlePeerData);
-            conn.on('close', ()=>{ PEER_STATUS = 'disconnected'; PEER_CONN = null; });
+            conn.on('data', data => handlePeerData(data, fromId));
+            conn.on('close', ()=>{ delete PEER_CONNS[fromId]; });
             conn.on('error', ()=>{});
-            // Send pending tasks
-            sendPendingTasks();
+            sendPendingTasks(fromId);
+            updateFriendUI();
         });
         PEER.on('error', ()=>{});
-        PEER.on('disconnected', ()=>{ PEER_STATUS = 'disconnected'; });
+        PEER.on('disconnected', ()=>{});
         return true;
     } catch(e){ return false; }
 }
 
 function tryConnectFriend(fid){
-    if(PEER_CONN && PEER_CONN.peer === fid) return;
-    if(!PEER) return;
-    FRIEND_ID = fid;
-    try{
+    if (!PEER) return;
+    if (PEER_CONNS[fid]) return;
+    try {
         const conn = PEER.connect(fid, {reliable:true});
         conn.on('open', ()=>{
-            PEER_CONN = conn;
+            PEER_CONNS[fid] = conn;
             PEER_STATUS = 'connected';
-            conn.on('data', handlePeerData);
-            conn.on('close', ()=>{ PEER_STATUS = 'disconnected'; PEER_CONN = null; });
+            conn.on('data', data => handlePeerData(data, fid));
+            conn.on('close', ()=>{ delete PEER_CONNS[fid]; });
             conn.on('error', ()=>{});
-            sendPendingTasks();
+            sendPendingTasks(fid);
+            updateFriendUI();
         });
         conn.on('error', ()=>{});
-    } catch(e){}
+    } catch(e) {}
 }
 
-function handlePeerData(data){
-    if(data.type === 'task'){
-        const today = new Date().toISOString().slice(0,10);
-        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-        if(!tasks[today]) tasks[today] = {};
-        if(data.task && !tasks[today].fromFriend){
-            tasks[today] = {fromFriend: data.task, done: tasks[today]?.done || false};
-            localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
-            showTaskPopup(data.task);
+function handlePeerData(data, fromId){
+    const today = new Date().toISOString().slice(0,10);
+    if (data.type === 'task') {
+        const taskData = getFriendTask(today, fromId);
+        if (data.task && !taskData.fromFriend) {
+            saveFriendTask(today, fromId, { fromFriend: data.task, done: false });
+            showTaskPopup(data.task, fromId);
+            updateFriendUI();
+        }
+    } else if (data.type === 'done') {
+        const taskData = getFriendTask(today, fromId);
+        if (taskData.myTask) {
+            saveFriendTask(today, fromId, { friendDone: true });
+            showToast('🎉 好友完成了你的任务！');
+            updateFriendUI();
         }
     }
 }
 
-function sendPendingTasks(){
-    if(!PEER_CONN || PEER_STATUS !== 'connected') return;
+function sendPendingTasks(fid){
+    const conn = PEER_CONNS[fid];
+    if (!conn) return;
     const today = new Date().toISOString().slice(0,10);
-    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-    const myTask = tasks[today]?.myTask;
-    if(myTask){
-        PEER_CONN.send({type:'task', task: myTask, from: getUID()});
+    const taskData = getFriendTask(today, fid);
+    if (taskData.myTask) {
+        conn.send({ type: 'task', task: taskData.myTask, from: getUID() });
     }
-}
-
-function loadTodayFriendTask(){
-    const today = new Date().toISOString().slice(0,10);
-    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-    return tasks[today] || {fromFriend: '', done: false};
-}
-
-function saveTodayFriendTask(taskText){
-    const today = new Date().toISOString().slice(0,10);
-    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-    if(!tasks[today]) tasks[today] = {};
-    tasks[today].myTask = taskText;
-    localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
-}
-
-function markTodayTaskDone(){
-    const today = new Date().toISOString().slice(0,10);
-    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-    if(!tasks[today]) tasks[today] = {};
-    tasks[today].done = true;
-    localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
 }
 
 function renderFriendPage(){
@@ -2058,115 +2069,157 @@ function renderFriendPage(){
     const uid = getUID();
     document.getElementById('myFriendCode').textContent = uid;
     
-    const fid = localStorage.getItem('jz_friend_id');
-    if(fid){
-        FRIEND_ID = fid;
-        document.getElementById('friendConnect').style.display = 'none';
-        document.getElementById('friendTaskSection').style.display = 'block';
-        document.getElementById('friendInfo').innerHTML = '🧑‍🤝‍🧑 已配对好友码: <b style="color:var(--primary);letter-spacing:1px;">'+fid+'</b>';
-        document.getElementById('friendStatus').innerHTML = PEER_STATUS==='connected' ? '🟢 好友在线' : '🟡 等待好友上线...';
-        if(PEER_STATUS !== 'connected') tryConnectFriend(fid);
-        updateTaskUI();
-    } else {
+    const friends = getFriends();
+    const listEl = document.getElementById('friendList');
+    
+    if (friends.length === 0) {
         document.getElementById('friendStatus').innerHTML = '😴 还没有好友，输入对方的好友码开始配对';
-        document.getElementById('friendConnect').style.display = 'block';
-        document.getElementById('friendTaskSection').style.display = 'none';
+        listEl.innerHTML = '';
+        return;
     }
-}
-
-function updateTaskUI(){
-    const data = loadTodayFriendTask();
-    const friendTask = document.getElementById('taskFromFriend');
-    const action = document.getElementById('taskAction');
-    const doneMsg = document.getElementById('taskDoneMsg');
     
-    if(data.fromFriend){
-        friendTask.innerHTML = '🎯 <span style="flex:1;">'+data.fromFriend+'</span>';
-        if(data.done){
-            action.innerHTML = '';
-            doneMsg.style.display = 'block';
-            doneMsg.textContent = '✅ 已完成！太棒了！🎉';
-            friendTask.style.opacity = '0.6';
+    let onlineCount = 0;
+    friends.forEach(f => { if (PEER_CONNS[f.id]) onlineCount++; });
+    document.getElementById('friendStatus').innerHTML = '🧑‍🤝‍🧑 已添加 <b>' + friends.length + '</b> 位好友，<b>' + onlineCount + '</b> 位在线';
+    
+    let html = '';
+    const today = new Date().toISOString().slice(0,10);
+    friends.forEach(f => {
+        const isOnline = !!PEER_CONNS[f.id];
+        const taskData = getFriendTask(today, f.id);
+        
+        html += '<div class="chart-card" style="margin:0 16px 10px;padding:16px;" data-fid="' + f.id + '">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+                '<span><b style="font-size:14px;">' + (f.name || f.id.slice(0,8)) + '</b> <span style="font-size:11px;color:var(--text2);">' + (isOnline?'🟢 在线':'🟡 离线') + '</span></span>' +
+                '<span style="font-size:11px;color:var(--out);cursor:pointer;" onclick="removeFriend(\'' + f.id + '\')">✕ 删除</span>' +
+            '</div>' +
+            '<div style="margin-bottom:10px;padding:10px;background:var(--input-bg);border-radius:8px;">' +
+                '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;">📋 对方给你的任务</div>' +
+                '<div style="font-size:14px;min-height:20px;display:flex;align-items:center;gap:6px;">';
+        if (taskData.fromFriend) {
+            html += '<span style="flex:1;' + (taskData.done?'opacity:.5;text-decoration:line-through':'') + '">' + taskData.fromFriend + '</span>';
+            if (!taskData.done) {
+                html += '<button onclick="doTaskDone(\'' + f.id + '\')" style="padding:4px 10px;border:none;border-radius:6px;background:var(--in);color:#fff;font-size:12px;cursor:pointer;">✅ 完成</button>';
+            } else {
+                html += '<span style="font-size:12px;color:var(--in);">✅ 已完成</span>';
+            }
         } else {
-            doneMsg.style.display = 'none';
-            action.innerHTML = '<button onclick="doTaskDone()" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--in);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 完成任务</button>';
-            friendTask.style.opacity = '1';
+            html += '<span style="color:var(--text2);font-size:12px;">💤 暂无任务</span>';
         }
-    } else {
-        friendTask.innerHTML = '💤 他/她还没给你布置任务哦';
-        action.innerHTML = '';
-        doneMsg.style.display = 'none';
-        friendTask.style.opacity = '1';
-    }
+        html += '</div></div>' +
+            '<div>' +
+                '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;">🎯 你给他/她的任务</div>' +
+                '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">🚶 走8000步</button>' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">📚 学习1小时</button>' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">💧 喝8杯水</button>' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">🧘 冥想10分钟</button>' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">📖 读20页书</button>' +
+                    '<button class="task-suggest" onclick="pickSuggestFor(\'' + f.id + '\', this)">🏃 跑步2公里</button>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;">' +
+                    '<input type="text" class="taskInputForFriend" data-fid="' + f.id + '" placeholder="自定义任务..." value="' + (taskData.myTask||'') + '" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--input-bg);color:var(--text);"' + (taskData.myTask?' readonly':'') + '>' +
+                    '<button onclick="setTaskForFriend(\'' + f.id + '\')" style="padding:8px 14px;border:none;border-radius:8px;background:' + (taskData.myTask?'var(--border)':'var(--primary)') + ';color:' + (taskData.myTask?'var(--text2)':'#fff') + ';font-size:12px;font-weight:600;cursor:pointer;"' + (taskData.myTask?' disabled':'') + '>' + (taskData.myTask?'已发送':'📤 发送') + '</button>' +
+                '</div>';
+        if (taskData.myTask && taskData.friendDone) {
+            html += '<div style="margin-top:6px;font-size:12px;color:var(--in);font-weight:600;">🎉 好友已完成此任务！</div>';
+        }
+        html += '</div></div>';
+    });
+    listEl.innerHTML = html;
     
-    const setInput = document.getElementById('taskSetInput');
-    if(data.myTask) setInput.value = data.myTask;
-    
-    // Streak count
     let streak = 0;
     for(let i=0; i<30; i++){
         const d = new Date(); d.setDate(d.getDate()-i);
         const ds = d.toISOString().slice(0,10);
-        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-        if(tasks[ds]?.done) streak++; else if(i>0) break;
+        const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if (all[ds]) {
+            let anyDone = false;
+            for (const td of Object.values(all[ds])) { if (td.done) { anyDone = true; break; } }
+            if (anyDone) streak++;
+            else if (i>0) break;
+        } else if (i>0) break;
     }
-    document.getElementById('streakCount').textContent = streak;
+    html += '<div style="margin:0 16px 8px;font-size:12px;color:var(--text2);text-align:center;">连续打卡: <b style="color:var(--primary);">' + streak + '</b> 天 🔥</div>';
+    listEl.innerHTML += html;
+}
+
+function updateFriendUI() {
+    if (document.getElementById('pageFriend') && document.getElementById('pageFriend').classList.contains('active')) {
+        renderFriendPage();
+    }
 }
 
 function connectFriend(){
     const code = document.getElementById('friendCodeInput').value.trim();
-    if(!code) return showToast('请输入好友码');
-    if(code===getUID()) return showToast('不能添加自己');
-    localStorage.setItem('jz_friend_id', code);
-    FRIEND_ID = code;
+    if (!code) return showToast('请输入好友码');
+    if (code === getUID()) return showToast('不能添加自己');
+    const friends = getFriends();
+    if (friends.find(f => f.id === code)) return showToast('已经是好友了');
+    friends.push({ id: code, name: '' });
+    saveFriends(friends);
     initPeer();
     tryConnectFriend(code);
-    showToast('✅ 配对成功！');
+    document.getElementById('friendCodeInput').value = '';
+    showToast('✅ 添加好友成功！');
     renderFriendPage();
 }
 
-function doTaskDone(){
-    markTodayTaskDone();
-    // Notify friend
-    if(PEER_CONN && PEER_STATUS==='connected'){
-        PEER_CONN.send({type:'done', from: getUID()});
+function removeFriend(fid) {
+    if (!confirm('确定删除该好友吗？相关的任务数据也会删除。')) return;
+    let friends = getFriends();
+    friends = friends.filter(f => f.id !== fid);
+    saveFriends(friends);
+    if (PEER_CONNS[fid]) { PEER_CONNS[fid].close(); delete PEER_CONNS[fid]; }
+    const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    for (const date of Object.keys(all)) {
+        delete all[date][fid];
     }
-    showToast('🎉 任务完成！');
-    updateTaskUI();
+    localStorage.setItem('jz_friend_tasks', JSON.stringify(all));
+    showToast('已删除好友');
+    renderFriendPage();
 }
 
-function setTaskForFriend(){
-    const task = document.getElementById('taskSetInput').value.trim();
-    if(!task) return showToast('请输入任务内容');
-    if(task.length>100) return showToast('任务内容最多100字');
-    saveTodayFriendTask(task);
-    // Send via PeerJS
-    if(PEER_CONN && PEER_STATUS==='connected'){
-        PEER_CONN.send({type:'task', task, from: getUID()});
+function setTaskForFriend(fid) {
+    const input = document.querySelector('.taskInputForFriend[data-fid="' + fid + '"]');
+    if (!input) return;
+    const task = input.value.trim();
+    if (!task) return showToast('请输入任务内容');
+    if (task.length > 100) return showToast('任务内容最多100字');
+    
+    const today = new Date().toISOString().slice(0,10);
+    const taskData = getFriendTask(today, fid);
+    if (taskData.myTask) return showToast('今天已经给这位好友发布过任务了');
+    
+    saveFriendTask(today, fid, { myTask: task });
+    
+    if (PEER_CONNS[fid]) {
+        PEER_CONNS[fid].send({ type: 'task', task, from: getUID() });
         showToast('📤 任务已发送！');
     } else {
-        // Generate share URL as fallback
-        const url = location.href.split('#')[0].split('?')[0] + '#task=' + encodeURIComponent(task) + '&from=' + getUID();
-        showToast('好友不在线，点 ❓ 查看分享方式');
-        document.getElementById('taskSetInput').value = task;
-        // Show share hint
-        const hint = document.createElement('div');
-        hint.style.cssText = 'margin-top:8px;padding:10px;background:var(--input-bg);border-radius:8px;font-size:12px;text-align:center;';
-        hint.innerHTML = '📤 好友不在线，<a onclick="copyTaskLink()" style="color:var(--primary);cursor:pointer;">点此复制分享链接</a> 发给好友';
-        document.getElementById('taskSetSection').appendChild(hint);
+        showToast('好友离线，上线后将自动发送');
     }
-    updateTaskUI();
+    renderFriendPage();
 }
 
-function copyTaskLink(){
-    const task = document.getElementById('taskSetInput').value.trim();
-    if(!task) return;
-    const url = location.href.split('#')[0].split('?')[0] + '#task=' + encodeURIComponent(task) + '&from=' + getUID();
-    navigator.clipboard.writeText(url).then(()=>{
-        showToast('✅ 链接已复制，发给好友即可');
-    }).catch(()=>{
-        showToast('请手动复制: '+url);
-    });
+function pickSuggestFor(fid, el) {
+    const input = document.querySelector('.taskInputForFriend[data-fid="' + fid + '"]');
+    if (input) input.value = el.textContent;
+}
+
+function doTaskDone(fid) {
+    const today = new Date().toISOString().slice(0,10);
+    const taskData = getFriendTask(today, fid);
+    if (!taskData.fromFriend) return showToast('没有任务可以完成');
+    if (taskData.done) return;
+    
+    saveFriendTask(today, fid, { done: true });
+    
+    if (PEER_CONNS[fid]) {
+        PEER_CONNS[fid].send({ type: 'done', from: getUID() });
+    }
+    showToast('🎉 任务完成！');
+    renderFriendPage();
 }
 
 // ========== URL HASH TASK SHARING ==========
@@ -2175,31 +2228,31 @@ function copyTaskLink(){
     if(!hash || !hash.includes('task=')) return;
     const params = new URLSearchParams(hash.slice(1));
     const task = params.get('task');
-    const from = params.get('from') || '好友';
-    if(task){
+    const from = params.get('from') || '';
+    if(task && from && from !== getUID()){
         const today = new Date().toISOString().slice(0,10);
-        const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-        if(!tasks[today]) tasks[today] = {};
-        tasks[today].fromFriend = task;
-        tasks[today].done = false;
-        localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
-        showTaskPopup(task);
-        if(from && from!==getUID() && !localStorage.getItem('jz_friend_id')){
-            localStorage.setItem('jz_friend_id', from);
-            FRIEND_ID = from;
+        const taskData = getFriendTask(today, from);
+        if (!taskData.fromFriend) {
+            saveFriendTask(today, from, { fromFriend: task, done: false });
+            const friends = getFriends();
+            if (!friends.find(f => f.id === from)) {
+                friends.push({ id: from, name: '' });
+                saveFriends(friends);
+                initPeer();
+                tryConnectFriend(from);
+            }
+            showTaskPopup(task, from);
         }
         if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
     }
 })();
 
-function pickSuggest(el){
-    document.getElementById('taskSetInput').value = el.textContent;
-}
-
-function showTaskPopup(text){
+function showTaskPopup(text, fromId){
     const overlay = document.getElementById('taskPopupOverlay');
+    const friends = getFriends();
+    const friend = friends.find(f => f.id === fromId);
     document.getElementById('popupTask').textContent = text;
-    document.getElementById('popupFrom').textContent = '来自好友 · ' + new Date().toLocaleDateString('zh-CN');
+    document.getElementById('popupFrom').textContent = '来自 ' + (friend ? (friend.name || friend.id.slice(0,8)) : '好友') + ' · ' + new Date().toLocaleDateString('zh-CN');
     overlay.classList.add('show');
 }
 
@@ -2213,17 +2266,24 @@ function goToFriendPage(){
 }
 
 // Periodic background check for friend tasks
-setInterval(()=>{
-    const fid = localStorage.getItem('jz_friend_id');
-    if(!fid) return;
-    if(PEER_STATUS !== 'connected'){
-        tryConnectFriend(fid);
-    }
+setInterval(() => {
+    const friends = getFriends();
+    if (friends.length === 0) return;
+    if (!PEER) initPeer();
+    friends.forEach(f => {
+        if (!PEER_CONNS[f.id]) tryConnectFriend(f.id);
+    });
     const overlay = document.getElementById('taskPopupOverlay');
-    if(!overlay.classList.contains('show')){
-        const data = loadTodayFriendTask();
-        if(data.fromFriend && !data.done && !localStorage.getItem('jz_dismissed_'+new Date().toISOString().slice(0,10))){
-            showTaskPopup(data.fromFriend);
+    if (!overlay.classList.contains('show')) {
+        const today = new Date().toISOString().slice(0,10);
+        const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if (all[today]) {
+            for (const [fid, td] of Object.entries(all[today])) {
+                if (td.fromFriend && !td.done) {
+                    showTaskPopup(td.fromFriend, fid);
+                    break;
+                }
+            }
         }
     }
 }, 10000);
@@ -2262,15 +2322,19 @@ setInterval(()=>{
 })();
 
 // Startup friend check
-setTimeout(()=>{
-    const fid = localStorage.getItem('jz_friend_id');
-    if(fid && getUID()){
-        FRIEND_ID = fid;
+setTimeout(() => {
+    const friends = getFriends();
+    if (friends.length > 0 && getUID()) {
         initPeer();
-        // Show popup if there's an unseen task
-        const data = loadTodayFriendTask();
-        if(data.fromFriend && !data.done){
-            showTaskPopup(data.fromFriend);
+        const today = new Date().toISOString().slice(0,10);
+        const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if (all[today]) {
+            for (const [fid, td] of Object.entries(all[today])) {
+                if (td.fromFriend && !td.done) {
+                    showTaskPopup(td.fromFriend, fid);
+                    break;
+                }
+            }
         }
     }
 }, 2000);
