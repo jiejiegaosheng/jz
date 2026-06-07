@@ -745,15 +745,21 @@ function getDateLabel(dateStr){
     return dateStr;
 }
 
-function toggleMonthBody(ym, el){
-    const mb = document.getElementById('mb_'+ym);
-    if(mb) {
-        mb.classList.toggle('show');
-        el.classList.toggle('open');
+function toggleMonthBody(el){
+    const mb = el.nextElementSibling;
+    if(mb && mb.classList.contains('month-body')) {
+        const isOpen = el.classList.contains('open');
+        if(isOpen){
+            mb.style.display = 'none';
+            el.classList.remove('open');
+        } else {
+            mb.style.display = 'block';
+            el.classList.add('open');
+        }
     }
 }
 
-function renderGroupedList(list, elId){
+function renderGroupedList(list, elId, startCollapsed){
     const el = document.getElementById(elId);
     if(!list.length){
         el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>暂无记录，点下方 ＋ 开始记账</p></div>';
@@ -793,12 +799,12 @@ function renderGroupedList(list, elId){
             curMonth = ym;
             const ms = monthStats[ym];
             const net = ms.inc - ms.exp - ms.save;
-            html += `<div class="month-group"><div class="month-title open" onclick="toggleMonthBody('${ym}',this)">
+            html += `<div class="month-group"><div class="month-title${startCollapsed?'':' open'}" onclick="toggleMonthBody(this)">
                 ${ym.replace('-','年')+'月'}
                 <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:8px;">收${ms.inc.toFixed(0)} 支${ms.exp.toFixed(0)}${ms.save?' 存'+ms.save.toFixed(0):''}</span>
                 <span style="margin-left:auto;font-size:12px;font-weight:600;color:${net>=0?'var(--in)':'var(--out)'}">${net>=0?'+':''}¥${net.toFixed(0)}</span>
                 <span class="month-arrow">▾</span>
-            </div><div class="month-body show" id="mb_${ym}">`;
+            </div><div class="month-body${startCollapsed?'':' show'}">`;
         }
         const label = getDateLabel(date);
         const dayTotal = groups[date].reduce((s,i)=>s+i.amount*(i.type==='income'?1:i.type==='save'?-1:-1),0);
@@ -864,7 +870,7 @@ function renderCateList(){
     if(!FILTER_CATE) return;
     let filtered = DATA.filter(i=>i.cate===FILTER_CATE);
     filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
-    renderGroupedList(filtered, 'cateList');
+    renderGroupedList(filtered, 'cateList', true);
 }
 
 function clearFilter(){
