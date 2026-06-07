@@ -960,6 +960,7 @@ function deleteTx(id){
     if(!confirm('确定删除这条记录吗？')) return;
     DATA = DATA.filter(i=>i.id!==id);
     localStorage.setItem('jz_data', JSON.stringify(DATA));
+    localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     // Clean up photo
     const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
     delete photos[id];
