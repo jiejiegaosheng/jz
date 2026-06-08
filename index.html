@@ -2031,6 +2031,7 @@ function switchTab(tab){
 let PEER = null;
 let PEER_CONNS = {};
 let PEER_STATUS = 'disconnected';
+let PEER_PENDING = {};
 
 function getUID(){
     let uid = localStorage.getItem('jz_uid');
@@ -2094,7 +2095,9 @@ function saveFriendTask(date, friendId, data) {
 function initPeer(){
     if(PEER) {
         if(PEER.disconnected){
-            try{ PEER.reconnect(); } catch(e){}
+            try{ PEER.destroy(); } catch(e){}
+            PEER = null; PEER_CONNS = {}; PEER_PENDING = {};
+            return initPeer();
         }
         return true;
     }
@@ -2107,6 +2110,7 @@ function initPeer(){
         });
         PEER.on('connection', conn=>{
             const fromId = conn.peer;
+            delete PEER_PENDING[fromId];
             PEER_CONNS[fromId] = conn;
             PEER_STATUS = 'connected';
             conn.on('data', data => handlePeerData(data, fromId));
@@ -2116,12 +2120,16 @@ function initPeer(){
             updateFriendUI();
         });
         PEER.on('error', ()=>{
-            if(PEER) { try{ PEER.destroy(); } catch(e){} PEER = null; }
+            // Don't destroy peer on transient errors; interval will retry connections
         });
         PEER.on('disconnected', ()=>{
             PEER_STATUS = 'disconnected';
             PEER_CONNS = {};
-            try{ PEER.reconnect(); } catch(e){}
+            PEER_PENDING = {};
+            if(PEER) {
+                try{ PEER.destroy(); } catch(e){}
+                PEER = null;
+            }
         });
         return true;
     } catch(e){ return false; }
@@ -2130,19 +2138,24 @@ function initPeer(){
 function tryConnectFriend(fid){
     if (!PEER) return;
     if (PEER_CONNS[fid]) return;
+    if (PEER_PENDING[fid]) return;
     try {
+        PEER_PENDING[fid] = true;
         const conn = PEER.connect(fid, {reliable:true});
         conn.on('open', ()=>{
+            delete PEER_PENDING[fid];
             PEER_CONNS[fid] = conn;
             PEER_STATUS = 'connected';
             conn.on('data', data => handlePeerData(data, fid));
-            conn.on('close', ()=>{ delete PEER_CONNS[fid]; });
-            conn.on('error', ()=>{});
+            conn.on('close', ()=>{ delete PEER_CONNS[fid]; updateFriendUI(); });
+            conn.on('error', ()=>{ delete PEER_PENDING[fid]; });
             sendPendingTasks(fid);
             updateFriendUI();
         });
-        conn.on('error', ()=>{});
-    } catch(e) {}
+        conn.on('error', ()=>{
+            delete PEER_PENDING[fid];
+        });
+    } catch(e) { delete PEER_PENDING[fid]; }
 }
 
 function handlePeerData(data, fromId){
@@ -2150,8 +2163,10 @@ function handlePeerData(data, fromId){
     if (data.type === 'task') {
         const taskData = getFriendTask(today, fromId);
         if (data.task && !taskData.fromFriend) {
-            saveFriendTask(today, fromId, { fromFriend: data.task, done: false });
+            saveFriendTask(today, fromId, { fromFriend: data.task, done: false, popupShown: false });
             showTaskPopup(data.task, fromId);
+            const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+            if(all[today] && all[today][fromId]) { all[today][fromId].popupShown = true; localStorage.setItem('jz_friend_tasks', JSON.stringify(all)); }
             updateFriendUI();
         }
     } else if (data.type === 'done') {
@@ -2411,7 +2426,7 @@ function doTaskDone(fid) {
         const today = new Date().toISOString().slice(0,10);
         const taskData = getFriendTask(today, from);
         if (!taskData.fromFriend) {
-            saveFriendTask(today, from, { fromFriend: task, done: false });
+            saveFriendTask(today, from, { fromFriend: task, done: false, popupShown: false });
             const friends = getFriends();
             if (!friends.find(f => f.id === from)) {
                 friends.push({ id: from, name: '' });
@@ -2420,6 +2435,8 @@ function doTaskDone(fid) {
                 tryConnectFriend(from);
             }
             showTaskPopup(task, from);
+            const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+            if(all[today] && all[today][from]) { all[today][from].popupShown = true; localStorage.setItem('jz_friend_tasks', JSON.stringify(all)); }
         }
         if(window.history && history.replaceState) history.replaceState({}, '', location.pathname);
     }
@@ -2457,8 +2474,10 @@ setInterval(() => {
         const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
         if (all[today]) {
             for (const [fid, td] of Object.entries(all[today])) {
-                if (td.fromFriend && !td.done) {
+                if (td.fromFriend && !td.done && !td.popupShown) {
                     showTaskPopup(td.fromFriend, fid);
+                    td.popupShown = true;
+                    localStorage.setItem('jz_friend_tasks', JSON.stringify(all));
                     break;
                 }
             }
