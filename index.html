@@ -300,6 +300,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <span class="more" onclick="switchTab('all')">全部 →</span>
     </div>
     <div id="budgetModuleList"></div>
+    <div class="section-header" style="padding-bottom:6px;padding-top:6px;">
+        <h2>收入明细</h2>
+    </div>
+    <div id="incomeModuleList"></div>
     <div style="margin:4px 16px 0;font-size:10px;color:var(--text2);text-align:center;">长按分类模块可单独设置该分类预算</div>
     <div id="dataStatus" style="margin:10px 16px;padding:10px;border-radius:8px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);text-align:center;"></div>
 </div>
@@ -569,6 +573,7 @@ let ADD_TYPE = 'expense';
 let CHART_MODE = 'month';
 let EDIT_ID = null;
 let FILTER_CATE = '';
+const monthToggle = {};
 
 const CATS = {
     expense: [
@@ -717,13 +722,40 @@ function refreshAll(){
                 <div style="flex:1;">
                     <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                         <span>${c.name}</span>
-                        <span>¥${spent.toFixed(0)} / ¥${catBudget.toFixed(0)}</span>
+                        <span>¥${spent.toFixed(2)} / ¥${catBudget.toFixed(0)}</span>
                     </div>
                     <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
                 </div>
             </div>
         </div>`;
     }).join('');
+
+    // Income modules
+    const incEl = document.getElementById('incomeModuleList');
+    if(incEl){
+        const incomeCats = CATS.income;
+        const incTotals = {};
+        DATA.filter(i=>i.type==='income' && i.date.slice(0,7)===CURRENT_MONTH).forEach(i=>{
+            incTotals[i.cate] = (incTotals[i.cate]||0) + i.amount;
+        });
+        const totalIncome = Object.values(incTotals).reduce((s,v)=>s+v,0);
+        incEl.innerHTML = incomeCats.map(c=>{
+            const val = incTotals[c.name]||0;
+            const pct = totalIncome>0 ? (val/totalIncome*100) : 0;
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:20px;">${c.icon}</span>
+                    <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
+                            <span>${c.name}</span>
+                            <span style="color:var(--in);">¥${val.toFixed(2)}</span>
+                        </div>
+                        <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill" style="width:${pct}%;background:var(--in);"></div></div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
     renderAllList();
     renderCateList();
@@ -748,7 +780,9 @@ function getDateLabel(dateStr){
 function toggleMonthBody(el){
     const mb = el.nextElementSibling;
     if(mb && mb.classList.contains('month-body')) {
+        const ym = el.dataset.ym;
         const isOpen = el.classList.contains('open');
+        monthToggle[ym] = !isOpen;
         if(isOpen){
             mb.style.display = 'none';
             el.classList.remove('open');
@@ -799,12 +833,14 @@ function renderGroupedList(list, elId, startCollapsed){
             curMonth = ym;
             const ms = monthStats[ym];
             const net = ms.inc - ms.exp - ms.save;
-            html += `<div class="month-group"><div class="month-title${startCollapsed?'':' open'}" onclick="toggleMonthBody(this)">
+            const userSet = ym in monthToggle;
+            const expanded = userSet ? monthToggle[ym] : (!startCollapsed && ym === CURRENT_MONTH);
+            html += `<div class="month-group"><div class="month-title${expanded?' open':''}" data-ym="${ym}" onclick="toggleMonthBody(this)">
                 ${ym.replace('-','年')+'月'}
                 <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:8px;">收${ms.inc.toFixed(0)} 支${ms.exp.toFixed(0)}${ms.save?' 存'+ms.save.toFixed(0):''}</span>
                 <span style="margin-left:auto;font-size:12px;font-weight:600;color:${net>=0?'var(--in)':'var(--out)'}">${net>=0?'+':''}¥${net.toFixed(0)}</span>
                 <span class="month-arrow">▾</span>
-            </div><div class="month-body${startCollapsed?'':' show'}">`;
+            </div><div class="month-body${expanded?' show':''}">`;
         }
         const label = getDateLabel(date);
         const dayTotal = groups[date].reduce((s,i)=>s+i.amount*(i.type==='income'?1:i.type==='save'?-1:-1),0);
@@ -812,7 +848,7 @@ function renderGroupedList(list, elId, startCollapsed){
             <div class="date-group-header">
                 <span class="date-dot"></span>
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
-                <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(0)}</span>
+                <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(2)}</span>
             </div>`;
         const foodPhotos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
         groups[date].forEach(i=>{
@@ -824,7 +860,7 @@ function renderGroupedList(list, elId, startCollapsed){
             html += `<div class="transaction-item">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
                 <div><div class="tx-cate">${i.mood||''} ${i.cate}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                <div class="tx-amount" style="color:${color};margin-left:auto;">${sign}¥${i.amount.toFixed(i.amount%1?2:0)}</div>
+                <div class="tx-amount" style="color:${color};margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
                 <div class="tx-item-actions">
                     <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
                     <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
@@ -1007,6 +1043,7 @@ function saveTransaction(){
         });
     }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
+    localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     EDIT_ID = null;
     closeSheet();
     refreshAll();
@@ -2055,7 +2092,12 @@ function saveFriendTask(date, friendId, data) {
 })();
 
 function initPeer(){
-    if(PEER) return true;
+    if(PEER) {
+        if(PEER.disconnected){
+            try{ PEER.reconnect(); } catch(e){}
+        }
+        return true;
+    }
     try{
         PEER = new Peer(getUID(), {debug:0});
         PEER.on('open', id=>{
@@ -2068,13 +2110,19 @@ function initPeer(){
             PEER_CONNS[fromId] = conn;
             PEER_STATUS = 'connected';
             conn.on('data', data => handlePeerData(data, fromId));
-            conn.on('close', ()=>{ delete PEER_CONNS[fromId]; });
+            conn.on('close', ()=>{ delete PEER_CONNS[fromId]; updateFriendUI(); });
             conn.on('error', ()=>{});
             sendPendingTasks(fromId);
             updateFriendUI();
         });
-        PEER.on('error', ()=>{});
-        PEER.on('disconnected', ()=>{});
+        PEER.on('error', ()=>{
+            if(PEER) { try{ PEER.destroy(); } catch(e){} PEER = null; }
+        });
+        PEER.on('disconnected', ()=>{
+            PEER_STATUS = 'disconnected';
+            PEER_CONNS = {};
+            try{ PEER.reconnect(); } catch(e){}
+        });
         return true;
     } catch(e){ return false; }
 }
@@ -2399,7 +2447,7 @@ function goToFriendPage(){
 setInterval(() => {
     const friends = getFriends();
     if (friends.length === 0) return;
-    if (!PEER) initPeer();
+    initPeer();
     friends.forEach(f => {
         if (!PEER_CONNS[f.id]) tryConnectFriend(f.id);
     });
