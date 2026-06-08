@@ -190,9 +190,9 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 /* Settings */
 .settings-list{padding:0 16px;}
 .setting-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow);transition:background .3s;border:1px solid var(--border);cursor:pointer;}
-.setting-item:active{opacity:.8;}
+.setting-item:active{background:var(--input-bg);}
 .setting-left{display:flex;align-items:center;gap:10px;}
-.setting-icon{font-size:18px;}
+.setting-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
 .setting-label{font-size:14px;font-weight:500;}
 .setting-right{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;}
 .toggle-switch{width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
@@ -242,6 +242,43 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .chart-mode-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:20px;background:var(--input-bg);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
 .chart-mode-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
 
+/* Cloud shape for shared bill modules */
+.cloud-shape{background:var(--card);border-radius:60px 60px 30px 30px;padding:14px 16px;position:relative;transition:background .3s;border:1px solid var(--border);box-shadow:var(--shadow);}
+.cloud-shape::before{content:'';position:absolute;width:30px;height:30px;background:var(--card);border-radius:50%;top:-12px;left:20px;border:1px solid var(--border);border-bottom:none;border-right:none;z-index:0;}
+.cloud-shape::after{content:'';position:absolute;width:22px;height:22px;background:var(--card);border-radius:50%;top:-8px;left:45px;border:1px solid var(--border);border-bottom:none;border-right:none;z-index:0;}
+.cloud-shape>*{position:relative;z-index:1;}
+.cloud-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+
+/* Chat bubbles */
+.chat-bubble{max-width:75%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.4;word-break:break-word;position:relative;}
+.chat-bubble.mine{background:var(--primary);color:#fff;border-bottom-right-radius:4px;align-self:flex-end;}
+.chat-bubble.theirs{background:var(--input-bg);color:var(--text);border-bottom-left-radius:4px;align-self:flex-start;}
+.chat-time{font-size:10px;color:var(--text2);margin-top:4px;text-align:right;}
+.chat-container{max-height:50vh;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:8px;}
+
+/* Friend request card */
+.request-card{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin:0 16px 8px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.request-card .req-info{flex:1;}
+.request-card .req-info .req-name{font-size:14px;font-weight:600;}
+.request-card .req-info .req-id{font-size:11px;color:var(--text2);}
+.req-btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.req-btn.accept{background:var(--in);color:#fff;}
+.req-btn.reject{background:var(--border);color:var(--text2);}
+
+/* Profile avatar selector */
+.avatar-selector{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0;}
+.avatar-option{width:40px;height:40px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;border:2px solid transparent;cursor:pointer;transition:all .2s;background:var(--input-bg);}
+.avatar-option:active{transform:scale(.9);}
+.avatar-option.active{border-color:var(--primary);background:rgba(108,92,231,.1);}
+#profileAvatar:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.2)!important;}
+
+/* Profile menu */
+.profile-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px;}
+.profile-menu-item{background:var(--card);border-radius:var(--radius);padding:16px 8px;text-align:center;cursor:pointer;box-shadow:var(--shadow);border:1px solid var(--border);transition:transform .15s;}
+.profile-menu-item:active{transform:scale(.94);}
+.profile-menu-item .menu-icon{font-size:26px;margin-bottom:4px;display:block;}
+.profile-menu-item .menu-label{font-size:12px;font-weight:500;color:var(--text2);}
+
 /* Animations */
 .fade-in{animation:fadeIn .3s ease both;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
@@ -266,8 +303,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="header-actions">
                 <span onclick="switchTab('charts')" title="图表">📊</span>
                 <span onclick="openSearch()" title="搜索">🔍</span>
-                <span onclick="switchTab('settings')" title="设置">⚙️</span>
-                <span onclick="switchTab('friend')" title="交友">🤝</span>
             </div>
         </div>
         <div class="month-nav">
@@ -296,7 +331,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <button class="quick-btn save" onclick="openAdd('save')">🏦 记一笔存款</button>
     </div>
     <div class="section-header" style="padding-bottom:6px;">
-        <h2>预算账本</h2>
+        <h2>支出明细</h2>
         <span class="more" onclick="switchTab('all')">全部 →</span>
     </div>
     <div id="budgetModuleList"></div>
@@ -482,6 +517,46 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <div id="friendChatContent"></div>
 </div>
 
+<div class="page" id="pageProfile">
+    <div class="header" style="padding:24px 20px 20px;">
+        <div class="header-top">
+            <h1>我的</h1>
+            <span style="font-size:12px;opacity:.7;">记账本</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:12px;position:relative;z-index:1;">
+            <div id="profileAvatar" style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;border:3px solid rgba(255,255,255,.25);background-size:cover;background-position:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 15px rgba(0,0,0,.15);" onclick="openAvatarSelector()">😊</div>
+            <div style="flex:1;">
+                <div id="profileName" style="font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="editProfileName()">记账本用户 <span style="font-size:14px;opacity:.6;">✏️</span></div>
+                <div style="font-size:13px;opacity:.75;margin-top:4px;" id="profileSubtitle"></div>
+            </div>
+        </div>
+    </div>
+    <div style="padding:8px 16px;">
+        <div style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;">
+            <div class="setting-item" onclick="switchTab('friend')" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;border-bottom:1px solid var(--border);">
+                <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);">🤝</span><span class="setting-label">交友</span></div>
+                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+            </div>
+            <div class="setting-item" onclick="showSavingsGoals()" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;border-bottom:1px solid var(--border);">
+                <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#00b894,#00d2a0);">🐷</span><span class="setting-label">存钱目标</span></div>
+                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+            </div>
+            <div class="setting-item" onclick="showAchievements()" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;border-bottom:1px solid var(--border);">
+                <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#fdcb6e,#e17055);">🏆</span><span class="setting-label">记账成就</span></div>
+                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+            </div>
+            <div class="setting-item" onclick="showBillSharedWithMe()" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;border-bottom:1px solid var(--border);">
+                <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#74b9ff,#0984e3);">☁️</span><span class="setting-label">好友看到的账单</span></div>
+                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+            </div>
+            <div class="setting-item" onclick="switchTab('settings')" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;">
+                <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#636e72,#b2bec3);">⚙️</span><span class="setting-label">设置</span></div>
+                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Task Notification Popup -->
 <div id="taskPopupOverlay">
     <div id="taskPopupBox">
@@ -500,7 +575,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <button class="nav-item" onclick="switchTab('report')"><span class="nav-icon">📊</span><span>报告</span></button>
     <button class="nav-fab" onclick="openAdd('expense')" title="记一笔">＋</button>
     <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
-    <button class="nav-item" onclick="switchTab('all')"><span class="nav-icon">📋</span><span>账单</span></button>
+    <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
 
 <script>
@@ -2016,8 +2091,8 @@ function toggleDark(){
 function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport',friend:'pageFriend'};
-    const navMap = {home:0,report:1,save:3,all:4,charts:-1,settings:-1,friend:-1};
+    const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport',friend:'pageFriend',profile:'pageProfile'};
+    const navMap = {home:0,report:1,save:3,profile:4,all:-1,charts:-1,settings:-1,friend:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
     if(tab==='all') renderAllList();
@@ -2025,6 +2100,7 @@ function switchTab(tab){
     if(tab==='save') renderSavePage();
     if(tab==='report'){ renderReport(); renderReportFriendTasks(); }
     if(tab==='friend') renderFriendPage();
+    if(tab==='profile') renderProfilePage();
 }
 
 // ========== PEERJS FRIEND SYSTEM ==========
@@ -2158,77 +2234,6 @@ function tryConnectFriend(fid){
     } catch(e) { delete PEER_PENDING[fid]; }
 }
 
-function handlePeerData(data, fromId){
-    const today = new Date().toISOString().slice(0,10);
-    if (data.type === 'task') {
-        const taskData = getFriendTask(today, fromId);
-        if (data.task && !taskData.fromFriend) {
-            saveFriendTask(today, fromId, { fromFriend: data.task, done: false, popupShown: false });
-            showTaskPopup(data.task, fromId);
-            const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-            if(all[today] && all[today][fromId]) { all[today][fromId].popupShown = true; localStorage.setItem('jz_friend_tasks', JSON.stringify(all)); }
-            updateFriendUI();
-        }
-    } else if (data.type === 'done') {
-        const taskData = getFriendTask(today, fromId);
-        if (taskData.myTask) {
-            saveFriendTask(today, fromId, { friendDone: true });
-            showToast('🎉 好友完成了你的任务！');
-            updateFriendUI();
-        }
-    }
-}
-
-function sendPendingTasks(fid){
-    const conn = PEER_CONNS[fid];
-    if (!conn) return;
-    const today = new Date().toISOString().slice(0,10);
-    const taskData = getFriendTask(today, fid);
-    if (taskData.myTask) {
-        conn.send({ type: 'task', task: taskData.myTask, from: getUID() });
-    }
-}
-
-function renderFriendPage(){
-    initPeer();
-    const uid = getUID();
-    document.getElementById('myFriendCode').textContent = uid;
-    
-    const friends = getFriends();
-    const listEl = document.getElementById('friendList');
-    
-    if (friends.length === 0) {
-        document.getElementById('friendStatus').innerHTML = '😴 还没有好友，输入对方的好友码开始配对';
-        listEl.innerHTML = '';
-        return;
-    }
-    
-    let onlineCount = 0;
-    friends.forEach(f => { if (PEER_CONNS[f.id]) onlineCount++; });
-    document.getElementById('friendStatus').innerHTML = '🧑‍🤝‍🧑 共 <b>' + friends.length + '</b> 位好友，<b>' + onlineCount + '</b> 位在线';
-    
-    const today = new Date().toISOString().slice(0,10);
-    let html = '';
-    friends.forEach(f => {
-        const isOnline = !!PEER_CONNS[f.id];
-        const taskData = getFriendTask(today, f.id);
-        const preview = taskData.fromFriend ? (taskData.done ? '✅ ' : '🎯 ') + taskData.fromFriend : '💤 暂无任务';
-        
-        html += '<div class="chart-card" style="margin:0 16px 6px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;" onclick="switchToFriendChat(\'' + f.id + '\')">' +
-            '<div style="width:36px;height:36px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:var(--primary);font-weight:700;">' + (f.name ? f.name[0] : f.id[0]) + '</div>' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-                    '<span style="font-size:14px;font-weight:600;">' + (f.name || f.id.slice(0,8)) + '</span>' +
-                    '<span style="font-size:10px;">' + (isOnline ? '🟢' : '🟡') + '</span>' +
-                '</div>' +
-                '<div style="font-size:12px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + preview + '</div>' +
-            '</div>' +
-            '<span style="color:var(--text2);font-size:16px;flex-shrink:0;">›</span>' +
-        '</div>';
-    });
-    listEl.innerHTML = html;
-}
-
 function updateFriendUI() {
     if (document.getElementById('pageFriend') && document.getElementById('pageFriend').classList.contains('active')) {
         renderFriendPage();
@@ -2239,77 +2244,6 @@ function switchToFriendChat(fid) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('pageFriendChat').classList.add('active');
     renderFriendChat(fid);
-}
-
-function renderFriendChat(fid) {
-    const friends = getFriends();
-    const f = friends.find(x => x.id === fid);
-    if (!f) return switchTab('friend');
-    
-    document.getElementById('friendChatTitle').textContent = f.name || f.id.slice(0,8);
-    
-    const isOnline = !!PEER_CONNS[fid];
-    const today = new Date().toISOString().slice(0,10);
-    const taskData = getFriendTask(today, fid);
-    
-    let streak = 0;
-    for(let i=0; i<30; i++){
-        const d = new Date(); d.setDate(d.getDate()-i);
-        const ds = d.toISOString().slice(0,10);
-        const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-        if (all[ds]) {
-            let anyDone = false;
-            for (const td of Object.values(all[ds])) { if (td.done) { anyDone = true; break; } }
-            if (anyDone) streak++;
-            else if (i>0) break;
-        } else if (i>0) break;
-    }
-    
-    let html = '<div style="text-align:center;padding:16px 16px 8px;">' +
-        '<div style="width:48px;height:48px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 6px;color:var(--primary);font-weight:700;">' + (f.name ? f.name[0] : f.id[0]) + '</div>' +
-        '<div style="font-size:14px;font-weight:600;">' + (f.name || f.id.slice(0,8)) + '</div>' +
-        '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (isOnline ? '🟢 在线' : '🟡 离线') + ' · 连续打卡 ' + streak + ' 天 🔥</div>' +
-        '<span style="font-size:11px;color:var(--out);cursor:pointer;" onclick="removeFriend(\'' + fid + '\')">✕ 删除好友</span>' +
-    '</div>';
-    
-    // Task from friend
-    html += '<div style="margin:4px 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
-        '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">📋 对方给你的任务</div>';
-    if (taskData.fromFriend) {
-        html += '<div style="padding:12px;background:var(--input-bg);border-radius:8px;font-size:15px;display:flex;align-items:center;gap:10px;">' +
-            '<span style="flex:1;' + (taskData.done?'opacity:.5;text-decoration:line-through;':'') + '">' + taskData.fromFriend + '</span>';
-        if (!taskData.done) {
-            html += '<button onclick="doTaskDone(\'' + fid + '\');renderFriendChat(\'' + fid + '\')" style="padding:8px 16px;border:none;border-radius:8px;background:var(--in);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 完成</button>';
-        } else {
-            html += '<span style="font-size:13px;color:var(--in);font-weight:600;">已完成</span>';
-        }
-        html += '</div>';
-    } else {
-        html += '<div style="font-size:13px;color:var(--text2);text-align:center;padding:8px;">💤 暂无任务</div>';
-    }
-    html += '</div>';
-    
-    // My task to friend
-    html += '<div style="margin:0 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
-        '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">🎯 你给他/她的任务</div>' +
-        '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🚶 走8000步</button>' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">📚 学习1小时</button>' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">💧 喝8杯水</button>' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🧘 冥想10分钟</button>' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">📖 读20页书</button>' +
-            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🏃 跑步2公里</button>' +
-        '</div>' +
-        '<div style="display:flex;gap:8px;">' +
-            '<input type="text" class="taskInputForFriend" data-fid="' + fid + '" placeholder="自定义任务..." value="' + (taskData.myTask||'') + '" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);"' + (taskData.myTask?' readonly':'') + '>' +
-            '<button onclick="setTaskForFriend(\'' + fid + '\');renderFriendChat(\'' + fid + '\')" style="padding:10px 16px;border:none;border-radius:8px;background:' + (taskData.myTask?'var(--border)':'var(--primary)') + ';color:' + (taskData.myTask?'var(--text2)':'#fff') + ';font-size:13px;font-weight:600;cursor:pointer;"' + (taskData.myTask?' disabled':'') + '>' + (taskData.myTask?'已发送':'📤 发送') + '</button>' +
-        '</div>';
-    if (taskData.myTask && taskData.friendDone) {
-        html += '<div style="margin-top:8px;font-size:13px;color:var(--in);font-weight:600;text-align:center;">🎉 好友已完成此任务！</div>';
-    }
-    html += '</div>';
-    
-    document.getElementById('friendChatContent').innerHTML = html;
 }
 
 function renderReportFriendTasks() {
@@ -2343,32 +2277,29 @@ function renderReportFriendTasks() {
     el.innerHTML = html;
 }
 
-function connectFriend(){
-    const code = document.getElementById('friendCodeInput').value.trim();
-    if (!code) return showToast('请输入好友码');
-    if (code === getUID()) return showToast('不能添加自己');
-    const friends = getFriends();
-    if (friends.find(f => f.id === code)) return showToast('已经是好友了');
-    friends.push({ id: code, name: '' });
-    saveFriends(friends);
-    initPeer();
-    tryConnectFriend(code);
-    document.getElementById('friendCodeInput').value = '';
-    showToast('✅ 添加好友成功！');
-    renderFriendPage();
-}
-
 function removeFriend(fid) {
     if (!confirm('确定删除该好友吗？相关的任务数据也会删除。')) return;
     let friends = getFriends();
     friends = friends.filter(f => f.id !== fid);
     saveFriends(friends);
     if (PEER_CONNS[fid]) { PEER_CONNS[fid].close(); delete PEER_CONNS[fid]; }
-    const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-    for (const date of Object.keys(all)) {
-        delete all[date][fid];
+    const tasks = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+    for (const date of Object.keys(tasks)) {
+        delete tasks[date][fid];
     }
-    localStorage.setItem('jz_friend_tasks', JSON.stringify(all));
+    localStorage.setItem('jz_friend_tasks', JSON.stringify(tasks));
+    // Clean up chat messages
+    const chats = JSON.parse(localStorage.getItem('jz_chat_messages') || '{}');
+    delete chats[fid];
+    localStorage.setItem('jz_chat_messages', JSON.stringify(chats));
+    // Clean up bill shares
+    const shares = getBillShares();
+    delete shares[fid];
+    saveBillShares(shares);
+    // Clean up friend requests
+    const reqs = getFriendRequests();
+    const idx = reqs.findIndex(r => r.id === fid);
+    if(idx>=0) { reqs.splice(idx,1); saveFriendRequests(reqs); }
     showToast('已删除好友');
     switchTab('friend');
 }
@@ -2415,7 +2346,752 @@ function doTaskDone(fid) {
     renderFriendPage();
 }
 
-// ========== URL HASH TASK SHARING ==========
+// ========== PROFILE PAGE ==========
+function renderProfilePage(){
+    const name = localStorage.getItem('jz_profile_name') || '记账本用户';
+    const avatar = localStorage.getItem('jz_profile_avatar') || '😊';
+    const avatarEl = document.getElementById('profileAvatar');
+    if(avatar.startsWith('data:')){
+        avatarEl.style.backgroundImage = 'url(' + avatar + ')';
+        avatarEl.textContent = '';
+    } else {
+        avatarEl.style.backgroundImage = '';
+        avatarEl.textContent = avatar;
+    }
+    document.getElementById('profileName').textContent = name;
+    const inc = DATA.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const exp = DATA.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const sav = DATA.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const friends = getFriends();
+    document.getElementById('profileSubtitle').textContent = '📊 ' + DATA.length + ' 笔  ·  💰¥' + inc.toFixed(0) + '  ·  💸¥' + exp.toFixed(0) + '  ·  🏦¥' + sav.toFixed(0) + '  ·  🤝' + friends.length + ' 位好友';
+}
+
+function openAvatarSelector(){
+    const avatars = ['😊','😎','🤩','😍','🥰','😇','🤗','😺','🐱','🐶','🦊','🐼','🐨','🦁','🐮','🐸','🐵','🦄','🐧','🐤','🌸','🌻','🌈','⭐','🔥','💎','🎮','📚','🎵','🎨','🏀','⚽','🚀','🌊'];
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay show';
+    overlay.id = 'avatarSelectorOverlay';
+    overlay.onclick = function(){ this.remove(); document.getElementById('avatarSheet')?.remove(); };
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.id = 'avatarSheet';
+    sheet.style.cssText = 'z-index:10002;max-height:60vh;overflow-y:auto;';
+    const current = localStorage.getItem('jz_profile_avatar') || '😊';
+    const isImg = current.startsWith('data:');
+    sheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2>选择头像</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('avatarSelectorOverlay').remove();">✕</button></div>
+    <div class="sheet-body">
+        <button onclick="document.getElementById('avatarFileInput').click()" style="width:100%;padding:14px;border:2px dashed var(--border);border-radius:12px;background:var(--input-bg);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;">📷 从相册选择</button>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">或选择表情</div>
+        <div class="avatar-selector">${avatars.map(a => `<span class="avatar-option${a===current?' active':''}" onclick="setAvatar('${a}')">${a}</span>`).join('')}</div>
+        ${isImg?'<button onclick="setAvatar(\'😊\')" style="width:100%;margin-top:12px;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text2);font-size:13px;cursor:pointer;">🔄 恢复默认头像</button>':''}
+    </div>`;
+    document.body.appendChild(sheet);
+    document.body.appendChild(overlay);
+    // Ensure file input exists
+    let fileInput = document.getElementById('avatarFileInput');
+    if(!fileInput){
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'avatarFileInput';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.onchange = function(e){
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev){
+                localStorage.setItem('jz_profile_avatar', ev.target.result);
+                document.getElementById('avatarSheet')?.remove();
+                document.getElementById('avatarSelectorOverlay')?.remove();
+                renderProfilePage();
+                showToast('✅ 头像已更新');
+            };
+            reader.readAsDataURL(file);
+            this.value = '';
+        };
+        document.body.appendChild(fileInput);
+    }
+}
+
+function setAvatar(a){
+    localStorage.setItem('jz_profile_avatar', a);
+    document.querySelectorAll('.avatar-option').forEach(el=>el.classList.remove('active'));
+    event.target.classList.add('active');
+    setTimeout(()=>{ document.getElementById('avatarSheet')?.remove(); document.getElementById('avatarSelectorOverlay')?.remove(); renderProfilePage(); }, 200);
+}
+
+function editProfileName(){
+    const current = localStorage.getItem('jz_profile_name') || '记账本用户';
+    const name = prompt('修改昵称：', current);
+    if(name && name.trim()){
+        localStorage.setItem('jz_profile_name', name.trim());
+        renderProfilePage();
+    }
+}
+
+// ========== SAVINGS GOALS ==========
+function getSavingsGoals(){
+    let goals = [];
+    try { goals = JSON.parse(localStorage.getItem('jz_savings_goals')); } catch(e){}
+    if(!Array.isArray(goals)) goals = [];
+    return goals;
+}
+function saveSavingsGoals(goals){
+    localStorage.setItem('jz_savings_goals', JSON.stringify(goals));
+}
+function showSavingsGoals(){
+    const goals = getSavingsGoals();
+    const totalSaved = DATA.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:10002;max-height:80vh;overflow-y:auto;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🐷 存钱目标</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div><div class="sheet-body">';
+    if(goals.length === 0){
+        html += '<div style="text-align:center;padding:24px;color:var(--text2);font-size:14px;">还没有存钱目标，添加一个吧 🎯</div>';
+    } else {
+        goals.forEach((g,i)=>{
+            const pct = g.target > 0 ? Math.min(g.saved/g.target*100,100) : 0;
+            html += '<div style="background:var(--input-bg);border-radius:12px;padding:14px;margin-bottom:10px;">' +
+                '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:4px;">' +
+                    '<span>' + g.icon + ' ' + g.name + '</span>' +
+                    '<span>¥' + g.saved.toFixed(0) + ' / ¥' + g.target.toFixed(0) + '</span>' +
+                '</div>' +
+                '<div class="budget-bar" style="height:8px;margin-bottom:4px;"><div class="budget-fill good" style="width:' + pct + '%;background:' + (pct>=100?'var(--out)':'var(--in)') + ';"></div></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);">' +
+                    '<span>' + pct.toFixed(0) + '%</span>' +
+                    '<span style="cursor:pointer;color:var(--out);" onclick="deleteSavingsGoal(' + i + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');showSavingsGoals();">🗑️ 删除</span>' +
+                '</div></div>';
+        });
+    }
+    html += '<div style="margin-top:12px;"><div style="font-size:12px;color:var(--text2);margin-bottom:6px;">总存款余额：<b style="color:var(--primary);">¥' + totalSaved.toFixed(0) + '</b></div></div>';
+    html += '<div style="background:var(--input-bg);border-radius:12px;padding:14px;margin-top:10px;">' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">✨ 新建目标</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
+            '<select id="goalIcon" style="flex:none;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);">' +
+                '<option>🐷</option><option>🎁</option><option>✈️</option><option>📱</option><option>🚗</option><option>🏠</option><option>💻</option><option>👗</option><option>🎮</option><option>📚</option>' +
+            '</select>' +
+            '<input type="text" id="goalName" placeholder="目标名称" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--input-bg);color:var(--text);">' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:8px;">' +
+            '<input type="number" id="goalTarget" placeholder="目标金额" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--input-bg);color:var(--text);">' +
+        '</div>' +
+        '<button onclick="addSavingsGoal()" style="width:100%;padding:10px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">➕ 添加目标</button>' +
+    '</div></div>';
+    sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+function addSavingsGoal(){
+    const icon = document.getElementById('goalIcon').value;
+    const name = document.getElementById('goalName').value.trim();
+    const target = parseFloat(document.getElementById('goalTarget').value);
+    if(!name) return showToast('请输入目标名称');
+    if(!target || target<=0) return showToast('请输入有效目标金额');
+    const goals = getSavingsGoals();
+    goals.push({ id: Date.now(), icon, name, target, saved: 0, created: Date.now() });
+    saveSavingsGoals(goals);
+    showToast('✅ 目标已添加');
+    document.querySelector('.sheet.show')?.remove();
+    document.getElementById('overlay')?.classList.remove('show');
+    showSavingsGoals();
+}
+function deleteSavingsGoal(idx){
+    const goals = getSavingsGoals();
+    if(idx>=0 && idx<goals.length) goals.splice(idx,1);
+    saveSavingsGoals(goals);
+}
+
+// ========== ACHIEVEMENTS ==========
+function showAchievements(){
+    const all = DATA;
+    const totalExp = all.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const totalInc = all.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const totalSave = all.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const dates = [...new Set(all.map(i=>i.date))].sort();
+    const days = dates.length;
+    const streak = getMaxStreak(dates);
+    const friends = getFriends();
+    const budgetMonths = getBudgetMonths();
+    const moods = all.filter(i=>i.mood).length;
+
+    const achievements = [
+        { icon: '📝', name: '初次记账', check: days>=1, desc: '记下第一笔账' },
+        { icon: '🔥', name: '坚持7天', check: days>=7, desc: '累计记账7天' },
+        { icon: '🔥', name: '坚持30天', check: days>=30, desc: '累计记账30天' },
+        { icon: '💪', name: '坚持100天', check: days>=100, desc: '累计记账100天' },
+        { icon: '⚡', name: '连续7天', check: streak>=7, desc: '连续7天每天都记账' },
+        { icon: '🏦', name: '存钱新手', check: totalSave>=100, desc: '累计存款超过¥100' },
+        { icon: '🏦', name: '存钱达人', check: totalSave>=1000, desc: '累计存款超过¥1,000' },
+        { icon: '💰', name: '存款过万', check: totalSave>=10000, desc: '累计存款超过¥10,000' },
+        { icon: '🐷', name: '小富翁', check: totalSave>=50000, desc: '累计存款超过¥50,000' },
+        { icon: '📊', name: '收支平衡', check: totalInc>=totalExp && totalInc>0, desc: '总收入≥总支出' },
+        { icon: '💸', name: '花钱能手', check: totalExp>=10000, desc: '累计支出超过¥10,000' },
+        { icon: '🤝', name: '社交达人', check: friends.length>=1, desc: '添加第一位好友' },
+        { icon: '🤝', name: '好友成群', check: friends.length>=3, desc: '拥有3位好友' },
+        { icon: '😊', name: '心情记录', check: moods>=10, desc: '记账时记录10次心情' },
+        { icon: '🎯', name: '预算卫士', check: budgetMonths>=1, desc: '1个月支出未超预算' },
+        { icon: '🎯', name: '预算大师', check: budgetMonths>=3, desc: '连续3个月未超预算' },
+        { icon: '📸', name: '美食猎人', check: checkFoodPhotos(), desc: '拍下3次食物照片' },
+    ];
+
+    const unlocked = achievements.filter(a=>a.check).length;
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:10002;max-height:80vh;overflow-y:auto;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🏆 记账成就</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div><div class="sheet-body">' +
+        '<div style="text-align:center;padding:8px 0 16px;"><span style="font-size:32px;display:block;margin-bottom:4px;">🏆</span><span style="font-size:14px;font-weight:600;">已解锁 ' + unlocked + '/' + achievements.length + '</span></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
+    achievements.forEach(a => {
+        html += '<div style="background:' + (a.check?'var(--input-bg)':'var(--card)') + ';border-radius:12px;padding:12px 6px;text-align:center;border:1px solid ' + (a.check?'var(--primary)':'var(--border)') + ';opacity:' + (a.check?'1':'.4') + ';">' +
+            '<div style="font-size:26px;margin-bottom:4px;">' + a.icon + '</div>' +
+            '<div style="font-size:11px;font-weight:600;color:var(--text);">' + a.name + '</div>' +
+            '<div style="font-size:9px;color:var(--text2);margin-top:2px;">' + a.desc + '</div>' +
+            (a.check ? '<div style="font-size:9px;color:var(--in);margin-top:2px;">✅</div>' : '') +
+        '</div>';
+    });
+    html += '</div></div>';
+    sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+function getMaxStreak(dates){
+    if(!dates.length) return 0;
+    let maxStr = 1, cur = 1;
+    for(let i=1; i<dates.length; i++){
+        const prev = new Date(dates[i-1]);
+        const curD = new Date(dates[i]);
+        const diff = (curD - prev) / 86400000;
+        if(diff===1) cur++;
+        else { maxStr = Math.max(maxStr,cur); cur = 1; }
+    }
+    return Math.max(maxStr,cur);
+}
+function getBudgetMonths(){
+    const months = [...new Set(DATA.filter(i=>i.type==='expense').map(i=>i.date.slice(0,7)))].sort();
+    let okCount = 0;
+    months.forEach(m => {
+        const inc = DATA.filter(i=>i.type==='income'&&i.date.slice(0,7)===m).reduce((s,i)=>s+i.amount,0);
+        const exp = DATA.filter(i=>i.type==='expense'&&i.date.slice(0,7)===m).reduce((s,i)=>s+i.amount,0);
+        if(inc>0 && exp <= inc*0.7) okCount++;
+    });
+    return okCount;
+}
+function checkFoodPhotos(){
+    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
+    return Object.keys(photos).length >= 3;
+}
+
+// ========== FRIEND REQUESTS ==========
+function getFriendRequests(){
+    let reqs = [];
+    try { reqs = JSON.parse(localStorage.getItem('jz_friend_requests')); } catch(e){}
+    if(!Array.isArray(reqs)) reqs = [];
+    return reqs;
+}
+
+function saveFriendRequests(reqs){
+    localStorage.setItem('jz_friend_requests', JSON.stringify(reqs));
+}
+
+function sendFriendRequest(fid){
+    const conn = PEER_CONNS[fid];
+    if(conn && conn.open){
+        conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+    }
+}
+
+function connectFriend(){
+    const code = document.getElementById('friendCodeInput').value.trim();
+    if (!code) return showToast('请输入好友码');
+    if (code === getUID()) return showToast('不能添加自己');
+    const friends = getFriends();
+    if (friends.find(f => f.id === code)) return showToast('已经是好友了');
+    const reqs = getFriendRequests();
+    if(reqs.find(r => r.id === code && r.status !== 'rejected')) return showToast('已发送过好友请求');
+    reqs.push({ id: code, status: 'sent', direction: 'sent', time: Date.now() });
+    saveFriendRequests(reqs);
+    initPeer();
+    tryConnectFriend(code);
+    sendFriendRequest(code);
+    document.getElementById('friendCodeInput').value = '';
+    showToast('📩 好友请求已发送，等待对方同意');
+    renderFriendPage();
+}
+
+function approveFriendRequest(fid, fname){
+    const friends = getFriends();
+    if(friends.find(f => f.id === fid)) return showToast('已经是好友了');
+    friends.push({ id: fid, name: fname || '' });
+    saveFriends(friends);
+    const reqs = getFriendRequests();
+    const idx = reqs.findIndex(r => r.id === fid);
+    if(idx>=0) { reqs.splice(idx,1); saveFriendRequests(reqs); }
+    const conn = PEER_CONNS[fid];
+    if(conn && conn.open){
+        conn.send({ type: 'friend_request_accept', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+    }
+    initPeer();
+    tryConnectFriend(fid);
+    showToast('✅ 已同意好友请求');
+    renderFriendPage();
+}
+
+function rejectFriendRequest(fid){
+    const reqs = getFriendRequests();
+    const idx = reqs.findIndex(r => r.id === fid);
+    if(idx>=0) { reqs[idx].status = 'rejected'; saveFriendRequests(reqs); }
+    const conn = PEER_CONNS[fid];
+    if(conn && conn.open){
+        conn.send({ type: 'friend_request_reject', from: getUID() });
+    }
+    showToast('已拒绝');
+    renderFriendPage();
+}
+
+// ========== CHAT MESSAGES ==========
+function getChatMessages(fid){
+    const all = JSON.parse(localStorage.getItem('jz_chat_messages') || '{}');
+    return all[fid] || [];
+}
+
+function saveChatMessage(fid, msg){
+    const all = JSON.parse(localStorage.getItem('jz_chat_messages') || '{}');
+    if(!all[fid]) all[fid] = [];
+    all[fid].push(msg);
+    localStorage.setItem('jz_chat_messages', JSON.stringify(all));
+}
+
+function sendChatMessage(fid, text){
+    const conn = PEER_CONNS[fid];
+    if(!conn || !conn.open) return showToast('好友不在线，消息将在上线后发送');
+    conn.send({ type: 'chat', text, from: getUID(), time: Date.now() });
+    saveChatMessage(fid, { text, mine: true, time: Date.now() });
+}
+
+// ========== BILL SHARING ==========
+function getBillShares(){
+    let shares = {};
+    try { shares = JSON.parse(localStorage.getItem('jz_bill_shares')); } catch(e){}
+    if(typeof shares !== 'object' || shares === null) shares = {};
+    return shares;
+}
+
+function saveBillShares(shares){
+    localStorage.setItem('jz_bill_shares', JSON.stringify(shares));
+}
+
+function requestViewBill(fid){
+    const conn = PEER_CONNS[fid];
+    if(!conn || !conn.open) return showToast('好友不在线，无法申请');
+    conn.send({ type: 'bill_view_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+    showToast('📩 已发送账单查看申请');
+}
+
+function approveBillView(fid, duration){
+    const expires = duration === -1 ? 9999999999999 : Date.now() + duration * 86400000;
+    const shares = getBillShares();
+    if(!shares[fid]) shares[fid] = {};
+    shares[fid].viewing = { approved: true, expires };
+    saveBillShares(shares);
+    const conn = PEER_CONNS[fid];
+    if(conn && conn.open){
+        // Send approval and current bill data
+        const monthExpense = DATA.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+        const catTotals = {};
+        DATA.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+        const totalInc = DATA.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+        const totalSave = DATA.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+        const durationLabel = duration === -1 ? '永久' : duration === 1 ? '1天' : duration === 10 ? '10天' : '30天';
+        conn.send({ type: 'bill_view_approved', from: getUID(), duration: durationLabel, data: { catTotals, totalExpense: monthExpense, totalIncome: totalInc, totalSave } });
+    }
+    showToast('✅ 已同意查看账单');
+}
+
+function showBillSharedWithMe(){
+    const shares = getBillShares();
+    const friends = getFriends();
+    const sharedBy = [];
+    for(const [fid, share] of Object.entries(shares)){
+        if(share.viewing && share.viewing.approved){
+            const f = friends.find(x => x.id === fid);
+            sharedBy.push({ fid, name: f ? (f.name || fid.slice(0,8)) : fid.slice(0,8), expires: share.viewing.expires });
+        }
+    }
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:10002;max-height:70vh;overflow-y:auto;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>☁️ 好友看到的账单</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div><div class="sheet-body">';
+    if(!sharedBy.length){
+        html += '<div style="text-align:center;padding:24px;color:var(--text2);font-size:14px;">暂无好友有权查看你的账单</div>';
+    } else {
+        sharedBy.forEach(s => {
+            const expired = s.expires < Date.now();
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--border);">' +
+                '<div style="flex:1;"><span style="font-weight:600;">' + s.name + '</span><span style="font-size:12px;color:var(--text2);margin-left:8px;">' + (expired?'❌ 已过期':'✅ 有效中') + '</span></div>' +
+                '<button onclick="revokeBillShare(\'' + s.fid + '\')" style="padding:6px 12px;border:none;border-radius:6px;background:var(--out);color:#fff;font-size:12px;cursor:pointer;">撤回</button>' +
+            '</div>';
+        });
+    }
+    html += '</div>';
+    sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+
+function revokeBillShare(fid){
+    const shares = getBillShares();
+    if(shares[fid]) delete shares[fid].viewing;
+    saveBillShares(shares);
+    const conn = PEER_CONNS[fid];
+    if(conn && conn.open) conn.send({ type: 'bill_view_revoked', from: getUID() });
+    showToast('已撤回账单查看权限');
+    document.querySelector('.sheet.show')?.remove();
+    document.getElementById('overlay')?.classList.remove('show');
+}
+
+// ========== UPDATED FRIEND PAGE WITH REQUESTS ==========
+function renderFriendPage(){
+    initPeer();
+    const uid = getUID();
+    document.getElementById('myFriendCode').textContent = uid;
+    
+    const friends = getFriends();
+    const listEl = document.getElementById('friendList');
+    
+    // Check for pending requests
+    const reqs = getFriendRequests();
+    const incomingReqs = reqs.filter(r => r.direction === 'received' && r.status === 'pending');
+    const sentReqs = reqs.filter(r => r.direction === 'sent' && r.status !== 'accepted');
+    
+    let statusHtml = '';
+    if(incomingReqs.length > 0){
+        statusHtml = '📩 有 <b>' + incomingReqs.length + '</b> 条好友请求待处理';
+    } else if(sentReqs.length > 0){
+        statusHtml = '📤 已发送 <b>' + sentReqs.length + '</b> 条好友请求，等待对方同意';
+    } else if(friends.length === 0){
+        statusHtml = '😴 还没有好友，快去添加吧';
+    } else {
+        let onlineCount = 0;
+        friends.forEach(f => { if (PEER_CONNS[f.id]) onlineCount++; });
+        statusHtml = '🧑‍🤝‍🧑 共 <b>' + friends.length + '</b> 位好友，<b>' + onlineCount + '</b> 位在线';
+    }
+    document.getElementById('friendStatus').innerHTML = statusHtml;
+    
+    // Show incoming requests
+    let reqHtml = '';
+    incomingReqs.forEach(r => {
+        reqHtml += '<div class="request-card">' +
+            '<div class="req-info"><div class="req-name">👤 ' + (r.name || r.id.slice(0,8)) + '</div><div class="req-id">请求加为好友 · ' + r.id.slice(0,8) + '</div></div>' +
+            '<button class="req-btn accept" onclick="approveFriendRequest(\'' + r.id + '\',\'' + (r.name || '') + '\')">同意</button>' +
+            '<button class="req-btn reject" onclick="rejectFriendRequest(\'' + r.id + '\')">拒绝</button>' +
+        '</div>';
+    });
+    
+    if(friends.length === 0){
+        listEl.innerHTML = reqHtml + '<div class="empty-state"><div class="empty-icon">🤝</div><p>暂无好友，上方输入好友码添加</p></div>';
+        return;
+    }
+    
+    const today = new Date().toISOString().slice(0,10);
+    let html = reqHtml;
+    friends.forEach(f => {
+        const isOnline = !!PEER_CONNS[f.id];
+        const taskData = getFriendTask(today, f.id);
+        const preview = taskData.fromFriend ? (taskData.done ? '✅ ' : '🎯 ') + taskData.fromFriend : (taskData.myTask ? '📤 已发任务' : '💤 暂无任务');
+        const avatar = f.avatar || f.name?.[0] || f.id[0];
+        
+        html += '<div class="chart-card" style="margin:0 16px 6px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;" onclick="switchToFriendChat(\'' + f.id + '\')">' +
+            '<div style="width:40px;height:40px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单">' + avatar + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<span style="font-size:14px;font-weight:600;">' + (f.name || f.id.slice(0,8)) + '</span>' +
+                    '<span style="font-size:10px;">' + (isOnline ? '🟢' : '🟡') + '</span>' +
+                '</div>' +
+                '<div style="font-size:12px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + preview + '</div>' +
+            '</div>' +
+            '<span style="color:var(--text2);font-size:16px;flex-shrink:0;">›</span>' +
+        '</div>';
+    });
+    listEl.innerHTML = html;
+}
+
+// ========== UPDATED FRIEND CHAT WITH MESSAGING ==========
+function renderFriendChat(fid){
+    const friends = getFriends();
+    const f = friends.find(x => x.id === fid);
+    if (!f) return switchTab('friend');
+    
+    document.getElementById('friendChatTitle').textContent = f.name || f.id.slice(0,8);
+    document.getElementById('friendChatTitle').dataset.fid = fid;
+    
+    const isOnline = !!PEER_CONNS[fid];
+    const today = new Date().toISOString().slice(0,10);
+    const taskData = getFriendTask(today, fid);
+    const avatar = f.avatar || f.name?.[0] || f.id[0];
+    
+    let streak = 0;
+    for(let i=0; i<30; i++){
+        const d = new Date(); d.setDate(d.getDate()-i);
+        const ds = d.toISOString().slice(0,10);
+        const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+        if (all[ds]) {
+            let anyDone = false;
+            for (const td of Object.values(all[ds])) { if (td.done) { anyDone = true; break; } }
+            if (anyDone) streak++;
+            else if (i>0) break;
+        } else if (i>0) break;
+    }
+    
+    let html = '<div style="text-align:center;padding:16px 16px 8px;">' +
+        '<div style="width:52px;height:52px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;cursor:pointer;" onclick="event.stopPropagation();editFriendNickname(\'' + fid + '\')" title="修改备注">' + avatar + '</div>' +
+        '<div style="font-size:14px;font-weight:600;cursor:pointer;" onclick="editFriendNickname(\'' + fid + '\')">' + (f.name || f.id.slice(0,8)) + ' ✏️</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (isOnline ? '🟢 在线' : '🟡 离线') + ' · 连续打卡 ' + streak + ' 天 🔥</div>' +
+        '<div style="display:flex;justify-content:center;gap:8px;margin-top:4px;">' +
+            '<span style="font-size:11px;color:var(--primary);cursor:pointer;" onclick="requestViewBill(\'' + fid + '\')">☁️ 申请看账单</span>' +
+            '<span style="font-size:11px;color:var(--out);cursor:pointer;" onclick="removeFriend(\'' + fid + '\')">✕ 删除好友</span>' +
+        '</div>' +
+    '</div>';
+    
+    // Task from friend
+    html += '<div style="margin:4px 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
+        '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">📋 对方给你的任务</div>';
+    if (taskData.fromFriend) {
+        html += '<div style="padding:12px;background:var(--input-bg);border-radius:8px;font-size:15px;display:flex;align-items:center;gap:10px;">' +
+            '<span style="flex:1;' + (taskData.done?'opacity:.5;text-decoration:line-through;':'') + '">' + taskData.fromFriend + '</span>';
+        if (!taskData.done) {
+            html += '<button onclick="doTaskDone(\'' + fid + '\');renderFriendChat(\'' + fid + '\')" style="padding:8px 16px;border:none;border-radius:8px;background:var(--in);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 完成</button>';
+        } else {
+            html += '<span style="font-size:13px;color:var(--in);font-weight:600;">已完成</span>';
+        }
+        html += '</div>';
+    } else {
+        html += '<div style="font-size:13px;color:var(--text2);text-align:center;padding:8px;">💤 暂无任务</div>';
+    }
+    html += '</div>';
+    
+    // My task to friend
+    html += '<div style="margin:0 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
+        '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">🎯 你给他/她的任务</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🚶 走8000步</button>' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">📚 学习1小时</button>' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">💧 喝8杯水</button>' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🧘 冥想10分钟</button>' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">📖 读20页书</button>' +
+            '<button class="task-suggest" onclick="pickSuggestFor(\'' + fid + '\', this)">🏃 跑步2公里</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+            '<input type="text" class="taskInputForFriend" data-fid="' + fid + '" placeholder="自定义任务..." value="' + (taskData.myTask||'') + '" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);"' + (taskData.myTask?' readonly':'') + '>' +
+            '<button onclick="setTaskForFriend(\'' + fid + '\');renderFriendChat(\'' + fid + '\')" style="padding:10px 16px;border:none;border-radius:8px;background:' + (taskData.myTask?'var(--border)':'var(--primary)') + ';color:' + (taskData.myTask?'var(--text2)':'#fff') + ';font-size:13px;font-weight:600;cursor:pointer;"' + (taskData.myTask?' disabled':'') + '>' + (taskData.myTask?'已发送':'📤 发送') + '</button>' +
+        '</div>';
+    if (taskData.myTask && taskData.friendDone) {
+        html += '<div style="margin-top:8px;font-size:13px;color:var(--in);font-weight:600;text-align:center;">🎉 好友已完成此任务！</div>';
+    }
+    html += '</div>';
+    
+    // Chat messages
+    const messages = getChatMessages(fid);
+    html += '<div style="margin:0 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
+        '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">💬 聊天记录</div>';
+    if (messages.length > 0) {
+        html += '<div class="chat-container" style="max-height:250px;">';
+        messages.forEach(m => {
+            const timeStr = new Date(m.time).toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+            html += '<div style="display:flex;flex-direction:column;align-items:' + (m.mine?'flex-end':'flex-start') + ';">' +
+                '<div class="chat-bubble ' + (m.mine?'mine':'theirs') + '">' + m.text + '</div>' +
+                '<div class="chat-time">' + timeStr + '</div>' +
+            '</div>';
+        });
+        html += '</div>';
+    } else {
+        html += '<div style="font-size:13px;color:var(--text2);text-align:center;padding:8px;">暂无聊天记录</div>';
+    }
+    html += '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        '<input type="text" id="chatInput_' + fid + '" placeholder="发消息..." style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);" onkeydown="if(event.key===\'Enter\')sendChatMessageFromChat(\'' + fid + '\')">' +
+        '<button onclick="sendChatMessageFromChat(\'' + fid + '\')" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">📤 发送</button>' +
+    '</div></div>';
+    
+    // Shared bill data (if approved)
+    const shares = getBillShares();
+    const myShare = shares[fid];
+    if(myShare && myShare.viewing && myShare.viewing.approved && myShare.viewing.expires > Date.now()){
+        html += '<div style="margin:0 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);">' +
+            '<div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500;">☁️ 对方账单（已授权）</div>';
+        if(myShare.viewing.data){
+            html += renderCloudBills(myShare.viewing.data);
+        }
+        html += '</div>';
+    } else if(myShare && myShare.viewing && myShare.viewing.approved && myShare.viewing.expires <= Date.now()){
+        html += '<div style="margin:0 16px 10px;padding:16px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);text-align:center;font-size:13px;color:var(--text2);">☁️ 账单查看权限已过期</div>';
+    }
+    
+    document.getElementById('friendChatContent').innerHTML = html;
+}
+
+function sendChatMessageFromChat(fid){
+    const input = document.getElementById('chatInput_' + fid);
+    if(!input || !input.value.trim()) return;
+    sendChatMessage(fid, input.value.trim());
+    input.value = '';
+    renderFriendChat(fid);
+}
+
+function editFriendNickname(fid){
+    const friends = getFriends();
+    const f = friends.find(x => x.id === fid);
+    if(!f) return;
+    const name = prompt('修改备注名：', f.name || '');
+    if(name !== null){
+        f.name = name.trim();
+        saveFriends(friends);
+        renderFriendChat(fid);
+        renderFriendPage();
+    }
+}
+
+function renderCloudBills(data){
+    if(!data || !data.catTotals) return '';
+    const entries = Object.entries(data.catTotals).sort((a,b)=>b[1]-a[1]);
+    const totalExpense = data.totalExpense || 0;
+    let html = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">';
+    entries.forEach(([cate, amt]) => {
+        const pct = totalExpense > 0 ? Math.round(amt/totalExpense*100) : 0;
+        html += '<div class="cloud-shape" style="text-align:center;">' +
+            '<div style="font-size:22px;margin-bottom:4px;">' + (findCat('expense',cate).icon) + '</div>' +
+            '<div style="font-size:12px;font-weight:600;">' + cate + '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--out);">¥' + amt.toFixed(0) + '</div>' +
+            '<div style="font-size:10px;color:var(--text2);">占 ' + pct + '%</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-around;margin-top:8px;font-size:12px;color:var(--text2);">' +
+        '<span>总支 <b style="color:var(--out);">¥' + totalExpense.toFixed(0) + '</b></span>' +
+        '<span>总收 <b style="color:var(--in);">¥' + (data.totalIncome||0).toFixed(0) + '</b></span>' +
+        '<span>存款 <b style="color:var(--primary);">¥' + (data.totalSave||0).toFixed(0) + '</b></span>' +
+    '</div>';
+    return html;
+}
+
+// ========== UPDATED handlePeerData ==========
+function handlePeerData(data, fromId){
+    const today = new Date().toISOString().slice(0,10);
+    if (data.type === 'task') {
+        const taskData = getFriendTask(today, fromId);
+        if (data.task && !taskData.fromFriend) {
+            saveFriendTask(today, fromId, { fromFriend: data.task, done: false, popupShown: false });
+            showTaskPopup(data.task, fromId);
+            const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
+            if(all[today] && all[today][fromId]) { all[today][fromId].popupShown = true; localStorage.setItem('jz_friend_tasks', JSON.stringify(all)); }
+            updateFriendUI();
+        }
+    } else if (data.type === 'done') {
+        const taskData = getFriendTask(today, fromId);
+        if (taskData.myTask) {
+            saveFriendTask(today, fromId, { friendDone: true });
+            showToast('🎉 好友完成了你的任务！');
+            updateFriendUI();
+        }
+    } else if (data.type === 'friend_request') {
+        const reqs = getFriendRequests();
+        if(!reqs.find(r => r.id === data.from && r.status === 'pending')){
+            reqs.push({ id: data.from, name: data.name || '', status: 'pending', direction: 'received', time: Date.now() });
+            saveFriendRequests(reqs);
+            showToast('📩 好友请求来自 ' + (data.name || data.from.slice(0,8)));
+            updateFriendUI();
+        }
+    } else if (data.type === 'friend_request_accept') {
+        const friends = getFriends();
+        if(!friends.find(f => f.id === data.from)){
+            friends.push({ id: data.from, name: data.name || '' });
+            saveFriends(friends);
+            const reqs = getFriendRequests();
+            const idx = reqs.findIndex(r => r.id === data.from);
+            if(idx>=0) { reqs.splice(idx,1); saveFriendRequests(reqs); }
+            showToast('✅ ' + (data.name || data.from.slice(0,8)) + ' 已同意你的好友请求！');
+            initPeer();
+            tryConnectFriend(data.from);
+            updateFriendUI();
+        }
+    } else if (data.type === 'friend_request_reject') {
+        const reqs = getFriendRequests();
+        const idx = reqs.findIndex(r => r.id === data.from);
+        if(idx>=0) { reqs.splice(idx,1); saveFriendRequests(reqs); }
+        showToast('❌ 好友请求被拒绝');
+        updateFriendUI();
+    } else if (data.type === 'chat') {
+        saveChatMessage(data.from, { text: data.text, mine: false, time: data.time || Date.now() });
+        showToast('💬 ' + (data.from.slice(0,4)) + ': ' + data.text);
+        const currFid = document.getElementById('friendChatTitle')?.dataset?.fid;
+        if(currFid === data.from) renderFriendChat(data.from);
+    } else if (data.type === 'bill_view_request') {
+        const friends = getFriends();
+        const f = friends.find(x => x.id === data.from);
+        const fname = f ? (f.name || f.id.slice(0,8)) : (data.name || data.from.slice(0,8));
+        showBillViewApproveDialog(data.from, fname);
+    } else if (data.type === 'bill_view_approved') {
+        const shares = getBillShares();
+        if(!shares[data.from]) shares[data.from] = {};
+        shares[data.from].viewing = { approved: true, data: data.data, expires: Date.now() + 86400000 };
+        saveBillShares(shares);
+        showToast('☁️ ' + data.from.slice(0,4) + ' 已同意查看账单（' + (data.duration || '') + '）');
+        const currFid = document.getElementById('friendChatTitle')?.dataset?.fid;
+        if(currFid === data.from) renderFriendChat(data.from);
+    } else if (data.type === 'bill_view_revoked') {
+        const shares = getBillShares();
+        if(shares[data.from] && shares[data.from].viewing) delete shares[data.from].viewing;
+        saveBillShares(shares);
+        showToast('☁️ 好友撤回了账单查看权限');
+        const currFid = document.getElementById('friendChatTitle')?.dataset?.fid;
+        if(currFid === data.from) renderFriendChat(data.from);
+    }
+}
+
+function showBillViewApproveDialog(fid, fname){
+    // Store current fid for render
+    document.getElementById('friendChatTitle').dataset.fid = fid;
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay show';
+    overlay.style.zIndex = '100010';
+    overlay.onclick = function(){ this.remove(); dlg.remove(); };
+    const dlg = document.createElement('div');
+    dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border-radius:20px;padding:24px;max-width:320px;width:90%;z-index:100011;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .3s cubic-bezier(.175,.885,.32,1.275);';
+    dlg.innerHTML = `
+        <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:40px;margin-bottom:8px;">☁️</div>
+            <h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">账单查看申请</h3>
+            <div style="font-size:13px;color:var(--text2);">${fname} 想查看你的账单</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <button onclick="approveBillView('${fid}',1); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 1 天</button>
+            <button onclick="approveBillView('${fid}',10); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 10 天</button>
+            <button onclick="approveBillView('${fid}',30); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 1 个月</button>
+            <button onclick="approveBillView('${fid}',-1); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary2);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 永久查看</button>
+            <button onclick="this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;">❌ 拒绝</button>
+        </div>`;
+    document.body.appendChild(overlay);
+    document.body.appendChild(dlg);
+}
+
+// ========== UPDATED sendPendingTasks WITH REQUESTS ==========
+function sendPendingTasks(fid){
+    const conn = PEER_CONNS[fid];
+    if (!conn || !conn.open) return;
+    const today = new Date().toISOString().slice(0,10);
+    const taskData = getFriendTask(today, fid);
+    if (taskData.myTask) {
+        conn.send({ type: 'task', task: taskData.myTask, from: getUID() });
+    }
+    // Send pending friend requests
+    const reqs = getFriendRequests();
+    const sentReq = reqs.find(r => r.id === fid && r.direction === 'sent' && r.status === 'sent');
+    if(sentReq){
+        conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+    }
+}
+
+
 (function checkHashTask(){
     const hash = location.hash;
     if(!hash || !hash.includes('task=')) return;
@@ -2483,7 +3159,7 @@ setInterval(() => {
             }
         }
     }
-}, 10000);
+}, 3000);
 
 // ========== URL DEEP LINK (like iCost share extension) ==========
 // ========== URL DEEP LINK (like iCost share extension) ==========
