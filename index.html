@@ -7,16 +7,18 @@
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
-:root{--bg:#f5f6fa;--card:#fff;--text:#1a1a2e;--text2:#8e8ea0;--primary:#6c5ce7;--primary2:#a29bfe;--in:#00b894;--out:#ff7675;--save:#6c5ce7;--border:#f0f0f5;--shadow:0 2px 12px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;--nav-bg:#fff;--nav-h:64px;--input-bg:#f5f6fa;}
-.dark{--bg:#0f0f23;--card:#1a1a35;--text:#e8e8f0;--text2:#9e9eb8;--border:#2a2a45;--shadow:0 2px 12px rgba(0,0,0,.3);--nav-bg:#141428;--input-bg:#252545;}
+:root{--bg:#faf5ff;--card:#fff;--text:#1a1a2e;--text2:#8e8ea0;--primary:#7c3aed;--primary2:#a78bfa;--in:#14b8a6;--out:#ef4444;--save:#7c3aed;--border:#e9d5ff;--shadow:0 4px 20px rgba(124,58,237,.08);--radius:16px;--radius-sm:10px;--nav-bg:#fff;--nav-h:64px;--input-bg:#f5f3ff;}
+.dark{--bg:#0f0f23;--card:#1a1a35;--text:#e8e8f0;--text2:#9e9eb8;--border:#2a2a45;--shadow:0 4px 20px rgba(0,0,0,.3);--nav-bg:#101020;--input-bg:#1e1e3a;--primary:#a78bfa;--primary2:#c4b5fd;--in:#14b8a6;--out:#ef4444;--save:#a78bfa;}
+.theme-blue{--bg:#eff6ff;--card:#fff;--text:#1e293b;--text2:#64748b;--primary:#3b82f6;--primary2:#60a5fa;--in:#14b8a6;--out:#93c5fd;--save:#6366f1;--border:#dbeafe;--shadow:0 4px 20px rgba(59,130,246,.1);--nav-bg:#fff;--input-bg:#f8faff;}
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent;outline:none;}
 body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;max-width:480px;margin:0 auto;min-height:100vh;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + 12px);position:relative;}
 ::-webkit-scrollbar{width:0;}
 
 /* Header */
-.header{padding:20px 20px 12px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border-radius:0 0 28px 28px;position:relative;overflow:hidden;}
-.header::before{content:'';position:absolute;top:-60px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,.08);border-radius:50%;}
-.header::after{content:'';position:absolute;bottom:-30px;left:-20px;width:100px;height:100px;background:rgba(255,255,255,.06);border-radius:50%;}
+.header{padding:20px 20px 16px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border-radius:0 0 32px 32px;position:relative;overflow:hidden;}
+.header::before{content:'✨';position:absolute;top:10px;right:20px;font-size:24px;opacity:.2;animation:sparkle 3s infinite;}
+.header::after{content:'💰';position:absolute;bottom:10px;right:60px;font-size:18px;opacity:.15;}
+@keyframes sparkle{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;position:relative;z-index:1;}
 .header-top h1{font-size:20px;font-weight:700;letter-spacing:.5px;}
 .header-actions{display:flex;gap:10px;}
@@ -27,14 +29,59 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .month-nav button:active{background:rgba(255,255,255,.3);}
 .month-nav .cur-month{font-size:15px;font-weight:600;min-width:120px;text-align:center;}
 
-/* Summary Cards */
-.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 16px 0;}
-.summary-card{background:var(--card);border-radius:var(--radius-sm);padding:12px 6px;text-align:center;box-shadow:var(--shadow);transition:background .3s;border:1px solid var(--border);}
-.summary-card .label{font-size:11px;color:var(--text2);margin-bottom:2px;}
-.summary-card .value{font-size:15px;font-weight:700;}
-.income .value{color:var(--in);}
-.expense .value{color:var(--out);}
-.balance-card .value{color:var(--primary);}
+/* Preview Strip */
+.preview-strip{display:flex;align-items:stretch;padding:12px 16px 0;gap:8px;}
+.preview-item{flex:1;background:var(--card);padding:12px 8px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04);border:1px solid var(--border);transition:background .3s,transform .15s,border-color .3s;border-radius:12px;}
+.preview-item:active{transform:scale(.96);}
+.preview-item.warn{border-color:var(--out);background:linear-gradient(135deg,var(--card),rgba(255,118,117,.04));}
+.preview-icon{font-size:20px;display:block;margin-bottom:2px;}
+.preview-label{font-size:10px;color:var(--text2);margin-bottom:1px;white-space:nowrap;}
+.preview-value{font-size:16px;font-weight:700;white-space:nowrap;}
+.preview-save .preview-value{color:var(--primary);}
+.preview-daily .preview-value{color:var(--in);}
+.preview-daily.warn .preview-value{color:var(--out);font-size:13px;}
+.preview-days .preview-value{color:var(--primary2);}
+
+/* Meal Plan */
+.meal-plan-wrap{padding:8px 0 0;}
+.meal-week-label{font-size:13px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:16px;letter-spacing:.5px;background:var(--input-bg);padding:8px 16px;border-radius:20px;display:inline-block;margin-left:auto;margin-right:auto;width:auto;}
+.meal-day-card{background:var(--card);border-radius:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid var(--border);overflow:hidden;transition:box-shadow .2s;}
+.meal-day-card.today{border-color:var(--primary);box-shadow:0 2px 14px rgba(108,92,231,.15);}
+.meal-day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;font-size:15px;font-weight:700;color:var(--text);}
+.meal-day-header .day-date{font-size:12px;font-weight:400;color:var(--text2);}
+.meal-day-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:12px;opacity:0;padding:2px;transition:opacity .2s;line-height:1;}
+.meal-day-card:hover .meal-day-del{opacity:.35;}
+.meal-day-del:hover{opacity:1!important;}
+.meal-slot{display:flex;align-items:flex-start;gap:8px;padding:4px 16px 10px;position:relative;}
+.meal-slot-label{font-size:12px;font-weight:600;flex-shrink:0;color:var(--text2);padding:4px 10px;border-radius:8px;display:flex;align-items:center;gap:4px;min-width:64px;}
+.meal-slot-label.breakfast{color:#e17055;background:rgba(225,112,85,.08);}
+.meal-slot-label.lunch{color:#fdcb6e;background:rgba(253,203,110,.12);}
+.meal-slot-label.dinner{color:#6c5ce7;background:rgba(108,92,231,.08);}
+.meal-dishes{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.meal-dish-tag{background:var(--input-bg);border-radius:20px;padding:5px 12px;font-size:13px;display:inline-flex;align-items:center;gap:4px;transition:background .2s;border:1px solid transparent;}
+.meal-dish-tag .del{font-size:9px;cursor:pointer;color:var(--out);opacity:0;transition:opacity .2s;margin-left:2px;line-height:1;}
+.meal-dish-tag:hover .del{opacity:.5;}
+.meal-dish-tag .del:hover{opacity:1;}
+.meal-dish-tag.has-recipe{cursor:pointer;border-color:rgba(108,92,231,.15);}
+.meal-dish-tag.has-recipe:hover{background:rgba(108,92,231,.1);}
+.meal-slot-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:11px;opacity:0;padding:0 4px;flex-shrink:0;transition:opacity .2s,color .2s;line-height:1;position:absolute;right:16px;top:6px;}
+.meal-slot:hover .meal-slot-del{opacity:.4;}
+.meal-slot-del:hover{opacity:1!important;color:var(--out);}
+.meal-add-btn{font-size:11px;color:var(--primary);cursor:pointer;padding:4px 10px;border-radius:16px;border:1px dashed var(--primary);background:none;transition:all .2s;line-height:1.4;opacity:.6;}
+.meal-add-btn:hover{opacity:1;background:rgba(108,92,231,.06);border-color:var(--primary);}
+.meal-slot-empty{font-size:12px;color:var(--text2);opacity:.4;}
+.meal-search-box{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-radius:20px 20px 0 0;z-index:10002;max-height:70vh;overflow-y:auto;padding:16px 20px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.12);}
+.meal-search-box .search-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.meal-search-box input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);margin-bottom:10px;}
+.meal-search-box input:focus{border-color:var(--primary);}
+.meal-search-result{padding:8px 12px;cursor:pointer;border-radius:8px;transition:background .15s;font-size:14px;}
+.meal-search-result:hover{background:var(--input-bg);}
+.meal-search-result .meal-type-label{font-size:11px;color:var(--text2);margin-left:8px;}
+.preview-daily .preview-value{color:var(--in);}
+.preview-days .preview-value{color:var(--primary2);}
+#budgetInfoRow{display:flex;align-items:center;gap:8px;padding:8px 16px 4px;font-size:12px;color:var(--text2);}
+.budget-summary-card{background:var(--card);border-radius:14px;padding:14px;margin:8px 16px 0;box-shadow:0 2px 12px rgba(0,0,0,.05);border:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background .3s,transform .15s;}
+.budget-summary-card:active{transform:scale(.99);}
 
 /* Annual Bar */
 .annual-bar{display:flex;align-items:center;gap:8px;padding:10px 16px 0;font-size:13px;color:var(--text2);}
@@ -46,14 +93,15 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .quick-actions{display:flex;gap:12px;padding:14px 16px 8px;}
 .quick-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .2s;}
 .quick-btn:active{transform:scale(.96);}
-.quick-btn.income{background:linear-gradient(135deg,#00b894,#00d2a0);color:#fff;box-shadow:0 4px 14px rgba(0,184,148,.3);}
-.quick-btn.expense{background:linear-gradient(135deg,#ff7675,#ff9a9a);color:#fff;box-shadow:0 4px 14px rgba(255,118,117,.3);}
-.quick-btn.save{background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;box-shadow:0 4px 14px rgba(108,92,231,.3);}
+.quick-btn.income{background:linear-gradient(135deg,#14b8a6,#2dd4bf);color:#fff;box-shadow:0 4px 14px rgba(20,184,166,.3);}
+.quick-btn.expense{background:linear-gradient(135deg,#ef4444,#f87171);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.3);}
+.quick-btn.save{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.3);}
 
 /* Year / Month Group */
 .year-title{padding:10px 16px 6px;font-size:15px;font-weight:700;color:var(--primary);}
 .year-body{padding-left:4px;}
-.month-group{margin:0 12px 8px;border-radius:var(--radius-sm);overflow:hidden;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--border);transition:background .3s;}
+.month-group{margin:0 12px 8px;border-radius:var(--radius-sm);overflow:hidden;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--border);transition:background .3s,transform .15s;}
+.month-group:active{transform:scale(.99);}
 .month-title{display:flex;align-items:center;gap:6px;padding:12px 14px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;user-select:none;transition:background .15s;}
 .month-title:active{background:var(--input-bg);}
 .month-arrow{font-size:12px;color:var(--text2);margin-left:4px;transition:transform .2s;}
@@ -78,24 +126,36 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 /* Transaction List */
 .transaction-list{padding:0 16px;}
-.transaction-item{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--border);transition:background .3s;}
-.tx-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.tx-cate{font-size:14px;font-weight:600;}
+.transaction-item{display:flex;align-items:center;gap:10px;padding:14px 12px;border-bottom:1px solid var(--border);transition:background .3s,transform .15s;border-radius:10px;margin-bottom:2px;}
+.transaction-item:active{background:var(--input-bg);transform:scale(.98);}
+.tx-icon{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.tx-cate{font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px;}
 .tx-remark{font-size:12px;color:var(--text2);margin-top:2px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tx-date{font-size:11px;color:var(--text2);margin-top:1px;}
-.tx-amount{font-size:15px;font-weight:700;white-space:nowrap;}
-.tx-btn-edit,.tx-btn-del{background:none;border:none;font-size:13px;cursor:pointer;padding:4px 4px;border-radius:6px;line-height:1;flex-shrink:0;opacity:.5;transition:opacity .2s;}
-.tx-btn-edit:hover,.tx-btn-del:hover{opacity:1;}
+.tx-amount{font-size:16px;font-weight:800;white-space:nowrap;letter-spacing:-.3px;}
+.tx-amount.income{color:var(--in);}
+.tx-amount.expense{color:var(--out);}
+.tx-amount.save{color:var(--primary);}
+.tx-mood{font-size:14px;margin-left:4px;}
+.tx-btn-edit,.tx-btn-del{background:none;border:none;font-size:13px;cursor:pointer;padding:6px;border-radius:8px;line-height:1;flex-shrink:0;opacity:0;transition:opacity .2s,background .15s;}
+.transaction-item:hover .tx-btn-edit,.transaction-item:hover .tx-btn-del{opacity:.5;}
+.tx-btn-edit:hover,.tx-btn-del:hover{opacity:1!important;}
 .tx-btn-edit{color:var(--primary);}
 .tx-btn-del{color:#ff7675;}
 .tx-item-actions{display:flex;align-items:center;gap:2px;margin-left:4px;flex-shrink:0;}
+.tx-date{font-size:11px;color:var(--text2);margin-top:1px;}
+.tx-mood{font-size:14px;margin-left:4px;}
 
 /* Bottom Nav with FAB */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:var(--nav-bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:4px 0 env(safe-area-inset-bottom,6px);z-index:9999;transition:background .3s;}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;cursor:pointer;border:none;background:none;color:var(--text2);font-size:10px;transition:color .2s;position:relative;min-width:48px;}
-.nav-item .nav-icon{font-size:20px;line-height:1.2;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:var(--nav-bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:4px 0 env(safe-area-inset-bottom,6px);z-index:9999;transition:background .3s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:rgba(255,255,255,.92);}
+.dark .bottom-nav{background:rgba(16,16,32,.92);}
+.theme-blue .bottom-nav{background:rgba(238,242,255,.92);}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;cursor:pointer;border:none;background:none;color:var(--text2);font-size:10px;transition:color .2s,transform .15s;position:relative;min-width:48px;}
+.nav-item:active{transform:scale(.92);}
+.nav-item .nav-icon{font-size:20px;line-height:1.2;transition:transform .2s;}
+.nav-item.active .nav-icon{transform:scale(1.1);}
 .nav-item.active{color:var(--primary);font-weight:600;}
-.nav-fab{position:relative;top:-16px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(108,92,231,.45);display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+.nav-fab{position:relative;top:-16px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.45);display:flex;align-items:center;justify-content:center;transition:transform .2s;}
 .nav-fab:active{transform:scale(.92);}
 
 /* Add Transaction Sheet */
@@ -136,8 +196,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 /* Charts */
 .chart-container{padding:0 16px;}
-.chart-card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;transition:background .3s;border:1px solid var(--border);}
-.chart-card h3{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.chart-card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;transition:transform .2s,box-shadow .2s;border:1px solid var(--border);position:relative;overflow:hidden;}
+.chart-card:active{transform:scale(.99);}
+.chart-card h3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.chart-card h3 .chart-deco{font-size:18px;}
 .pie-wrapper{display:flex;align-items:center;gap:16px;padding:8px 0;}
 .pie-chart{flex-shrink:0;}
 .pie-legend{flex:1;display:flex;flex-direction:column;gap:5px;}
@@ -167,6 +229,21 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .budget-input-row button:active{opacity:.85;}
 
 /* Friend */
+.friend-card{background:var(--card);border-radius:var(--radius);padding:16px;margin:0 16px 10px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:transform .15s;}
+.friend-card:active{transform:scale(.98);}
+.friend-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--input-bg);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.friend-info{flex:1;min-width:0;}
+.friend-name{font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;}
+.friend-id{font-size:11px;color:var(--text2);margin-top:1px;}
+.friend-pending{font-size:11px;color:var(--out);margin-top:2px;}
+.friend-btns{display:flex;gap:6px;flex-shrink:0;}
+.friend-btn{padding:7px 12px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:transform .15s;}
+.friend-btn:active{transform:scale(.92);}
+.friend-btn.chat{background:var(--primary);color:#fff;}
+.friend-btn.share{background:rgba(108,92,231,.1);color:var(--primary);}
+.friend-btn.remove{background:var(--input-bg);color:var(--out);}
+.friend-btn.accept{background:var(--in);color:#fff;}
+.friend-btn.reject{background:var(--border);color:var(--text2);}
 .task-suggest{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--input-bg);color:var(--text);font-size:12px;cursor:pointer;transition:all .2s;}
 .task-suggest:active{background:var(--primary);color:#fff;border-color:var(--primary);}
 #friendStatus a{color:var(--primary);cursor:pointer;text-decoration:underline;}
@@ -196,6 +273,8 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .setting-label{font-size:14px;font-weight:500;}
 .setting-right{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;}
 .toggle-switch{width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.theme-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .2s;opacity:.5;}
+.theme-dot.active{opacity:1;transform:scale(1.15);box-shadow:0 2px 10px rgba(0,0,0,.15);}
 .toggle-switch.on{background:var(--primary);}
 .toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.15);}
 .toggle-switch.on::after{transform:translateX(20px);}
@@ -214,12 +293,13 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 @keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 /* Empty state */
-.empty-state{text-align:center;padding:40px 16px;color:var(--text2);}
-.empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:.5;}
-.empty-state p{font-size:14px;}
+.empty-state{text-align:center;padding:48px 16px;color:var(--text2);}
+.empty-state .empty-icon{font-size:56px;margin-bottom:14px;display:block;animation:float 3s ease-in-out infinite;}
+.empty-state p{font-size:15px;margin-bottom:4px;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
 /* Toast */
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:99999;white-space:nowrap;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:12px 24px;border-radius:14px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.175,.885,.32,1.275);z-index:99999;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.15);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* Filter bar */
@@ -229,18 +309,30 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .filter-bar select{padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--input-bg);color:var(--text);cursor:pointer;}
 
 /* Dark mode compat */
-.dark .quick-btn.income{box-shadow:0 4px 14px rgba(0,184,148,.2);}
-.dark .quick-btn.expense{box-shadow:0 4px 14px rgba(255,118,117,.2);}
-.dark .quick-btn.save{box-shadow:0 4px 14px rgba(108,92,231,.2);}
-.dark .header{background:linear-gradient(135deg,#5a4bd1,#8b7cf7);}
+.dark .quick-btn.income{box-shadow:0 4px 14px rgba(20,184,166,.25);}
+.dark .quick-btn.expense{box-shadow:0 4px 14px rgba(239,68,68,.25);}
+.dark .quick-btn.save{box-shadow:0 4px 14px rgba(167,139,250,.25);}
+.dark .header{background:linear-gradient(135deg,#5b21b6,#8b5cf6);}
 .dark .cat-item{background:var(--card);}
-.dark .cat-item.active{background:rgba(108,92,231,.15);}
-.dark .nav-fab{box-shadow:0 4px 16px rgba(108,92,231,.6);}
+.dark .cat-item.active{background:rgba(167,139,250,.15);}
+.dark .nav-fab{background:linear-gradient(135deg,#7c3aed,#a78bfa);box-shadow:0 4px 16px rgba(167,139,250,.5);}
 .dark .amount-wrap{background:var(--card);}
+.theme-blue .header{background:linear-gradient(135deg,#2563eb,#60a5fa);}
+.theme-blue .quick-btn.save{background:linear-gradient(135deg,#6366f1,#818cf8);box-shadow:0 4px 14px rgba(99,102,241,.3);}
+.theme-blue .quick-btn.expense{background:linear-gradient(135deg,#93c5fd,#bfdbfe);color:#1e293b;box-shadow:0 4px 14px rgba(147,197,253,.3);}
+.theme-blue .nav-fab{background:linear-gradient(135deg,#3b82f6,#60a5fa);box-shadow:0 4px 16px rgba(59,130,246,.6);}
+.theme-blue .cat-item.active{background:rgba(59,130,246,.15);}
+.theme-blue .amount-wrap{background:var(--card);}
 
 /* Chart Mode Toggle */
 .chart-mode-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:20px;background:var(--input-bg);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
 .chart-mode-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* Summary row (savings page) */
+.summary-row{display:flex;gap:10px;padding:8px 16px;}
+.summary-card{flex:1;text-align:center;padding:16px 8px;border-radius:14px;border:1px solid var(--border);background:var(--card);}
+.summary-card .label{font-size:12px;color:var(--text2);margin-bottom:4px;}
+.summary-card .value{font-size:16px;font-weight:700;}
 
 /* Cloud shape for shared bill modules */
 .cloud-shape{background:var(--card);border-radius:60px 60px 30px 30px;padding:14px 16px;position:relative;transition:background .3s;border:1px solid var(--border);box-shadow:var(--shadow);}
@@ -280,8 +372,12 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .profile-menu-item .menu-label{font-size:12px;font-weight:500;color:var(--text2);}
 
 /* Animations */
-.fade-in{animation:fadeIn .3s ease both;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.fade-in{animation:fadeIn .35s ease both;}
+.scale-in{animation:scaleIn .3s cubic-bezier(.175,.885,.32,1.275) both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.shimmer{background:linear-gradient(90deg,var(--input-bg) 25%,var(--border) 50%,var(--input-bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
 
 /* Responsive */
 @media(min-width:480px){body{border-left:1px solid var(--border);border-right:1px solid var(--border);}}
@@ -310,21 +406,26 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <span class="cur-month" id="curMonth"></span>
             <button onclick="changeMonth(1)">›</button>
         </div>
+        <div style="display:flex;gap:12px;justify-content:center;font-size:11px;opacity:.8;margin-top:2px;position:relative;z-index:1;" id="headerStats"></div>
     </div>
-    <div class="summary-row">
-        <div class="summary-card income"><div class="label">收入</div><div class="value" id="sumIncome">¥0</div></div>
-        <div class="summary-card expense"><div class="label">支出</div><div class="value" id="sumExpense">¥0</div></div>
-        <div class="summary-card save"><div class="label">存款</div><div class="value" id="sumSave">¥0</div></div>
-        <div class="summary-card balance-card"><div class="label">余钱</div><div class="value" id="sumBalance">¥0</div></div>
+    <div class="preview-strip">
+        <div class="preview-item preview-days">
+            <span class="preview-icon">📅</span>
+            <div class="preview-label">本月剩余</div>
+            <div class="preview-value" id="previewRemainingDays">-- 天</div>
+        </div>
+        <div class="preview-item preview-daily">
+            <span class="preview-icon">💰</span>
+            <div class="preview-label">日均可花</div>
+            <div class="preview-value" id="previewDailyAvg">¥--</div>
+        </div>
+        <div class="preview-item preview-save">
+            <span class="preview-icon">🏦</span>
+            <div class="preview-label">本月存款</div>
+            <div class="preview-value" id="previewSave">¥--</div>
+        </div>
     </div>
-    <div class="annual-bar">
-        <span class="annual-label">📅 本年</span>
-        <span>收 <b id="yearIncome">¥0</b></span>
-        <span class="annual-divider">|</span>
-        <span>支 <b id="yearExpense">¥0</b></span>
-        <span class="annual-divider">|</span>
-        <span>存 <b id="yearSave">¥0</b></span>
-    </div>
+    <div class="preview-strip" id="budgetInfoRow"></div>
     <div class="quick-actions">
         <button class="quick-btn income" onclick="openAdd('income')">➕ 记一笔收入</button>
         <button class="quick-btn expense" onclick="openAdd('expense')">➖ 记一笔支出</button>
@@ -345,15 +446,15 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 <div class="page" id="pageAll">
     <div class="section-header">
-        <h2 id="pageAllTitle">全部记录</h2>
+        <h2>📋 全部记录</h2>
         <span class="more" onclick="switchTab('home')">← 返回</span>
     </div>
     <div class="filter-bar">
-        <input type="text" id="searchInput" placeholder="搜索备注、分类..." oninput="renderAllList()">
+        <input type="text" id="searchInput" placeholder="🔍 搜索备注、分类..." oninput="renderAllList()">
         <select id="filterType" onchange="renderAllList()">
-            <option value="all">全部</option>
-            <option value="income">收入</option>
-            <option value="expense">支出</option>
+            <option value="all">📋 全部</option>
+            <option value="income">➕ 收入</option>
+            <option value="expense">➖ 支出</option>
         </select>
     </div>
     <div class="transaction-list" id="allList"></div>
@@ -361,49 +462,63 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 <div class="page" id="pageCate">
     <div class="section-header">
-        <h2 id="pageCateTitle">分类明细</h2>
-        <span class="more" onclick="switchTab('home')">← 返回</span>
+        <h2 id="pageCateTitle">📂 分类明细</h2>
+        <div style="display:flex;gap:6px;">
+            <span class="more" id="mealPlanTabBtn" style="display:none;color:var(--in);font-weight:600;" onclick="showMealPlan()">📖 本周食谱</span>
+            <span class="more" onclick="switchTab('home')">← 返回</span>
+        </div>
     </div>
     <div class="transaction-list" id="cateList"></div>
 </div>
+<div class="page" id="pageMealPlan">
+    <div class="section-header">
+        <h2>📖 本周食谱</h2>
+        <span class="more" onclick="showCatePage()">← 返回明细</span>
+    </div>
+    <div id="mealPlanContent" style="padding:0 16px;"></div>
+</div>
 
 <div class="page" id="pageCharts">
-    <div class="section-header"><h2>支出分析</h2></div>
+    <div class="section-header"><h2>📊 支出分析</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">📈 数据洞察</span></div>
     <div style="display:flex;gap:8px;padding:0 16px 10px;">
         <button class="chart-mode-btn active" id="chartModeMonth" onclick="setChartMode('month')">📅 月</button>
         <button class="chart-mode-btn" id="chartModeYear" onclick="setChartMode('year')">📆 年</button>
     </div>
     <div class="chart-container">
         <div class="chart-card">
-            <h3>📊 分类占比</h3>
-            <div id="pieSection"><div class="empty-state"><div class="empty-icon">📈</div><p>暂无支出数据</p></div></div>
+            <h3><span class="chart-deco">📊</span> 分类占比</h3>
+            <div id="pieSection"><div class="empty-state"><div class="empty-icon" style="font-size:56px;">📈</div><p>暂无支出数据</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">记几笔支出就能看到分析啦</p></div></div>
         </div>
         <div class="chart-card">
-            <h3>💡 消费建议</h3>
-            <div id="trendSection"><div class="empty-state"><div class="empty-icon">💡</div><p>暂无支出数据</p></div></div>
+            <h3><span class="chart-deco">💡</span> 消费建议</h3>
+            <div id="trendSection"><div class="empty-state"><div class="empty-icon" style="font-size:56px;">💡</div><p>暂无支出数据</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">开始记账后会有智能建议哦</p></div></div>
         </div>
     </div>
 </div>
 
 <div class="page" id="pageSave">
-    <div class="section-header"><h2>🏦 存款管理</h2></div>
+    <div class="section-header"><h2>🏦 存款小金库</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">💰 攒钱进行时</span></div>
     <div class="summary-row" style="padding-top:0;">
-        <div class="summary-card income"><div class="label">总存款</div><div class="value" id="saveTotal" style="color:var(--primary);">¥0</div></div>
-        <div class="summary-card expense"><div class="label">本月存入</div><div class="value" id="saveMonth" style="color:var(--in);">¥0</div></div>
-        <div class="summary-card balance-card"><div class="label">存款笔数</div><div class="value" id="saveCount">0</div></div>
+        <div class="summary-card" style="background:linear-gradient(135deg,rgba(108,92,231,.08),rgba(162,155,254,.12));border-color:rgba(108,92,231,.2);"><div class="label">💰 总存款</div><div class="value" id="saveTotal" style="color:var(--primary);font-size:18px;">¥0</div></div>
+        <div class="summary-card" style="background:linear-gradient(135deg,rgba(0,184,148,.08),rgba(0,210,160,.12));border-color:rgba(0,184,148,.2);"><div class="label">📥 本月存入</div><div class="value" id="saveMonth" style="color:var(--in);font-size:18px;">¥0</div></div>
+        <div class="summary-card" style="background:linear-gradient(135deg,rgba(253,203,110,.08),rgba(225,112,85,.12));border-color:rgba(253,203,110,.2);"><div class="label">📋 存款笔数</div><div class="value" id="saveCount" style="color:#e17055;font-size:18px;">0</div></div>
     </div>
-    <div class="section-header"><h2>存款记录</h2></div>
+    <div class="section-header"><h2>📝 存款记录</h2></div>
     <div class="transaction-list" id="saveList"></div>
 </div>
 
 
 
 <div class="page" id="pageSettings">
-    <div class="section-header"><h2>设置</h2></div>
+    <div class="section-header"><h2>⚙️ 设置</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">🔧 个性化</span></div>
     <div class="settings-list">
         <div class="setting-item">
-            <div class="setting-left"><span class="setting-icon">🌙</span><span class="setting-label">深色模式</span></div>
-            <div class="setting-right"><div class="toggle-switch" id="darkToggle" onclick="toggleDark()"></div></div>
+            <div class="setting-left"><span class="setting-icon">🎨</span><span class="setting-label">主题颜色</span></div>
+            <div class="setting-right" style="gap:6px;">
+                <span class="theme-dot" data-theme="light" style="background:#f0f2f8;border:2px solid var(--border);" onclick="setTheme('light')">☀️</span>
+                <span class="theme-dot" data-theme="dark" style="background:#0f0f23;border:2px solid var(--border);color:#fff;" onclick="setTheme('dark')">🌙</span>
+                <span class="theme-dot" data-theme="blue" style="background:#3b82f6;border:2px solid var(--border);" onclick="setTheme('blue')">💙</span>
+            </div>
         </div>
         <div class="setting-item" onclick="manageCategories()">
             <div class="setting-left"><span class="setting-icon">📂</span><span class="setting-label">管理分类</span></div>
@@ -489,29 +604,29 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 </div>
 
 <div class="page" id="pageReport">
-    <div class="section-header"><h2>📊 年度报告</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
+    <div class="section-header"><h2>📊 年度报告</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">📈 年度账单</span></div>
     <div id="reportFriendTasks" style="padding:10px 16px 0;"></div>
     <div class="chart-container" id="reportContent"></div>
 </div>
 
 <div class="page" id="pageFriend">
-    <div class="section-header"><h2>🤝 交友</h2><span class="more" onclick="switchTab('home')">← 返回</span></div>
-    <div id="friendStatus" style="margin:10px 16px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;"></div>
-    <div id="friendConnect" style="margin:0 16px 10px;padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;">
-        <div style="margin-bottom:10px;font-weight:600;">你的好友码</div>
-        <div id="myFriendCode" style="font-size:22px;font-weight:700;color:var(--primary);text-align:center;padding:8px;background:var(--input-bg);border-radius:8px;letter-spacing:2px;margin-bottom:12px;"></div>
+    <div class="section-header"><h2>🤝 我的好友</h2><span class="more" onclick="switchTab('profile')">← 返回</span></div>
+    <div id="friendStatus" style="margin:6px 16px;padding:12px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:13px;text-align:center;color:var(--text2);"></div>
+    <div id="friendConnect" style="margin:0 16px 14px;padding:18px;border-radius:var(--radius);background:linear-gradient(135deg,var(--card),rgba(108,92,231,.04));border:1px solid var(--border);font-size:13px;box-shadow:var(--shadow);">
+        <div style="margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:6px;"><span style="font-size:18px;">🔑</span> 你的好友码</div>
+        <div id="myFriendCode" style="font-size:24px;font-weight:800;color:var(--primary);text-align:center;padding:12px;background:var(--input-bg);border-radius:12px;letter-spacing:3px;margin-bottom:14px;font-family:monospace;"></div>
         <div style="display:flex;gap:8px;">
-            <input type="text" id="friendCodeInput" placeholder="输入对方好友码" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);">
-            <button onclick="connectFriend()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">🔗 添加</button>
+            <input type="text" id="friendCodeInput" placeholder="输入对方好友码" style="flex:1;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--input-bg);color:var(--text);">
+            <button onclick="connectFriend()" style="padding:12px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(108,92,231,.3);">🔗 添加</button>
         </div>
     </div>
     <div id="friendList"></div>
 </div>
 
 <div class="page" id="pageFriendChat">
-    <div class="section-header">
+    <div class="section-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;">
         <span class="more" onclick="switchTab('friend')">← 返回</span>
-        <h2 id="friendChatTitle">好友</h2>
+        <h2 id="friendChatTitle" style="font-size:16px;">💬 好友</h2>
         <span style="width:40px;"></span>
     </div>
     <div id="friendChatContent"></div>
@@ -520,11 +635,11 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <div class="page" id="pageProfile">
     <div class="header" style="padding:24px 20px 20px;">
         <div class="header-top">
-            <h1>我的</h1>
-            <span style="font-size:12px;opacity:.7;">记账本</span>
+            <h1>👤 我的</h1>
+            <span style="font-size:12px;opacity:.7;display:flex;align-items:center;gap:4px;">📒 记账本</span>
         </div>
-        <div style="display:flex;align-items:center;gap:16px;margin-top:12px;position:relative;z-index:1;">
-            <div id="profileAvatar" style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;border:3px solid rgba(255,255,255,.25);background-size:cover;background-position:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 15px rgba(0,0,0,.15);" onclick="openAvatarSelector()">😊</div>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:16px;position:relative;z-index:1;">
+            <div id="profileAvatar" style="width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;border:3px solid rgba(255,255,255,.25);background-size:cover;background-position:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 20px rgba(0,0,0,.15);" onclick="openAvatarSelector()">😊</div>
             <div style="flex:1;">
                 <div id="profileName" style="font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="editProfileName()">记账本用户 <span style="font-size:14px;opacity:.6;">✏️</span></div>
                 <div style="font-size:13px;opacity:.75;margin-top:4px;" id="profileSubtitle"></div>
@@ -634,7 +749,7 @@ function loadData(){
 }
 let DATA = loadData();
 let BUDGETS = JSON.parse(localStorage.getItem('jz_budgets')) || {};
-let DARK = localStorage.getItem('jz_dark') === '1';
+let THEME = localStorage.getItem('jz_theme') || 'light';
 let CURRENT_MONTH = new Date().toISOString().slice(0,7);
 let ADD_TYPE = 'expense';
 // Debug localStorage state
@@ -674,10 +789,21 @@ const CAT_COLORS = ['#6c5ce7','#00b894','#ff7675','#fdcb6e','#e17055','#0984e3',
 function updateDataStatus(){
     const el = document.getElementById('dataStatus');
     if(!el) return;
-    const keys = [];
-    for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
-    el.innerHTML = `📊 账本数据: ${DATA.length} 条 &nbsp;|&nbsp; localStorage keys: ${keys.join(', ')||'无'}`
-        + (DATA.length ? '' : ' ❌ 无数据 - <span style="color:var(--primary);cursor:pointer;" onclick="recoverData()">点此恢复</span>');
+    const entryCount = DATA.length;
+    const totalIncome = DATA.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const totalExpense = DATA.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const duration = DATA.length ? (()=>{
+        const dates = DATA.map(i=>i.date).sort();
+        const first = new Date(dates[0]+'T00:00:00');
+        const months = (new Date().getFullYear()-first.getFullYear())*12 + (new Date().getMonth()-first.getMonth()) + 1;
+        return months + ' 个月';
+    })() : '';
+    if(!DATA.length){
+        el.innerHTML = '📭 暂无数据 - <span style="color:var(--primary);cursor:pointer;" onclick="recoverData()">点此恢复</span>';
+    } else {
+        const emoji = totalExpense > 0 ? (totalIncome/totalExpense > 1.5 ? '🌟' : totalIncome/totalExpense > 0.8 ? '👍' : '💪') : '💰';
+        el.innerHTML = `${emoji} 共 ${entryCount} 笔 · 跨度 ${duration} · 收入 ¥${totalIncome.toFixed(0)} · 支出 ¥${totalExpense.toFixed(0)}`;
+    }
 }
 // ========== INIT ==========
 // Auto-recovery: scan ALL localStorage keys for array data if DATA is empty
@@ -703,8 +829,9 @@ if(!DATA.length){
         localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     }
 }
-if(DARK) document.body.classList.add('dark');
-document.getElementById('darkToggle').classList.toggle('on', DARK);
+if(THEME==='dark') document.body.classList.add('dark');
+else if(THEME==='blue') document.body.classList.add('theme-blue');
+document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active', d.dataset.theme===THEME));
 renderMonth();
 refreshAll();
 switchTab('home');
@@ -732,74 +859,114 @@ function refreshAll(){
     const income = list.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const expense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
     const save = list.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
-    document.getElementById('sumIncome').textContent = '¥'+income.toFixed(income%1?2:0);
-    document.getElementById('sumExpense').textContent = '¥'+expense.toFixed(expense%1?2:0);
-    document.getElementById('sumSave').textContent = '¥'+save.toFixed(save%1?2:0);
-    document.getElementById('sumBalance').textContent = '¥'+(income-expense-save).toFixed((income-expense-save)%1?2:0);
 
-    // Yearly totals
-    const curYear = CURRENT_MONTH.slice(0,4);
-    const yearData = DATA.filter(i=>i.date.slice(0,4)===curYear);
-    const yIn = yearData.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
-    const yOut = yearData.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
-    const ySave = yearData.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
-    document.getElementById('yearIncome').textContent = '¥'+yIn.toFixed(yIn%1?2:0);
-    document.getElementById('yearExpense').textContent = '¥'+(yOut).toFixed(yOut%1?2:0);
-    document.getElementById('yearSave').textContent = '¥'+ySave.toFixed(ySave%1?2:0);
-
-    // Budget health - total budget = sum of individual category budgets
-    const monthExpense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    // Preview bar: remaining days + daily avg + savings
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const today = now.getDate();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const remainingDays = daysInMonth - today;
+    
     const monthIncome = income;
     const autoBudget = Math.round(monthIncome * 0.7);
-    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
-    const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoBudget;
+    const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
+    const budget = budgetMap[CURRENT_MONTH] || autoBudget;
+    const remainingBudget = budget - expense;
+    const isOverBudget = remainingBudget <= 0;
+    const dailyAvg = remainingDays > 0 && remainingBudget > 0 ? remainingBudget / remainingDays : 0;
+    
+    document.getElementById('previewRemainingDays').textContent = Math.max(0, remainingDays) + ' 天';
+    
+    // Header stats: income | expense | balance
+    const balance = income - expense;
+    document.getElementById('headerStats').innerHTML = `
+        <span>收入 ¥${income.toFixed(0)}</span>
+        <span style="opacity:.5;">|</span>
+        <span>支出 ¥${expense.toFixed(0)}</span>
+        <span style="opacity:.5;">|</span>
+        <span style="color:${balance>=0?'#fff':'#ff9a9a'};">结余 ¥${balance.toFixed(0)}</span>
+    `;
+    const dailyEl = document.getElementById('previewDailyAvg');
+    const dailyCard = dailyEl.closest('.preview-item');
+    if(isOverBudget){
+        dailyEl.textContent = '¥0';
+        dailyCard.classList.add('warn');
+    } else {
+        dailyEl.textContent = '¥' + dailyAvg.toFixed(0);
+        dailyCard.classList.remove('warn');
+    }
+    document.getElementById('previewSave').textContent = '¥' + save.toFixed(save % 1 ? 2 : 0);
+
+    // Budget info row
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
     const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
-    
     const monthExpenses = DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH);
     const catTotals = {};
     monthExpenses.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
     const cats = CATS.expense;
-    // Compute each cat's effective budget, then sum for total
     const catEffectiveBudgets = {};
     cats.forEach(c => {
         catEffectiveBudgets[c.name] = monthCatBudgets[c.name] || Math.round(budget / cats.length);
     });
     const totalCatBudget = Object.values(catEffectiveBudgets).reduce((s,v)=>s+v, 0);
-    const pct = totalCatBudget>0 ? Math.min(monthExpense/totalCatBudget*100,100) : 0;
+    const pct = totalCatBudget>0 ? Math.min(expense/totalCatBudget*100,100) : 0;
+    const barColor = pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)';
     
-    let bRow = document.getElementById('budgetInfoRow');
-    if(!bRow){
-        bRow = document.createElement('div');
-        bRow.id = 'budgetInfoRow';
-        bRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 16px 4px;font-size:11px;color:var(--text2);';
-        const header = document.querySelector('.quick-actions');
-        header.parentNode.insertBefore(bRow, header.nextSibling);
-    }
+    // Budget info row (preview-strip style)
+    const bRow = document.getElementById('budgetInfoRow');
+    const remaining = Math.max(0, budget - expense);
+    const budgetLabel = pct>=100?'预算':pct>=80?'即将超支':pct>=50?'预算过半':'预算充足';
+    const budgetIcon = pct>=100?'💳':pct>=80?'⚡':pct>=50?'📊':'✅';
+    const displayTotal = pct>=100 ? totalCatBudget : remaining;
     bRow.innerHTML = `
-        <div class="budget-bar" style="flex:none;width:50px;height:5px;"><div class="budget-fill good" style="width:${pct}%;background:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};"></div></div>
-        <span>收<b style="color:var(--in);margin-left:2px;">¥${monthIncome.toFixed(0)}</b></span>
-        <span>支<b style="color:var(--out);margin-left:2px;">¥${monthExpense.toFixed(0)}</b></span>
-        <span style="cursor:pointer;" onclick="editBudget()">预算<b style="color:var(--primary);margin-left:2px;">¥${totalCatBudget.toFixed(0)}</b>✏️</span>
-        <span style="margin-left:auto;">${pct>=100?'⚠️超支':pct>=80?'⚡警戒':'✅健康'}</span>
+        <div class="preview-item">
+            <span class="preview-icon">📊</span>
+            <div class="preview-label">预算总额</div>
+            <div class="preview-value" style="font-size:14px;">¥${totalCatBudget.toFixed(0)}</div>
+        </div>
+        <div class="preview-item" style="cursor:pointer;" onclick="${pct>=100?`editBudget(${expense.toFixed(0)})`:'editBudget()'}">
+            <span class="preview-icon">${budgetIcon}</span>
+            <div class="preview-label">${budgetLabel}</div>
+            <div class="preview-value" style="color:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};">${pct>=100?'¥'+totalCatBudget.toFixed(0):'¥'+remaining.toFixed(0)}</div>
+        </div>
+        <div class="preview-item">
+            <span class="preview-icon">💳</span>
+            <div class="preview-label">已花</div>
+            <div class="preview-value" style="color:var(--out);">¥${expense.toFixed(0)}</div>
+        </div>
     `;
     
     const el = document.getElementById('budgetModuleList');
     if(!el) return;
+    const moodTips = {
+        '吃喝':{icon:'🍽️',tip:p=>p>=100?'👻 吃土了' : p>=70?'😋 吃货上线' : p>=40?'🥗 控制得不错' : '💪 省钱小能手'},
+        '出行':{icon:'🚗',tip:p=>p>=100?'⛽ 路费超标' : p>=70?'🚶 少打车哦' : p>=40?'🚲 绿色出行' : '🏃 真省油'},
+        '追星':{icon:'✨',tip:p=>p>=100?'💖 真爱粉认证' : p>=70?'🌟 狂热追星中' : p>=40?'🎵 理性追星' : '📺 白嫖快乐'},
+        '生活':{icon:'🏠',tip:p=>p>=100?'📦 购物节到了' : p>=70?'🛍️ 买了不少' : p>=40?'🧹 日常开销' : '🧘 极简生活'},
+        '人情往来':{icon:'💌',tip:p=>p>=100?'🎉 社交达人' : p>=70?'🤝 人缘不错' : p>=40?'💬 保持联系' : '📱 社恐模式'},
+        '杂七杂八':{icon:'🎲',tip:p=>p>=100?'🌀 意外开销' : p>=70?'🎪 生活丰富' : p>=40?'📦 零零碎碎' : '✨ 清清爽爽'}
+    };
     el.innerHTML = cats.map(c=>{
         const spent = catTotals[c.name]||0;
         const catBudget = catEffectiveBudgets[c.name];
         const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : 0;
         const barColor = pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)';
-        return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
+        const mood = moodTips[c.name];
+        const funEmoji = pct>=100?'😱':pct>=80?'😅':pct>=50?'😊':pct>=20?'😌':'🌟';
+        const tip = mood ? mood.tip(pct) : '';
+        const badge = pct>=100 ? '<span style="font-size:9px;background:var(--out);color:#fff;padding:2px 6px;border-radius:10px;margin-left:4px;vertical-align:middle;">超支</span>' : '';
+        return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;overflow:hidden;border-left:3px solid ${barColor};" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
             <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:20px;">${c.icon}</span>
-                <div style="flex:1;">
+                <span style="font-size:22px;transition:transform .3s;display:inline-block;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${c.icon}</span>
+                <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
-                        <span>${c.name}</span>
+                        <span>${c.name}${badge} <span style="font-size:14px;">${funEmoji}</span></span>
                         <span>¥${spent.toFixed(2)} / ¥${catBudget.toFixed(0)}</span>
                     </div>
                     <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
+                    <div style="font-size:10px;color:var(--text2);margin-top:3px;">${tip}</div>
                 </div>
             </div>
         </div>`;
@@ -814,18 +981,26 @@ function refreshAll(){
             incTotals[i.cate] = (incTotals[i.cate]||0) + i.amount;
         });
         const totalIncome = Object.values(incTotals).reduce((s,v)=>s+v,0);
+        const incMoods = {
+            '生活费':{tip:v=>v>=5000?'🤑 小富婆！':v>=2000?'💪 生活费到账':'💰 零花钱'},
+            '兼职收入':{tip:v=>v>=2000?'🚀 副业起飞！':v>=500?'💼 赚点外快':'✨ 小赚一笔'}
+        };
         incEl.innerHTML = incomeCats.map(c=>{
             const val = incTotals[c.name]||0;
             const pct = totalIncome>0 ? (val/totalIncome*100) : 0;
-            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;" onclick="filterCategory('${c.name}')">
+            const incMood = incMoods[c.name];
+            const incFun = val>=5000?'🎉':val>=1000?'😎':'🙂';
+            const incTip = incMood ? incMood.tip(val) : '';
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;border-left:3px solid var(--in);" onclick="filterCategory('${c.name}')">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:20px;">${c.icon}</span>
+                    <span style="font-size:22px;">${c.icon}</span>
                     <div style="flex:1;">
                         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
-                            <span>${c.name}</span>
+                            <span>${c.name} ${incFun}</span>
                             <span style="color:var(--in);">¥${val.toFixed(2)}</span>
                         </div>
                         <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill" style="width:${pct}%;background:var(--in);"></div></div>
+                        <div style="font-size:10px;color:var(--text2);margin-top:3px;">${incTip}</div>
                     </div>
                 </div>
             </div>`;
@@ -919,7 +1094,7 @@ function renderGroupedList(list, elId, startCollapsed){
         }
         const label = getDateLabel(date);
         const dayTotal = groups[date].reduce((s,i)=>s+i.amount*(i.type==='income'?1:i.type==='save'?-1:-1),0);
-        html += `<div class="date-group${di===0?'':' fade-in'}">
+            html += `<div class="date-group${di===0?'':' fade-in'}">
             <div class="date-group-header">
                 <span class="date-dot"></span>
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
@@ -928,14 +1103,14 @@ function renderGroupedList(list, elId, startCollapsed){
         const foodPhotos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
         groups[date].forEach(i=>{
             const icon = findCat(i.type,i.cate).icon;
-            let sign = '+', bg = 'rgba(0,184,148,.12)', color = 'var(--in)';
-            if(i.type==='expense'){ sign='-'; bg='rgba(255,118,117,.12)'; color='var(--out)'; }
-            else if(i.type==='save'){ sign=''; bg='rgba(108,92,231,.12)'; color='var(--primary)'; }
+            let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
+            if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
+            else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
             const hasPhoto = foodPhotos[i.id];
             html += `<div class="transaction-item">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
-                <div><div class="tx-cate">${i.mood||''} ${i.cate}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                <div class="tx-amount" style="color:${color};margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
+                <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
                 <div class="tx-item-actions">
                     <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
                     <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
@@ -953,6 +1128,257 @@ function getMonthData(){
     return DATA.filter(i=>i.date.slice(0,7)===CURRENT_MONTH);
 }
 
+// ========== MEAL PLAN ==========
+const DISH_DB = {
+    breakfast: ['包子','馒头','油条','豆浆','稀饭','小米粥','八宝粥','皮蛋瘦肉粥','煎饼果子','鸡蛋灌饼','肉夹馍','馄饨','饺子','汤圆','茶叶蛋','煮鸡蛋','荷包蛋','吐司','面包','牛奶','酸奶','麦片','三明治','汉堡','蛋糕','发糕','花卷','烧麦','肠粉','米粉','米线'],
+    lunch: ['米饭','白饭','蛋炒饭','扬州炒饭','红烧肉','回锅肉','鱼香肉丝','宫保鸡丁','麻婆豆腐','水煮肉片','酸菜鱼','糖醋里脊','红烧排骨','清蒸鱼','白灼虾','干锅花菜','地三鲜','番茄炒蛋','韭菜炒蛋','蒜蓉青菜','炒时蔬','凉拌黄瓜','拍黄瓜','蒜泥白肉','口水鸡','辣子鸡','东坡肉','粉蒸肉','梅菜扣肉','红烧牛腩','土豆烧牛肉','青椒肉丝','木须肉','油焖大虾','葱爆羊肉','孜然牛肉','咖喱土豆肥牛','咖喱土豆鸡肉'],
+    dinner: ['面条','炸酱面','担担面','阳春面','牛肉面','兰州拉面','热干面','刀削面','米线','过桥米线','螺蛳粉','酸辣粉','麻辣烫','冒菜','火锅','烧烤','串串','关东煮','砂锅','煲仔饭','盖浇饭','黄焖鸡','卤肉饭','叉烧饭','烧鸭饭','白切鸡','盐焗鸡','手撕鸡','烤鱼','小龙虾','凉皮','肉夹馍','煎饼','饺子','云吞','紫菜蛋花汤','番茄蛋汤','酸辣汤']
+};
+const RECIPES = {
+    '蛋炒饭':'🍚 剩米饭1碗、鸡蛋2个、葱花、盐、油\n\n1️⃣ 鸡蛋打散，热油炒熟盛出\n2️⃣ 锅中加油，倒入米饭炒散\n3️⃣ 加入鸡蛋、盐翻炒均匀\n4️⃣ 撒葱花出锅',
+    '扬州炒饭':'🍚 米饭、虾仁、火腿丁、鸡蛋、青豆、胡萝卜丁、盐\n\n1️⃣ 鸡蛋炒散盛出\n2️⃣ 虾仁、火腿、青豆、胡萝卜丁炒熟\n3️⃣ 倒入米饭翻炒，加盐调味\n4️⃣ 混入鸡蛋炒匀即可',
+    '红烧肉':'🥩 五花肉500g、冰糖、生抽、老抽、料酒、姜、八角、桂皮\n\n1️⃣ 五花肉切块焯水去血沫\n2️⃣ 锅中放少许油，加冰糖小火炒出糖色\n3️⃣ 倒入肉块翻炒上色\n4️⃣ 加生抽、老抽、料酒、姜、八角、桂皮\n5️⃣ 加热水没过肉，小火慢炖40分钟\n6️⃣ 大火收汁即可',
+    '回锅肉':'🥩 五花肉、青蒜、豆瓣酱、姜片、料酒、生抽、糖\n\n1️⃣ 五花肉整块煮至八成熟，切薄片\n2️⃣ 锅中不放油，肉片煸炒出油至微卷\n3️⃣ 加豆瓣酱炒出红油\n4️⃣ 加姜片、料酒、生抽、糖翻炒\n5️⃣ 加青蒜段炒断生即可',
+    '鱼香肉丝':'🥩 猪里脊200g、木耳、胡萝卜、青椒、葱姜蒜、豆瓣酱、醋、糖、生抽、淀粉\n\n1️⃣ 里脊切丝，加料酒、淀粉抓匀腌制\n2️⃣ 调鱼香汁：醋3勺、糖2勺、生抽1勺、淀粉1勺、水2勺\n3️⃣ 肉丝滑油变色盛出\n4️⃣ 炒香豆瓣酱、葱姜蒜，加配菜翻炒\n5️⃣ 倒入肉丝和鱼香汁炒匀出锅',
+    '宫保鸡丁':'🍗 鸡胸肉、花生米、干辣椒、花椒、葱姜蒜、醋、糖、生抽、淀粉\n\n1️⃣ 鸡胸肉切丁，加料酒、淀粉腌制\n2️⃣ 调汁：醋2勺、糖2勺、生抽1勺、淀粉1勺、水2勺\n3️⃣ 鸡丁滑油变色盛出\n4️⃣ 炒香干辣椒、花椒、葱姜蒜\n5️⃣ 加鸡丁和料汁炒匀，撒花生米出锅',
+    '麻婆豆腐':'🥘 嫩豆腐1块、猪肉末、豆瓣酱、花椒粉、葱花、姜蒜、水淀粉\n\n1️⃣ 豆腐切小块，开水焯2分钟捞出\n2️⃣ 炒香肉末，加豆瓣酱炒出红油\n3️⃣ 加姜蒜末、适量水烧开\n4️⃣ 放入豆腐，小火煮5分钟入味\n5️⃣ 水淀粉勾芡，撒花椒粉和葱花',
+    '水煮肉片':'🥩 猪里脊、豆芽、生菜、干辣椒、花椒、豆瓣酱、姜蒜、料酒、淀粉\n\n1️⃣ 肉片加料酒、淀粉、盐抓匀腌制\n2️⃣ 豆芽生菜焯水垫碗底\n3️⃣ 炒香豆瓣酱、姜蒜，加水烧开\n4️⃣ 下肉片滑熟，连汤倒入碗中\n5️⃣ 撒干辣椒段、花椒，浇热油即可',
+    '酸菜鱼':'🐟 草鱼1条、酸菜、干辣椒、花椒、姜蒜、料酒、淀粉、蛋清\n\n1️⃣ 鱼片成薄片，加料酒、淀粉、蛋清腌制\n2️⃣ 鱼骨煎黄，加水熬鱼汤\n3️⃣ 炒香酸菜、姜蒜，倒入鱼汤煮10分钟\n4️⃣ 捞出酸菜鱼骨垫碗底\n5️⃣ 汤中下鱼片煮至变白，连汤倒入碗中\n6️⃣ 撒干辣椒、花椒，浇热油',
+    '糖醋里脊':'🥩 猪里脊、鸡蛋、面粉、番茄酱、醋、糖、生抽、淀粉\n\n1️⃣ 里脊切条，加盐、料酒腌制\n2️⃣ 调面糊：鸡蛋、面粉、水搅匀，裹在肉条上\n3️⃣ 油温六成热，炸至金黄捞出\n4️⃣ 锅中少许油，加番茄酱、醋、糖、生抽烧开\n5️⃣ 水淀粉勾芡，倒入肉条翻炒均匀',
+    '红烧排骨':'🍖 排骨、冰糖、生抽、老抽、料酒、姜、八角\n\n1️⃣ 排骨焯水去血沫\n2️⃣ 锅中放油加冰糖炒糖色\n3️⃣ 倒入排骨翻炒上色\n4️⃣ 加生抽、老抽、料酒、姜、八角\n5️⃣ 加开水没过排骨，小火炖30分钟\n6️⃣ 大火收汁即可',
+    '清蒸鱼':'🐟 鲈鱼1条、葱姜、蒸鱼豉油、料酒\n\n1️⃣ 鱼身划几刀，抹料酒，放葱姜\n2️⃣ 水开后上锅蒸8-10分钟\n3️⃣ 倒掉盘中蒸出的水\n4️⃣ 浇蒸鱼豉油，撒葱丝姜丝\n5️⃣ 浇一勺热油即可',
+    '白灼虾':'🦐 鲜虾、姜片、葱段、料酒、生抽、醋\n\n1️⃣ 虾洗净去虾线\n2️⃣ 水加姜片、葱段、料酒烧开\n3️⃣ 放入虾煮至变红卷曲（约2分钟）\n4️⃣ 捞出装盘，蘸生抽醋吃',
+    '番茄炒蛋':'🍅 番茄2个、鸡蛋3个、盐、糖、葱花\n\n1️⃣ 鸡蛋打散，热油炒熟盛出\n2️⃣ 番茄切块，锅中炒软出汁\n3️⃣ 加少许糖和盐调味\n4️⃣ 倒入鸡蛋翻炒均匀，撒葱花',
+    '地三鲜':'🥔 土豆、茄子、青椒、生抽、蒜末、水淀粉\n\n1️⃣ 土豆切块，茄子切块，青椒切片\n2️⃣ 土豆炸至金黄，茄子炸软捞出\n3️⃣ 锅内留底油，爆香蒜末\n4️⃣ 加青椒翻炒，倒入土豆茄子\n5️⃣ 加生抽、盐调味，水淀粉勾芡',
+    '干锅花菜':'🥦 花菜、五花肉片、干辣椒、花椒、姜蒜、生抽、蚝油\n\n1️⃣ 花菜掰小朵焯水1分钟\n2️⃣ 五花肉片煸炒出油\n3️⃣ 加干辣椒、花椒、姜蒜爆香\n4️⃣ 加入花菜大火翻炒\n5️⃣ 加生抽、蚝油、盐调味出锅',
+    '口水鸡':'🍗 鸡腿、姜、葱、料酒、辣椒油、花椒油、生抽、醋、糖、蒜末、芝麻、花生碎\n\n1️⃣ 鸡腿加姜葱料酒煮熟，冰水浸泡\n2️⃣ 去骨切块装盘\n3️⃣ 调汁：辣椒油、花椒油、生抽、醋、糖、蒜末\n4️⃣ 浇在鸡肉上，撒芝麻花生碎',
+    '辣子鸡':'🍗 鸡腿肉、干辣椒大量、花椒、姜蒜、料酒、生抽、淀粉、芝麻\n\n1️⃣ 鸡肉切小块，加料酒、生抽、淀粉腌制\n2️⃣ 油温六成热，炸至金黄酥脆捞出\n3️⃣ 锅中留底油，炒香干辣椒、花椒、姜蒜\n4️⃣ 倒入鸡肉翻炒，撒芝麻出锅',
+    '东坡肉':'🥩 五花肉、冰糖、生抽、老抽、料酒、姜、葱、八角\n\n1️⃣ 五花肉切大块焯水\n2️⃣ 砂锅底铺葱姜，肉皮朝下放入\n3️⃣ 加冰糖、生抽、老抽、料酒、八角\n4️⃣ 加开水没过肉，小火慢炖2小时\n5️⃣ 翻面再炖1小时，收汁即可',
+    '梅菜扣肉':'🥩 五花肉、梅干菜、生抽、老抽、料酒、糖、姜\n\n1️⃣ 五花肉煮至八成熟，切片\n2️⃣ 梅干菜泡发洗净挤干\n3️⃣ 肉片加生抽、老抽、料酒、糖拌匀\n4️⃣ 碗中肉皮朝下铺好，上面铺梅干菜\n5️⃣ 上锅蒸1.5小时，倒扣装盘',
+    '土豆烧牛肉':'🥩 牛腩、土豆、胡萝卜、姜、八角、生抽、老抽、料酒\n\n1️⃣ 牛腩切块焯水\n2️⃣ 锅中炒香姜片、八角，加牛腩翻炒\n3️⃣ 加生抽、老抽、料酒，加水烧开\n4️⃣ 小火炖1小时\n5️⃣ 加土豆、胡萝卜块再炖20分钟',
+    '青椒肉丝':'🥩 猪里脊、青椒、姜蒜、生抽、料酒、淀粉\n\n1️⃣ 里脊切丝，加料酒、淀粉抓匀\n2️⃣ 青椒切丝\n3️⃣ 肉丝滑油变色盛出\n4️⃣ 爆香姜蒜，加青椒翻炒\n5️⃣ 倒回肉丝，加生抽调味炒匀',
+    '黄焖鸡':'🍗 鸡腿、香菇、青椒、姜蒜、生抽、老抽、料酒、冰糖\n\n1️⃣ 鸡腿剁块焯水\n2️⃣ 锅中炒香姜蒜，加鸡块翻炒\n3️⃣ 加生抽、老抽、料酒、冰糖\n4️⃣ 加泡发的香菇和水，小火炖15分钟\n5️⃣ 加青椒块再炒2分钟出锅',
+    '卤肉饭':'🍚 五花肉、洋葱、香菇、鸡蛋、生抽、老抽、冰糖、八角\n\n1️⃣ 五花肉切小丁，洋葱切碎\n2️⃣ 炒香洋葱碎至金黄\n3️⃣ 加肉丁炒变色，加香菇丁\n4️⃣ 加生抽、老抽、冰糖、八角，加水炖40分钟\n5️⃣ 配米饭、卤蛋享用',
+    '炸酱面':'🍜 面条、五花肉丁、甜面酱、黄豆酱、黄瓜丝、豆芽\n\n1️⃣ 五花肉丁煸炒出油\n2️⃣ 加甜面酱和黄豆酱（1:1）炒出香味\n3️⃣ 加少许水熬煮5分钟\n4️⃣ 面条煮熟捞出\n5️⃣ 浇上炸酱，配黄瓜丝、豆芽',
+    '牛肉面':'🍜 牛腩、面条、姜、八角、桂皮、生抽、老抽、料酒、香菜\n\n1️⃣ 牛腩焯水，切块\n2️⃣ 炒香姜片、八角、桂皮\n3️⃣ 加牛腩翻炒，加生抽、老抽、料酒\n4️⃣ 加水烧开，小火炖1.5小时\n5️⃣ 面条煮熟，浇牛肉和汤，撒香菜',
+    '螺蛳粉':'🍜 螺蛳粉一包、酸笋、花生、腐竹、木耳、青菜、辣椒油\n\n1️⃣ 干米粉冷水泡软\n2️⃣ 水开煮米粉至筷子能夹断\n3️⃣ 捞出过凉水\n4️⃣ 另起锅煮汤包，加酸笋、木耳等配料\n5️⃣ 倒入米粉，加辣椒油、醋，撒花生腐竹',
+    '酸辣粉':'🍜 红薯粉条、肉末、花生、香菜、醋、辣椒油、生抽、蒜末\n\n1️⃣ 粉条泡软煮熟捞出\n2️⃣ 炒香肉末\n3️⃣ 碗中调：醋3勺、辣椒油2勺、生抽1勺、蒜末、盐、糖\n4️⃣ 加开水冲开料汁\n5️⃣ 放入粉条，加肉末、花生、香菜',
+    '麻辣烫':'🥘 各种蔬菜、丸子、粉丝、豆腐、麻辣烫底料、芝麻酱、蒜末\n\n1️⃣ 锅中炒香麻辣烫底料\n2️⃣ 加水烧开，先煮难熟的食材（丸子、豆腐）\n3️⃣ 再煮蔬菜、粉丝至熟\n4️⃣ 碗中放芝麻酱、蒜末\n5️⃣ 倒入煮好的食材和汤即可',
+    '火锅':'🥘 火锅底料、各种肉片、蔬菜、丸子、菌菇、蘸料\n\n1️⃣ 锅中加水烧开，放入火锅底料\n2️⃣ 调蘸料：芝麻酱、蒜末、葱花、香菜、腐乳、韭菜花\n3️⃣ 先涮肉类，再涮蔬菜菌菇\n4️⃣ 边煮边吃，随时加汤',
+    '烧烤':'🥩 各种肉串、鸡翅、蔬菜、烧烤料、油、孜然、辣椒粉\n\n1️⃣ 食材腌制：生抽、料酒、烧烤料、油\n2️⃣ 炭火或烤箱预热\n3️⃣ 肉串烤至变色翻面\n4️⃣ 撒孜然、辣椒粉\n5️⃣ 烤至两面金黄即可',
+    '小龙虾':'🦞 小龙虾2斤、火锅底料、干辣椒、花椒、姜蒜、啤酒、生抽、糖\n\n1️⃣ 小龙虾刷洗干净，去虾线\n2️⃣ 油锅炸至变红捞出\n3️⃣ 炒香火锅底料、干辣椒、花椒、姜蒜\n4️⃣ 倒入小龙虾翻炒，加啤酒没过\n5️⃣ 加生抽、糖调味，煮10分钟入味',
+    '白切鸡':'🍗 三黄鸡1只、姜、葱、料酒、冰水\n\n1️⃣ 鸡洗净，水加姜葱料酒烧开\n2️⃣ 放入鸡，大火煮10分钟关火\n3️⃣ 盖盖焖15分钟至熟\n4️⃣ 捞出放入冰水浸泡10分钟（皮更脆）\n5️⃣ 斩块，蘸姜葱酱或酱油吃',
+    '盐焗鸡':'🍗 三黄鸡1只、盐焗鸡粉、姜黄粉、粗盐\n\n1️⃣ 鸡洗净擦干，抹盐焗鸡粉和姜黄粉\n2️⃣ 用油纸包好鸡\n3️⃣ 锅中粗盐炒热，铺一半在锅底\n4️⃣ 放入包好的鸡，盖上剩余粗盐\n5️⃣ 小火焗40分钟，取出撕块',
+    '手撕鸡':'🍗 鸡胸肉、黄瓜、香菜、蒜末、辣椒油、生抽、醋、糖、芝麻\n\n1️⃣ 鸡胸肉煮熟，放凉撕成丝\n2️⃣ 黄瓜切丝，香菜切段\n3️⃣ 调汁：辣椒油、生抽、醋、糖、蒜末\n4️⃣ 所有食材拌匀，撒芝麻',
+    '烤鱼':'🐟 草鱼或鲈鱼、火锅底料、豆芽、土豆、藕片、干辣椒、花椒\n\n1️⃣ 鱼开背，加料酒、盐腌制\n2️⃣ 烤箱200度烤15分钟\n3️⃣ 炒香火锅底料、干辣椒、花椒\n4️⃣ 加水烧开，加配菜煮至断生\n5️⃣ 配菜铺盘底，放上烤鱼，浇汤汁再烤5分钟',
+    '凉皮':'🥟 凉皮（买现成的）、面筋、黄瓜、豆芽、醋、辣椒油、蒜水、芝麻酱\n\n1️⃣ 凉皮切宽条，面筋切块\n2️⃣ 黄瓜切丝，豆芽焯水\n3️⃣ 碗中放凉皮、面筋、配菜\n4️⃣ 加醋、辣椒油、蒜水、芝麻酱拌匀',
+    '饺子':'🥟 饺子皮、猪肉馅、韭菜/白菜、姜末、生抽、盐、香油\n\n1️⃣ 肉馅加姜末、生抽、盐、香油拌匀\n2️⃣ 加入切碎的韭菜或白菜搅匀\n3️⃣ 取饺子皮包馅，捏紧\n4️⃣ 水开下饺子，煮至浮起加凉水\n5️⃣ 重复三次，捞出即可',
+    '云吞':'🥟 云吞皮、猪肉馅、虾仁、姜末、生抽、盐、紫菜、虾皮\n\n1️⃣ 肉馅加虾仁丁、姜末、生抽、盐拌匀\n2️⃣ 云吞皮包馅，捏紧\n3️⃣ 水开下云吞，煮至浮起\n4️⃣ 碗中放紫菜、虾皮、生抽、香油\n5️⃣ 舀入煮好的云吞和汤',
+    '馄饨':'🥟 馄饨皮、猪肉馅、姜末、生抽、盐、紫菜、蛋皮丝、香菜\n\n1️⃣ 肉馅加姜末、生抽、盐、香油拌匀\n2️⃣ 馄饨皮包馅（对折再对折）\n3️⃣ 水开下馄饨，煮至浮起\n4️⃣ 碗中放紫菜、蛋皮丝、生抽、香油\n5️⃣ 盛入馄饨和汤，撒香菜',
+    '包子':'🥟 面粉、酵母、猪肉馅、姜末、生抽、盐、葱花\n\n1️⃣ 面粉加酵母温水揉成团，发酵至2倍大\n2️⃣ 肉馅加姜末、生抽、盐、葱花搅匀\n3️⃣ 面团排气，擀成中间厚边缘薄的面皮\n4️⃣ 包入馅料，捏褶收口\n5️⃣ 二次发酵15分钟，上锅蒸15分钟',
+    '煎饼果子':'🥟 面粉、鸡蛋、油条或薄脆、葱花、甜面酱、辣椒酱\n\n1️⃣ 面粉加水调成稀面糊\n2️⃣ 平底锅刷油，倒入面糊摊平\n3️⃣ 打一个鸡蛋摊开，撒葱花\n4️⃣ 翻面，刷甜面酱和辣椒酱\n5️⃣ 放油条或薄脆，卷起出锅',
+    '肠粉':'🥟 肠粉专用粉、水、鸡蛋、虾仁、生菜、生抽\n\n1️⃣ 肠粉粉加水调成浆\n2️⃣ 蒸盘刷油，倒入薄薄一层粉浆\n3️⃣ 撒虾仁或打一个鸡蛋，放生菜\n4️⃣ 上锅蒸2分钟至透明\n5️⃣ 用刮板卷起，淋生抽即可',
+    '过桥米线':'🍜 米线、鸡汤、鹌鹑蛋、火腿片、豆腐皮、豆芽、韭菜、菊花\n\n1️⃣ 熬一锅浓郁鸡汤，倒入砂锅保持滚烫\n2️⃣ 米线提前泡软\n3️⃣ 依次将生鹌鹑蛋、火腿片、豆腐皮放入汤中烫熟\n4️⃣ 加入米线、豆芽、韭菜烫一下\n5️⃣ 撒菊花瓣点缀',
+    '热干面':'🍜 碱面条、芝麻酱、生抽、醋、辣萝卜丁、葱花、香油\n\n1️⃣ 碱面条煮至八成熟，捞出拌油晾凉\n2️⃣ 吃前开水烫热面条\n3️⃣ 芝麻酱加生抽、醋、香油调开\n4️⃣ 面条浇芝麻酱，撒萝卜丁和葱花',
+    '担担面':'🍜 面条、猪肉末、碎米芽菜、花生碎、辣椒油、花椒粉、醋、蒜末\n\n1️⃣ 炒香肉末，加芽菜炒匀\n2️⃣ 碗中调：辣椒油、醋、生抽、花椒粉、蒜末\n3️⃣ 面条煮熟捞出放入碗中\n4️⃣ 加肉末芽菜、花生碎、葱花',
+    '刀削面':'🍜 刀削面片、牛肉/猪肉、番茄、青菜、生抽、盐\n\n1️⃣ 面片开水煮熟捞出\n2️⃣ 番茄切块炒出汁，加水烧开\n3️⃣ 加入肉片煮熟，加生抽、盐调味\n4️⃣ 放入面片和青菜煮1分钟',
+    '煲仔饭':'🍚 大米、腊肠/排骨、姜丝、生抽、老抽、油、葱花\n\n1️⃣ 大米浸泡30分钟\n2️⃣ 砂锅刷油，倒入米和水（1:1.2）\n3️⃣ 大火烧开转小火，焖至水分收干\n4️⃣ 铺上腊肠片或排骨、姜丝\n5️⃣ 沿锅边淋一圈油，小火焖10分钟\n6️⃣ 淋酱汁（生抽+老抽+糖），撒葱花',
+    '盖浇饭':'🍚 米饭1碗、任意炒菜（番茄炒蛋/宫保鸡丁/回锅肉等）、葱花\n\n1️⃣ 做一道自己喜欢的炒菜\n2️⃣ 米饭盛入碗中\n3️⃣ 把炒菜连汤汁浇在米饭上\n4️⃣ 撒葱花即可',
+    '叉烧饭':'🍚 叉烧肉、米饭、青菜、鸡蛋、叉烧汁\n\n1️⃣ 五花肉用叉烧酱、蜂蜜、生抽腌制过夜\n2️⃣ 烤箱200度烤25分钟，刷蜂蜜再烤10分钟\n3️⃣ 切片\n4️⃣ 米饭装碗，铺叉烧肉、烫青菜、煎蛋\n5️⃣ 淋烤盘里的叉烧汁',
+    '烧鸭饭':'🍚 烧鸭（买现成）、米饭、酸梅酱、青菜\n\n1️⃣ 烧鸭切块\n2️⃣ 米饭装碗\n3️⃣ 铺上烧鸭块和烫青菜\n4️⃣ 配酸梅酱蘸食',
+    '水煮蛋/煮鸡蛋':'🥚 鸡蛋、水\n\n1️⃣ 鸡蛋放入锅中，加水没过\n2️⃣ 水开后煮6-8分钟（溏心/全熟）\n3️⃣ 捞出冲凉水即可',
+    '荷包蛋':'🥚 鸡蛋、油、盐\n\n1️⃣ 平底锅加油烧热\n2️⃣ 打入鸡蛋，小火煎至蛋白凝固\n3️⃣ 撒少许盐\n4️⃣ 单面或翻面煎至喜欢程度',
+    '三明治':'🥪 吐司2片、鸡蛋、火腿/培根、生菜、芝士片、沙拉酱\n\n1️⃣ 吐司烤至微焦\n2️⃣ 鸡蛋煎熟，火腿煎香\n3️⃣ 吐司上依次放生菜、火腿、鸡蛋、芝士\n4️⃣ 挤沙拉酱，盖上另一片吐司\n5️⃣ 对角切开即可',
+    '牛奶燕麦/麦片':'🥣 燕麦片、牛奶/酸奶、水果、坚果、蜂蜜\n\n1️⃣ 燕麦片用热牛奶冲泡（或冷泡过夜）\n2️⃣ 加入切好的水果（香蕉/蓝莓等）\n3️⃣ 撒坚果\n4️⃣ 淋少许蜂蜜即可',
+    '咖喱土豆肥牛':'🥩 肥牛卷、土豆1个、胡萝卜半根、洋葱半个、咖喱块2块、生抽、料酒\n\n1️⃣ 土豆胡萝卜切丁，洋葱切丝\n2️⃣ 肥牛卷焯水变色捞出\n3️⃣ 锅中炒香洋葱，加土豆胡萝卜炒2分钟\n4️⃣ 加水没过食材，煮至土豆软烂\n5️⃣ 关火加入咖喱块搅拌至融化\n6️⃣ 放入肥牛卷，开火煮1分钟即可',
+    '咖喱土豆鸡肉':'🍗 鸡腿肉2个、土豆1个、胡萝卜半根、洋葱半个、咖喱块2块、姜、料酒\n\n1️⃣ 鸡腿肉切块，加料酒腌制10分钟\n2️⃣ 土豆胡萝卜切丁，洋葱切块\n3️⃣ 炒香姜片和洋葱，加鸡肉炒至变色\n4️⃣ 加土豆胡萝卜翻炒，加水没过食材\n5️⃣ 煮至土豆软烂，关火加咖喱块搅化\n6️⃣ 开火收汁至浓稠即可'
+};
+function getDayName(offset){
+    const days = ['周日','周一','周二','周三','周四','周五','周六'];
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return { name: days[d.getDay()], date: (d.getMonth()+1)+'/'+d.getDate(), key: d.toISOString().slice(0,10) };
+}
+function getMealPlan(){
+    const mon = new Date();
+    mon.setDate(mon.getDate() - ((mon.getDay()||7)-1));
+    const weekKey = mon.toISOString().slice(0,10);
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    if(!all[weekKey]){
+        all[weekKey] = {};
+        for(let i=0;i<7;i++){
+            const d = new Date(mon);
+            d.setDate(d.getDate()+i);
+            const k = d.toISOString().slice(0,10);
+            all[weekKey][k] = { breakfast: [], lunch: [], dinner: [] };
+        }
+        localStorage.setItem('jz_meal_plan', JSON.stringify(all));
+    }
+    return { weekKey, plan: all[weekKey], all };
+}
+function saveMealPlan(all){ localStorage.setItem('jz_meal_plan', JSON.stringify(all)); }
+function showRecipe(name, e){
+    if(e){ e.stopPropagation(); }
+    const recipe = RECIPES[name];
+    if(!recipe) return;
+    const lines = recipe.split('\n');
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:10002;max-height:80vh;overflow-y:auto;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🍳 ' + name + ' 做法</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div><div class="sheet-body">';
+    html += '<div style="line-height:1.8;font-size:14px;">';
+    lines.forEach(l => {
+        if(l.match(/^\d/)) html += '<div style="display:flex;gap:8px;margin-bottom:6px;padding:6px 10px;background:var(--input-bg);border-radius:8px;">' + l + '</div>';
+        else if(l.trim()) html += '<div style="margin-bottom:4px;">' + l + '</div>';
+    });
+    html += '</div></div>';
+    sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+function showMealPlan(){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('pageMealPlan').classList.add('active');
+    renderMealPlan();
+}
+function renderMealPlan(){
+    const { weekKey, plan } = getMealPlan();
+    const container = document.getElementById('mealPlanContent');
+    const keys = Object.keys(plan);
+    const first = new Date(keys[0]+'T00:00:00');
+    const last = new Date(keys[keys.length-1]+'T00:00:00');
+    const weekLabel = (first.getMonth()+1)+'/'+first.getDate()+' ~ '+(last.getMonth()+1)+'/'+last.getDate();
+    let html = '<div class="meal-plan-wrap"><div style="text-align:center;"><span class="meal-week-label">📅 ' + weekLabel + '</span></div>';
+    for(const [dayKey, meals] of Object.entries(plan)){
+        const d = new Date(dayKey+'T00:00:00');
+        const dayName = ['日','一','二','三','四','五','六'][d.getDay()];
+        const dateStr = (d.getMonth()+1)+'/'+d.getDate();
+        const isToday = new Date().toISOString().slice(0,10) === dayKey;
+        const todayClass = isToday ? ' today' : '';
+        html += '<div class="meal-day-card' + todayClass + '">';
+        html += '<div class="meal-day-header"><span>' + (isToday?'🔴 ':'') + '周' + dayName + '</span><div><span class="day-date">' + dateStr + '</span><button class="meal-day-del" onclick="removeDay(\'' + dayKey + '\')" title="删除当天">✕</button></div></div>';
+        Object.keys(meals).forEach(slot => {
+            const labels = {breakfast:['☀️','早餐'],lunch:['🌤️','午餐'],dinner:['🌙','晚餐']};
+            const label = labels[slot] || [slot,''];
+            const dishes = meals[slot];
+            html += '<div class="meal-slot">';
+            html += '<div class="meal-slot-label ' + slot + '">' + label[0] + label[1] + '</div><button class="meal-slot-del" onclick="removeSlot(\'' + dayKey + '\',\'' + slot + '\')" title="删除该餐">✕</button>';
+            html += '<div class="meal-dishes">';
+            if(dishes.length===0){
+                html += '<span class="meal-slot-empty">— 无记录</span><button class="meal-add-btn" onclick="openDishSearch(\'' + dayKey + '\',\'' + slot + '\')">+ 添加</button>';
+            } else {
+                dishes.forEach((d,i) => {
+                    const hasRecipe = RECIPES[d];
+                    const cls = 'meal-dish-tag' + (hasRecipe ? ' has-recipe' : '');
+                    const onclick = hasRecipe ? ' onclick="showRecipe(\'' + d.replace(/'/g,"\\'") + '\',event)" title="📖 查看做法" ' : '';
+                    html += '<span class="' + cls + '"' + onclick + '>' + d + (hasRecipe ? '👩‍🍳' : '') + '<span class="del" onclick="event.stopPropagation();removeDish(\'' + dayKey + '\',\'' + slot + '\',' + i + ')">✕</span></span>';
+                });
+                html += '<button class="meal-add-btn" onclick="openDishSearch(\'' + dayKey + '\',\'' + slot + '\')">+ 添加</button>';
+            }
+            html += '</div></div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+function removeDish(dayKey, slot, idx){
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    const { weekKey } = getMealPlan();
+    if(all[weekKey] && all[weekKey][dayKey] && all[weekKey][dayKey][slot]){
+        all[weekKey][dayKey][slot].splice(idx, 1);
+        saveMealPlan(all);
+        renderMealPlan();
+    }
+}
+function removeSlot(dayKey, slot){
+    if(!confirm('确定清空该餐？')) return;
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    const { weekKey } = getMealPlan();
+    if(all[weekKey] && all[weekKey][dayKey] && (slot in all[weekKey][dayKey])){
+        delete all[weekKey][dayKey][slot];
+        saveMealPlan(all);
+        renderMealPlan();
+    }
+}
+function removeDay(dayKey){
+    if(!confirm('确定删除当天所有记录？')) return;
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    const { weekKey } = getMealPlan();
+    if(all[weekKey] && all[weekKey][dayKey]){
+        delete all[weekKey][dayKey];
+        saveMealPlan(all);
+        renderMealPlan();
+    }
+}
+function openDishSearch(dayKey, slot){
+    const existing = document.querySelector('.meal-search-box');
+    if(existing) existing.remove();
+    const box = document.createElement('div');
+    box.className = 'meal-search-box';
+    box.innerHTML = '<div class="search-header"><span style="font-size:16px;font-weight:600;">🍳 添加菜品</span><span style="font-size:20px;cursor:pointer;" onclick="this.parentElement.parentElement.remove()">✕</span></div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
+            '<input type="text" id="dishSearchInput" placeholder="输入菜名，回车添加..." style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);" oninput="filterDishes()" onkeydown="if(event.key===\'Enter\'){confirmAddDish();}">' +
+            '<button onclick="confirmAddDish()" style="padding:10px 14px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">添加</button>' +
+        '</div>' +
+        '<div id="dishSearchResults"></div>';
+    document.body.appendChild(box);
+    box.dataset.dayKey = dayKey;
+    box.dataset.slot = slot;
+    document.getElementById('dishSearchInput').focus();
+    filterDishes();
+}
+function confirmAddDish(){
+    const q = document.getElementById('dishSearchInput').value.trim();
+    if(!q) return;
+    const box = document.querySelector('.meal-search-box');
+    if(!box) return;
+    const dayKey = box.dataset.dayKey;
+    const slot = box.dataset.slot;
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    const { weekKey } = getMealPlan();
+    if(all[weekKey] && all[weekKey][dayKey]){
+        if(!all[weekKey][dayKey][slot]) all[weekKey][dayKey][slot] = [];
+        if(!all[weekKey][dayKey][slot].includes(q)){
+            all[weekKey][dayKey][slot].push(q);
+            saveMealPlan(all);
+        }
+    }
+    box.remove();
+    renderMealPlan();
+}
+function filterDishes(){
+    const q = document.getElementById('dishSearchInput').value.trim().toLowerCase();
+    const results = document.getElementById('dishSearchResults');
+    if(!q){ results.innerHTML = ''; return; }
+    const hits = [];
+    for(const [type, list] of Object.entries(DISH_DB)){
+        list.forEach(name => {
+            if(name.includes(q)) hits.push({ name, type });
+        });
+    }
+    if(hits.length===0){ results.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px;">按回车直接添加自定义菜名</div>'; return; }
+    results.innerHTML = hits.map(h =>
+        '<div class="meal-search-result" onclick="selectDish(\'' + h.name + '\')">' + h.name + '<span class="meal-type-label">' + (h.type==='breakfast'?'☀️早餐':h.type==='lunch'?'🌤️午餐':'🌙晚餐') + '</span></div>'
+    ).join('');
+}
+function selectDish(name){
+    const box = document.querySelector('.meal-search-box');
+    if(!box) return;
+    const dayKey = box.dataset.dayKey;
+    const slot = box.dataset.slot;
+    const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
+    const { weekKey } = getMealPlan();
+    if(all[weekKey] && all[weekKey][dayKey]){
+        if(!all[weekKey][dayKey][slot]) all[weekKey][dayKey][slot] = [];
+        if(!all[weekKey][dayKey][slot].includes(name)){
+            all[weekKey][dayKey][slot].push(name);
+            saveMealPlan(all);
+        }
+    }
+    box.remove();
+    renderMealPlan();
+}
 // ========== TRANSACTION LIST ==========
 function renderAllList(){
     const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -971,8 +1397,13 @@ function renderAllList(){
 function filterCategory(cate){
     FILTER_CATE = cate;
     renderCateList();
-    document.getElementById('pageCateTitle').textContent = `${cate} 明细`;
-    // show page
+    document.getElementById('pageCateTitle').textContent = cate + ' 明细';
+    const tabBtn = document.getElementById('mealPlanTabBtn');
+    tabBtn.style.display = cate === '吃喝' ? 'inline' : 'none';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('pageCate').classList.add('active');
+}
+function showCatePage(){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('pageCate').classList.add('active');
 }
@@ -1492,8 +1923,9 @@ function renderCharts(){
     // Budget check
     const monthIncome = DATA.filter(i => i.type === 'income' && i.date.slice(0,7) === CURRENT_MONTH).reduce((s,i) => s + i.amount, 0);
     const autoBudget = Math.round(monthIncome * 0.7);
-    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
-    const budget = savedBudget && savedBudget.month === CURRENT_MONTH ? savedBudget.amount : autoBudget;
+    const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
+    const budget = budgetMap[CURRENT_MONTH] || autoBudget;
     if (CHART_MODE === 'month' && budget > 0 && total > budget) {
         suggestions.push(`🚨 本月已超预算 <b>¥${(total - budget).toFixed(0)}</b>`);
     } else if (CHART_MODE === 'month' && budget > 0 && total > budget * 0.7) {
@@ -1768,8 +2200,9 @@ function longPressMove(e){
 function showCategoryBudget(cate){
     const monthIncome = getMonthData().filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const autoTotal = Math.round(monthIncome * 0.7);
-    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
-    const budget = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : autoTotal;
+    const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
+    const budget = budgetMap[CURRENT_MONTH] || autoTotal;
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
     const monthCatBudgets = catBudgets[CURRENT_MONTH] || {};
     const spent = DATA.filter(i=>i.type==='expense'&&i.cate===cate&&i.date.slice(0,7)===CURRENT_MONTH)
@@ -1837,20 +2270,33 @@ function saveCatBudget(cate){
 }
 
 // ========== EDIT BUDGET ==========
-function editBudget(){
-    const savedBudget = JSON.parse(localStorage.getItem('jz_custom_budget'));
-    const current = savedBudget && savedBudget.month===CURRENT_MONTH ? savedBudget.amount : 0;
-    const input = prompt('修改本月预算金额（¥）：', current||'');
+function editBudget(autoVal){
+    const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
+    const current = budgetMap[CURRENT_MONTH] || 0;
+    if(autoVal !== undefined){
+        const val = autoVal;
+        if(val<=0) return;
+        budgetMap[CURRENT_MONTH] = val;
+        localStorage.setItem('jz_custom_budget', JSON.stringify(budgetMap));
+        refreshAll();
+        showToast('✅ 预算已自动调整为 ¥'+val.toFixed(0));
+        return;
+    }
+    const input = prompt('修改 ' + CURRENT_MONTH + ' 月预算金额（¥）：', current||'');
     if(input===null) return;
     const val = parseFloat(input);
     if(isNaN(val) || val<0) return showToast('请输入有效金额');
     if(val===0){
-        localStorage.removeItem('jz_custom_budget');
+        delete budgetMap[CURRENT_MONTH];
+        if(Object.keys(budgetMap).length===0) localStorage.removeItem('jz_custom_budget');
+        else localStorage.setItem('jz_custom_budget', JSON.stringify(budgetMap));
     } else {
-        localStorage.setItem('jz_custom_budget', JSON.stringify({month: CURRENT_MONTH, amount: val}));
+        budgetMap[CURRENT_MONTH] = val;
+        localStorage.setItem('jz_custom_budget', JSON.stringify(budgetMap));
     }
     refreshAll();
-    showToast('✅ 预算已更新 ¥'+val.toFixed(0));
+    showToast('✅ ' + CURRENT_MONTH + ' 预算已设为 ¥'+val.toFixed(0));
 }
 
 // ========== MANAGE CATEGORIES ==========
@@ -2080,11 +2526,13 @@ function showToast(msg){
 }
 
 // ========== DARK MODE ==========
-function toggleDark(){
-    DARK = !DARK;
-    document.body.classList.toggle('dark', DARK);
-    document.getElementById('darkToggle').classList.toggle('on', DARK);
-    localStorage.setItem('jz_dark', DARK?'1':'0');
+function setTheme(t){
+    THEME = t;
+    document.body.classList.remove('dark','theme-blue');
+    if(t==='dark') document.body.classList.add('dark');
+    else if(t!=='light') document.body.classList.add('theme-'+t);
+    document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active', d.dataset.theme===t));
+    localStorage.setItem('jz_theme', t);
 }
 
 // ========== TAB SWITCH ==========
@@ -2790,7 +3238,7 @@ function renderFriendPage(){
     });
     
     if(friends.length === 0){
-        listEl.innerHTML = reqHtml + '<div class="empty-state"><div class="empty-icon">🤝</div><p>暂无好友，上方输入好友码添加</p></div>';
+        listEl.innerHTML = reqHtml + '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🤝</div><p style="font-size:15px;color:var(--text2);">暂无好友，输入好友码添加吧</p><p style="font-size:12px;color:var(--text2);margin-top:4px;opacity:.6;">交换好友码即可互相添加</p></div>';
         return;
     }
     
@@ -2799,19 +3247,18 @@ function renderFriendPage(){
     friends.forEach(f => {
         const isOnline = !!PEER_CONNS[f.id];
         const taskData = getFriendTask(today, f.id);
-        const preview = taskData.fromFriend ? (taskData.done ? '✅ ' : '🎯 ') + taskData.fromFriend : (taskData.myTask ? '📤 已发任务' : '💤 暂无任务');
-        const avatar = f.avatar || f.name?.[0] || f.id[0];
+        const preview = taskData.fromFriend ? (taskData.done ? '✅ 已完成任务' : '🎯 ' + taskData.fromFriend) : (taskData.myTask ? '📤 已发任务' : '💤 暂无互动');
+        const avatar = f.avatar || (f.name ? f.name[0] : f.id[0]);
         
-        html += '<div class="chart-card" style="margin:0 16px 6px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;" onclick="switchToFriendChat(\'' + f.id + '\')">' +
-            '<div style="width:40px;height:40px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单">' + avatar + '</div>' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-                    '<span style="font-size:14px;font-weight:600;">' + (f.name || f.id.slice(0,8)) + '</span>' +
-                    '<span style="font-size:10px;">' + (isOnline ? '🟢' : '🟡') + '</span>' +
-                '</div>' +
-                '<div style="font-size:12px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + preview + '</div>' +
+        html += '<div class="friend-card" onclick="switchToFriendChat(\'' + f.id + '\')">' +
+            '<div class="friend-avatar" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单">' + avatar + '</div>' +
+            '<div class="friend-info">' +
+                '<div class="friend-name">' + (f.name || f.id.slice(0,8)) + ' <span style="font-size:10px;color:var(--text2);font-weight:400;">' + (isOnline ? '🟢 在线' : '🟡 离线') + '</span></div>' +
+                '<div class="friend-id">' + preview + '</div>' +
             '</div>' +
-            '<span style="color:var(--text2);font-size:16px;flex-shrink:0;">›</span>' +
+            '<div class="friend-btns">' +
+                '<button class="friend-btn chat" onclick="event.stopPropagation();switchToFriendChat(\'' + f.id + '\')">💬 聊天</button>' +
+            '</div>' +
         '</div>';
     });
     listEl.innerHTML = html;
