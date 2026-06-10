@@ -1193,15 +1193,17 @@ const RECIPES = {
     '咖喱土豆肥牛':'🥩 肥牛卷、土豆1个、胡萝卜半根、洋葱半个、咖喱块2块、生抽、料酒\n\n1️⃣ 土豆胡萝卜切丁，洋葱切丝\n2️⃣ 肥牛卷焯水变色捞出\n3️⃣ 锅中炒香洋葱，加土豆胡萝卜炒2分钟\n4️⃣ 加水没过食材，煮至土豆软烂\n5️⃣ 关火加入咖喱块搅拌至融化\n6️⃣ 放入肥牛卷，开火煮1分钟即可',
     '咖喱土豆鸡肉':'🍗 鸡腿肉2个、土豆1个、胡萝卜半根、洋葱半个、咖喱块2块、姜、料酒\n\n1️⃣ 鸡腿肉切块，加料酒腌制10分钟\n2️⃣ 土豆胡萝卜切丁，洋葱切块\n3️⃣ 炒香姜片和洋葱，加鸡肉炒至变色\n4️⃣ 加土豆胡萝卜翻炒，加水没过食材\n5️⃣ 煮至土豆软烂，关火加咖喱块搅化\n6️⃣ 开火收汁至浓稠即可'
 };
+let MEAL_WEEK_OFFSET = 0;
 function getDayName(offset){
     const days = ['周日','周一','周二','周三','周四','周五','周六'];
     const d = new Date();
     d.setDate(d.getDate() + offset);
     return { name: days[d.getDay()], date: (d.getMonth()+1)+'/'+d.getDate(), key: d.toISOString().slice(0,10) };
 }
-function getMealPlan(){
+function getMealPlan(offset){
+    offset = offset || MEAL_WEEK_OFFSET || 0;
     const mon = new Date();
-    mon.setDate(mon.getDate() - ((mon.getDay()||7)-1));
+    mon.setDate(mon.getDate() - ((mon.getDay()||7)-1) + offset * 7);
     const weekKey = mon.toISOString().slice(0,10);
     const all = JSON.parse(localStorage.getItem('jz_meal_plan') || '{}');
     if(!all[weekKey]){
@@ -1241,6 +1243,10 @@ function showMealPlan(){
     document.getElementById('pageMealPlan').classList.add('active');
     renderMealPlan();
 }
+function changeMealWeek(delta){
+    MEAL_WEEK_OFFSET += delta;
+    renderMealPlan();
+}
 function renderMealPlan(){
     const { weekKey, plan } = getMealPlan();
     const container = document.getElementById('mealPlanContent');
@@ -1248,7 +1254,7 @@ function renderMealPlan(){
     const first = new Date(keys[0]+'T00:00:00');
     const last = new Date(keys[keys.length-1]+'T00:00:00');
     const weekLabel = (first.getMonth()+1)+'/'+first.getDate()+' ~ '+(last.getMonth()+1)+'/'+last.getDate();
-    let html = '<div class="meal-plan-wrap"><div style="text-align:center;"><span class="meal-week-label">📅 ' + weekLabel + '</span></div>';
+    let html = '<div class="meal-plan-wrap"><div style="text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;"><button onclick="changeMealWeek(-1)" style="background:var(--input-bg);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--text);">‹</button><span class="meal-week-label">📅 ' + weekLabel + '</span><button onclick="changeMealWeek(1)" style="background:var(--input-bg);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--text);">›</button></div>' + (MEAL_WEEK_OFFSET!==0 ? '<div style="text-align:center;margin-top:4px;"><a href="#" onclick="MEAL_WEEK_OFFSET=0;renderMealPlan();return false;" style="font-size:12px;color:var(--primary);">回到本周</a></div>' : '');
     for(const [dayKey, meals] of Object.entries(plan)){
         const d = new Date(dayKey+'T00:00:00');
         const dayName = ['日','一','二','三','四','五','六'][d.getDay()];
