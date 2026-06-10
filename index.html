@@ -880,7 +880,7 @@ function refreshAll(){
     document.getElementById('previewRemainingDays').textContent = Math.max(0, remainingDays) + ' 天';
     
     // Header stats: income | expense | balance
-    const balance = income - expense;
+    const balance = income - expense - save;
     document.getElementById('headerStats').innerHTML = `
         <span>收入 ¥${income.toFixed(0)}</span>
         <span style="opacity:.5;">|</span>
