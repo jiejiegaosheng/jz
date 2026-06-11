@@ -811,7 +811,7 @@ if(!DATA.length){
     const seen = new Set();
     for(let k=0; k<localStorage.length; k++){
         const key = localStorage.key(k);
-        if(key==='jz_data'||key==='jz_data_backup'||key==='jz_budgets'||key==='jz_food_photos'||key==='jz_food_reminders'||key==='jz_cats'||key==='jz_custom_budget'||key==='jz_cat_budgets'||key==='jz_dark') continue;
+        if(key==='jz_data'||key==='jz_data_backup'||key==='jz_budgets'||key==='jz_food_reminders'||key==='jz_cats'||key==='jz_custom_budget'||key==='jz_cat_budgets'||key==='jz_dark') continue;
         try {
             const val = JSON.parse(localStorage.getItem(key));
             if(Array.isArray(val) && val.length){
@@ -885,8 +885,6 @@ function refreshAll(){
         <span>收入 ¥${income.toFixed(0)}</span>
         <span style="opacity:.5;">|</span>
         <span>支出 ¥${expense.toFixed(0)}</span>
-        <span style="opacity:.5;">|</span>
-        <span style="color:${balance>=0?'#fff':'#ff9a9a'};">结余 ¥${balance.toFixed(0)}</span>
     `;
     const dailyEl = document.getElementById('previewDailyAvg');
     const dailyCard = dailyEl.closest('.preview-item');
@@ -922,9 +920,9 @@ function refreshAll(){
     const displayTotal = pct>=100 ? totalCatBudget : remaining;
     bRow.innerHTML = `
         <div class="preview-item">
-            <span class="preview-icon">📊</span>
-            <div class="preview-label">预算总额</div>
-            <div class="preview-value" style="font-size:14px;">¥${totalCatBudget.toFixed(0)}</div>
+            <span class="preview-icon">💰</span>
+            <div class="preview-label">结余</div>
+            <div class="preview-value" style="font-size:14px;color:${balance>=0?'var(--in)':'var(--out)'};">¥${balance.toFixed(0)}</div>
         </div>
         <div class="preview-item" style="cursor:pointer;" onclick="${pct>=100?`editBudget(${expense.toFixed(0)})`:'editBudget()'}">
             <span class="preview-icon">${budgetIcon}</span>
@@ -1100,16 +1098,15 @@ function renderGroupedList(list, elId, startCollapsed){
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
                 <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(2)}</span>
             </div>`;
-        const foodPhotos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
         groups[date].forEach(i=>{
             const icon = findCat(i.type,i.cate).icon;
             let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
             if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
             else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
-            const hasPhoto = foodPhotos[i.id];
+            const hasPhoto = false;
             html += `<div class="transaction-item">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
-                <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}${hasPhoto?` <span style="font-size:11px;cursor:pointer;" onclick="viewFoodPhoto(${i.id},event)">📸</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
                 <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
                 <div class="tx-item-actions">
                     <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
@@ -1515,10 +1512,6 @@ function deleteTx(id){
     DATA = DATA.filter(i=>i.id!==id);
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
-    // Clean up photo
-    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-    delete photos[id];
-    localStorage.setItem('jz_food_photos', JSON.stringify(photos));
     // Clean up reminder
     const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
     delete reminders[id];
@@ -1560,108 +1553,7 @@ function saveTransaction(){
     closeSheet();
     refreshAll();
     showToast('保存成功 ✨');
-    // 吃喝交易 → 拍照提醒
-    if(ADD_TYPE==='expense' && cate==='吃喝' && newId){
-        setTimeout(()=>showFoodPhotoPrompt(newId), 600);
-    }
 }
-
-// ========== EXPENSE FOOD PHOTO ==========
-function viewFoodPhoto(txId, e){
-    if(e) e.stopPropagation();
-    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-    const dataUrl = photos[txId];
-    if(!dataUrl) return;
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:10003;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-    overlay.onclick = function(){ this.remove(); };
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    img.style.cssText = 'max-width:90%;max-height:80%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.4);';
-    overlay.appendChild(img);
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '🗑️ 删除照片';
-    delBtn.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);padding:12px 24px;border:none;border-radius:12px;background:var(--out);color:#fff;font-size:15px;font-weight:600;cursor:pointer;';
-    delBtn.onclick = function(e){
-        e.stopPropagation();
-        delete photos[txId];
-        localStorage.setItem('jz_food_photos', JSON.stringify(photos));
-        overlay.remove();
-        refreshAll();
-        showToast('照片已删除');
-    };
-    overlay.appendChild(delBtn);
-    document.body.appendChild(overlay);
-}
-function showFoodPhotoPrompt(txId){
-    if(!txId) return;
-    const existing = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-    if(existing[txId]) return; // already has photo
-    const sheet = document.createElement('div');
-    sheet.className = 'sheet show';
-    sheet.id = 'foodPhotoPrompt';
-    sheet.style.zIndex = '10002';
-    sheet.innerHTML = `
-    <div class="sheet-handle"></div>
-    <div class="sheet-header"><h2>📸 拍下食物照片</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
-    <div class="sheet-body">
-        <div style="text-align:center;font-size:14px;color:var(--text2);margin-bottom:16px;">记录这笔 ${'吃喝'} 的实物照片</div>
-        <button onclick="document.getElementById('foodPhotoInput').click();document.getElementById('foodPhotoInput').dataset.txid='${txId}';this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');"
-            style="width:100%;padding:18px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:12px;">📸 立即拍照</button>
-        <button onclick="setFoodReminder('${txId}');this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');"
-            style="width:100%;padding:18px;border:1.5px solid var(--border);border-radius:12px;background:var(--input-bg);color:var(--text);font-size:16px;font-weight:600;cursor:pointer;">⏰ 10分钟后提醒</button>
-    </div>`;
-    document.body.appendChild(sheet);
-    document.getElementById('overlay').classList.add('show');
-}
-
-function handleFoodPhoto(input){
-    const file = input.files[0];
-    const txId = input.dataset.txid;
-    if(!file || !txId) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-        const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-        photos[txId] = e.target.result;
-        localStorage.setItem('jz_food_photos', JSON.stringify(photos));
-        showToast('✅ 食物照片已保存');
-        refreshAll();
-    };
-    reader.readAsDataURL(file);
-    input.value = '';
-}
-
-function setFoodReminder(txId){
-    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
-    reminders[txId] = Date.now() + 10*60*1000;
-    localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
-    if('Notification' in window && Notification.permission === 'default'){
-        Notification.requestPermission();
-    }
-    showToast('⏰ 已设置10分钟拍照提醒');
-}
-
-function checkFoodReminders(){
-    const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
-    const now = Date.now();
-    for(const [txId, time] of Object.entries(reminders)){
-        if(time <= now){
-            delete reminders[txId];
-            localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
-            // show reminder
-            const tx = DATA.find(d=>d.id==parseFloat(txId));
-            if(tx) showFoodPhotoPrompt(txId);
-            return;
-        }
-    }
-}
-
-// Check food reminders on page focus
-document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState === 'visible') checkFoodReminders();
-});
-// Also check on load
-setTimeout(checkFoodReminders, 1000);
 
 function findCat(type,name){
     const cats = CATS[type]||CATS.expense;
@@ -2987,7 +2879,6 @@ function showAchievements(){
         { icon: '😊', name: '心情记录', check: moods>=10, desc: '记账时记录10次心情' },
         { icon: '🎯', name: '预算卫士', check: budgetMonths>=1, desc: '1个月支出未超预算' },
         { icon: '🎯', name: '预算大师', check: budgetMonths>=3, desc: '连续3个月未超预算' },
-        { icon: '📸', name: '美食猎人', check: checkFoodPhotos(), desc: '拍下3次食物照片' },
     ];
 
     const unlocked = achievements.filter(a=>a.check).length;
@@ -3031,10 +2922,6 @@ function getBudgetMonths(){
         if(inc>0 && exp <= inc*0.7) okCount++;
     });
     return okCount;
-}
-function checkFoodPhotos(){
-    const photos = JSON.parse(localStorage.getItem('jz_food_photos')) || {};
-    return Object.keys(photos).length >= 3;
 }
 
 // ========== FRIEND REQUESTS ==========
