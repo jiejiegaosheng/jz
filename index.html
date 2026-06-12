@@ -505,13 +505,29 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 
 <div class="page" id="pageSave">
     <div class="section-header"><h2>🏦 存款小金库</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">💰 攒钱进行时</span></div>
-    <div class="summary-row" style="padding-top:0;">
-        <div class="summary-card" style="background:linear-gradient(135deg,rgba(108,92,231,.08),rgba(162,155,254,.12));border-color:rgba(108,92,231,.2);"><div class="label">💰 总存款</div><div class="value" id="saveTotal" style="color:var(--primary);font-size:18px;">¥0</div></div>
-        <div class="summary-card" style="background:linear-gradient(135deg,rgba(0,184,148,.08),rgba(0,210,160,.12));border-color:rgba(0,184,148,.2);"><div class="label">📥 本月存入</div><div class="value" id="saveMonth" style="color:var(--in);font-size:18px;">¥0</div></div>
-        <div class="summary-card" style="background:linear-gradient(135deg,rgba(253,203,110,.08),rgba(225,112,85,.12));border-color:rgba(253,203,110,.2);"><div class="label">📋 存款笔数</div><div class="value" id="saveCount" style="color:#e17055;font-size:18px;">0</div></div>
+    <div class="preview-strip" style="padding-top:0;">
+        <div class="preview-item preview-save" style="border-color:rgba(108,92,231,.3);">
+            <span class="preview-icon">💰</span>
+            <div class="preview-label">总存款</div>
+            <div class="preview-value" id="saveTotal" style="font-size:16px;">¥0</div>
+        </div>
+        <div class="preview-item" style="border-color:rgba(0,184,148,.3);">
+            <span class="preview-icon">📥</span>
+            <div class="preview-label">本月存入</div>
+            <div class="preview-value" id="saveMonth" style="font-size:16px;color:var(--in);">¥0</div>
+        </div>
+        <div class="preview-item" style="border-color:rgba(108,92,231,.3);">
+            <span class="preview-icon">📋</span>
+            <div class="preview-label">存款月份</div>
+            <div class="preview-value" id="saveCount" style="font-size:16px;color:var(--primary);">0</div>
+        </div>
     </div>
-    <div class="section-header"><h2>📝 存款记录</h2></div>
-    <div class="transaction-list" id="saveList"></div>
+    <div class="annual-bar" style="padding:6px 16px 4px;">
+        <span class="annual-label">🏦 存款记录</span>
+        <span class="annual-divider">|</span>
+        <span id="saveStatsSub" style="font-size:12px;"></span>
+    </div>
+    <div id="saveList" style="padding:0 12px;"></div>
 </div>
 
 
@@ -1021,14 +1037,21 @@ function refreshAll(){
         '人情往来':{icon:'💌',tip:p=>p>=100?'🎉 社交达人' : p>=70?'🤝 人缘不错' : p>=40?'💬 保持联系' : '📱 社恐模式'},
         '杂七杂八':{icon:'🎲',tip:p=>p>=100?'🌀 意外开销' : p>=70?'🎪 生活丰富' : p>=40?'📦 零零碎碎' : '✨ 清清爽爽'}
     };
+    function getTip(cname, pct){
+        const m = moodTips[cname];
+        if(m) return m.tip(pct);
+        if(pct>=100) return '💥 超出预算了';
+        if(pct>=70) return '📈 花了不少';
+        if(pct>=40) return '📊 进度过半';
+        return '✅ 预算充足';
+    }
     el.innerHTML = cats.map(c=>{
         const spent = catTotals[c.name]||0;
         const catBudget = catEffectiveBudgets[c.name];
         const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : 0;
         const barColor = pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)';
-        const mood = moodTips[c.name];
         const funEmoji = pct>=100?'😱':pct>=80?'😅':pct>=50?'😊':pct>=20?'😌':'🌟';
-        const tip = mood ? mood.tip(pct) : '';
+        const tip = getTip(c.name, pct);
         const badge = pct>=100 ? '<span style="font-size:9px;background:var(--out);color:#fff;padding:2px 6px;border-radius:10px;margin-left:4px;vertical-align:middle;">超支</span>' : '';
         return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;overflow:hidden;border-left:3px solid ${barColor};" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1054,16 +1077,19 @@ function refreshAll(){
             incTotals[i.cate] = (incTotals[i.cate]||0) + i.amount;
         });
         const totalIncome = Object.values(incTotals).reduce((s,v)=>s+v,0);
-        const incMoods = {
-            '生活费':{tip:v=>v>=5000?'🤑 小富婆！':v>=2000?'💪 生活费到账':'💰 零花钱'},
-            '兼职收入':{tip:v=>v>=2000?'🚀 副业起飞！':v>=500?'💼 赚点外快':'✨ 小赚一笔'}
-        };
+        function getIncTip(cname, val){
+            const m = {'生活费':{tip:v=>v>=5000?'🤑 小富婆！':v>=2000?'💪 生活费到账':'💰 零花钱'},
+                       '兼职收入':{tip:v=>v>=2000?'🚀 副业起飞！':v>=500?'💼 赚点外快':'✨ 小赚一笔'}}[cname];
+            if(m) return m.tip(val);
+            if(val>=5000) return '🎉 收入可观！';
+            if(val>=1000) return '💰 不错的收入';
+            return '📥 小有进账';
+        }
         incEl.innerHTML = incomeCats.map(c=>{
             const val = incTotals[c.name]||0;
             const pct = totalIncome>0 ? (val/totalIncome*100) : 0;
-            const incMood = incMoods[c.name];
             const incFun = val>=5000?'🎉':val>=1000?'😎':'🙂';
-            const incTip = incMood ? incMood.tip(val) : '';
+            const incTip = getIncTip(c.name, val);
             return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;border-left:3px solid var(--in);" onclick="filterCategory('${c.name}')">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:22px;">${c.icon}</span>
@@ -1509,20 +1535,32 @@ function renderSavePage(){
     document.getElementById('saveTotal').textContent = '¥'+total.toFixed(0);
     document.getElementById('saveMonth').textContent = '¥'+(monthSaveVal||0).toFixed(0);
     document.getElementById('saveCount').textContent = Object.keys(allSaves).length;
+    document.getElementById('saveStatsSub').textContent = '共 ' + Object.keys(allSaves).length + ' 个月 · 月均 ¥' + (Object.keys(allSaves).length ? (total/Object.keys(allSaves).length).toFixed(0) : '0');
     const el = document.getElementById('saveList');
     const months = Object.keys(allSaves).sort().reverse();
     if(months.length===0){
-        el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🏦</div><p>还没有存款记录</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">点击"本月存款"开始攒钱</p></div>';
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🏦</div><p>还没有存款记录</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">点击首页"本月存款"开始攒钱</p></div>';
         return;
     }
     el.innerHTML = months.map(m => {
         const [y,mon] = m.split('-');
+        const pct = total > 0 ? (allSaves[m]/total*100) : 0;
         const isCur = m === curMonth;
-        return '<div class="budget-card" style="cursor:pointer;border-left:3px solid var(--primary);'+(isCur?'background:var(--input-bg);':'')+'" onclick="setMonthlySave(\''+m+'\')">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<span style="font-weight:600;">' + y + '年' + parseInt(mon) + '月</span>' +
-            '<span style="font-size:18px;font-weight:700;color:var(--primary);">¥' + allSaves[m].toFixed(0) + '</span>' +
-            '</div></div>';
+        return '<div class="chart-card" style="padding:14px;margin:0 4px 8px;cursor:pointer;border-left:3px solid ' + (isCur?'var(--primary)':'rgba(108,92,231,.25)') + ';' + (isCur?'background:var(--input-bg);':'') + '" onclick="setMonthlySave(\''+m+'\')">' +
+            '<div style="display:flex;align-items:center;gap:12px;">' +
+                '<div class="tx-icon" style="background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))">🏦</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+                        y + '年' + parseInt(mon) + '月' +
+                        (isCur?'<span style="font-size:9px;background:var(--primary);color:#fff;padding:1px 6px;border-radius:8px;">当前</span>':'') +
+                    '</div>' +
+                    '<div style="font-size:11px;color:var(--text2);margin-top:2px;">总存款 · 占 ' + pct.toFixed(1) + '%</div>' +
+                '</div>' +
+                '<div style="font-size:17px;font-weight:700;color:var(--primary);">¥' + allSaves[m].toFixed(2) + '</div>' +
+                '<button class="tx-btn-edit" style="opacity:.5;" onclick="event.stopPropagation();setMonthlySave(\''+m+'\')">✏️</button>' +
+            '</div>' +
+            (total > 0 ? '<div class="budget-bar" style="height:3px;margin-top:8px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
+        '</div>';
     }).join('');
 }
 function getMonthlySave(month){
@@ -2399,8 +2437,7 @@ function saveCatsFromUI(){
     const sheet = document.querySelector('.sheet.show');
     if(sheet) { sheet.remove(); document.getElementById('overlay').classList.remove('show'); }
     refreshAll();
-    renderBudgetModule();
-    toast('分类已保存');
+    showToast('分类已保存');
 }
 
 // ========== DATA RECOVERY ==========
