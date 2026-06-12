@@ -436,7 +436,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <div class="quick-actions">
         <button class="quick-btn income" onclick="openAdd('income')">➕ 记一笔收入</button>
         <button class="quick-btn expense" onclick="openAdd('expense')">➖ 记一笔支出</button>
-        <button class="quick-btn save" onclick="setMonthlySave()">🏦 本月存款</button>
+        <button class="quick-btn save" onclick="openAdd('save')">🏦 记一笔存款</button>
     </div>
     <div class="section-header" style="padding-bottom:6px;">
         <h2>支出明细</h2>
@@ -731,7 +731,7 @@ function normItem(i){
     return {
         id: i.id || Date.now()+Math.random(),
         type,
-        cate: type==='save' ? '总存款' : (i.cate || '吃喝'),
+        cate: type==='save' ? (i.cate || '存款') : (i.cate || '吃喝'),
         amount: i.money ?? i.amount ?? 0,
         date: i.date || new Date().toISOString().slice(0,10),
         note: i.remark ?? i.note ?? '',
@@ -766,8 +766,8 @@ function loadData(){
     // Final dedupe
     const seen2 = new Set();
     d = d.filter(i=>{ const k=String(i.id); if(seen2.has(k)) return false; seen2.add(k); return true; });
-    // Fix: if cate was not normalized for save type
-    d.forEach(i => { if(i.type==='save' && i.cate!=='总存款') i.cate = '总存款'; });
+    // Migrate old '总存款' cate to '存款'
+    d.forEach(i => { if(i.type==='save' && i.cate==='总存款') i.cate = '存款'; });
     if(d.length){
         localStorage.setItem('jz_data', JSON.stringify(d));
         localStorage.setItem('jz_data_backup', JSON.stringify(d));
@@ -806,7 +806,7 @@ const CATS = {
         {icon:'💼',name:'兼职收入'},
     ],
     save: [
-        {icon:'🏦',name:'总存款'},
+        {icon:'🏦',name:'存款'},
     ]
 };
 
@@ -868,14 +868,15 @@ if(!DATA.length){
 // Migrate old per-entry saves to monthly format (runs once)
 function migrateOldSaves(){
     const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
-    let hasOld = false;
-    // Check DATA for save entries
-    DATA.forEach(i => {
-        if(i.type === 'save'){
-            const m = i.date.slice(0,7);
-            if(!(m in monthly)){ monthly[m] = Math.round((monthly[m]||0) + i.amount); }
-            hasOld = true;
-        }
+    let changed = false;
+    // Rebuild monthly totals from DATA save entries (keeps entries in DATA for sub-category breakdown)
+    const dataMonths = {};
+    DATA.filter(i => i.type === 'save').forEach(i => {
+        const m = i.date.slice(0,7);
+        dataMonths[m] = (dataMonths[m] || 0) + i.amount;
+    });
+    Object.keys(dataMonths).forEach(m => {
+        if(monthly[m] !== dataMonths[m]){ monthly[m] = dataMonths[m]; changed = true; }
     });
     // Also scan other localStorage keys for old save entries that might have been lost
     for(let k = 0; k < localStorage.length; k++){
@@ -888,18 +889,18 @@ function migrateOldSaves(){
                     const t = (i.type || '').toLowerCase();
                     if(t === 'save' || t === '存款' || t === 'saving'){
                         const item = normItem(i);
-                        const m = item.date.slice(0,7);
-                        if(!(m in monthly)){
+                        if(!DATA.find(x => x.id === item.id)){
+                            DATA.push(item);
+                            const m = item.date.slice(0,7);
                             monthly[m] = Math.round((monthly[m]||0) + item.amount);
-                            hasOld = true;
+                            changed = true;
                         }
                     }
                 });
             }
         } catch(e){}
     }
-    if(hasOld){
-        DATA = DATA.filter(i => i.type !== 'save');
+    if(changed){
         localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
         localStorage.setItem('jz_data', JSON.stringify(DATA));
         localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
@@ -1539,29 +1540,57 @@ function renderSavePage(){
     const el = document.getElementById('saveList');
     const months = Object.keys(allSaves).sort().reverse();
     if(months.length===0){
-        el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🏦</div><p>还没有存款记录</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">点击首页"本月存款"开始攒钱</p></div>';
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🏦</div><p>还没有存款记录</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">点击首页"记一笔存款"开始攒钱</p></div>';
         return;
     }
     el.innerHTML = months.map(m => {
         const [y,mon] = m.split('-');
         const pct = total > 0 ? (allSaves[m]/total*100) : 0;
         const isCur = m === curMonth;
-        return '<div class="chart-card" style="padding:14px;margin:0 4px 8px;cursor:pointer;border-left:3px solid ' + (isCur?'var(--primary)':'rgba(108,92,231,.25)') + ';' + (isCur?'background:var(--input-bg);':'') + '" onclick="setMonthlySave(\''+m+'\')">' +
-            '<div style="display:flex;align-items:center;gap:12px;">' +
+        // Sub-category breakdown for this month
+        const monthEntries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===m);
+        const subTotals = {};
+        monthEntries.forEach(d => { subTotals[d.cate] = (subTotals[d.cate]||0) + d.amount; });
+        const breakdownHtml = Object.keys(subTotals).map(c => '<span style="font-size:10px;color:var(--text2);margin-right:8px;">' + c + ' ¥' + subTotals[c].toFixed(0) + '</span>').join('');
+        return '<div class="chart-card" style="padding:14px;margin:0 4px 8px;border-left:3px solid ' + (isCur?'var(--primary)':'rgba(108,92,231,.25)') + ';' + (isCur?'background:var(--input-bg);':'') + '">' +
+            '<div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="renderSaveMonthDetail(\''+m+'\')">' +
                 '<div class="tx-icon" style="background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))">🏦</div>' +
                 '<div style="flex:1;min-width:0;">' +
                     '<div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
                         y + '年' + parseInt(mon) + '月' +
                         (isCur?'<span style="font-size:9px;background:var(--primary);color:#fff;padding:1px 6px;border-radius:8px;">当前</span>':'') +
                     '</div>' +
-                    '<div style="font-size:11px;color:var(--text2);margin-top:2px;">总存款 · 占 ' + pct.toFixed(1) + '%</div>' +
+                    (breakdownHtml ? '<div style="margin-top:2px;">' + breakdownHtml + '</div>' : '') +
                 '</div>' +
                 '<div style="font-size:17px;font-weight:700;color:var(--primary);">¥' + allSaves[m].toFixed(2) + '</div>' +
-                '<button class="tx-btn-edit" style="opacity:.5;" onclick="event.stopPropagation();setMonthlySave(\''+m+'\')">✏️</button>' +
             '</div>' +
             (total > 0 ? '<div class="budget-bar" style="height:3px;margin-top:8px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
         '</div>';
     }).join('');
+}
+function renderSaveMonthDetail(month){
+    const entries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!entries.length){ showToast('该月无存款记录'); return; }
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:99999;max-height:75vh;overflow-y:auto;';
+    const [y,mon] = month.split('-');
+    let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;">🏦 ' + y + '年' + parseInt(mon) + '月 存款</h3><span onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="cursor:pointer;font-size:20px;color:var(--text2);">✕</span></div>';
+    html += '<div style="font-size:12px;color:var(--text2);margin-bottom:10px;">共 ' + entries.length + ' 笔，合计 ¥' + entries.reduce((s,e)=>s+e.amount,0).toFixed(2) + '</div>';
+    entries.forEach(e => {
+        html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;">' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:13px;font-weight:600;">' + e.cate + '</div>' +
+                '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
+            '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">¥' + e.amount.toFixed(2) + '</div>' +
+            '<button class="tx-btn-edit" onclick="openAdd(\'save\',' + e.id + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="opacity:.5;">✏️</button>' +
+            '<button class="tx-btn-edit" onclick="deleteTx(' + e.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
+        '</div>';
+    });
+    sheet.innerHTML = html;
+    document.getElementById('overlay').classList.add('show');
+    document.body.appendChild(sheet);
 }
 function getMonthlySave(month){
     const all = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
@@ -1587,7 +1616,7 @@ function setMonthlySave(month){
     // Sync a DATA entry so existing code that filters type==='save' still works
     DATA = DATA.filter(i => !(i.type==='save' && i.date.slice(0,7) === month));
     if(num > 0){
-        DATA.push({ id: Date.now(), type: 'save', cate: '总存款', amount: num, date: month + '-01', note: '' });
+        DATA.push({ id: Date.now(), type: 'save', cate: '存款', amount: num, date: month + '-01', note: '' });
     }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
@@ -1686,6 +1715,7 @@ function closeSheet(){
 
 function deleteTx(id){
     if(!confirm('确定删除这条记录吗？')) return;
+    const deleted = DATA.find(i=>i.id===id);
     DATA = DATA.filter(i=>i.id!==id);
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
@@ -1693,6 +1723,14 @@ function deleteTx(id){
     const reminders = JSON.parse(localStorage.getItem('jz_food_reminders')) || {};
     delete reminders[id];
     localStorage.setItem('jz_food_reminders', JSON.stringify(reminders));
+    // Update monthly save cache if deleting a save entry
+    if(deleted && deleted.type==='save'){
+        const m = deleted.date.slice(0,7);
+        const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+        monthly[m] = DATA.filter(i => i.type==='save' && i.date.slice(0,7)===m).reduce((s,i) => s + i.amount, 0);
+        if(monthly[m] <= 0) delete monthly[m];
+        localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+    }
     refreshAll();
     showToast('已删除');
 }
@@ -1706,10 +1744,11 @@ function saveTransaction(){
     const mood = document.getElementById('addMood').value;
     const selected = document.querySelector('.cat-item.active');
     const cate = selected ? selected.dataset.cat : (CATS[ADD_TYPE]||CATS.expense)[0].name;
-    let newId;
+    let newId, oldSaveMonth;
     if(EDIT_ID){
         const idx = DATA.findIndex(d=>d.id===EDIT_ID);
         if(idx>=0){
+            oldSaveMonth = DATA[idx].date.slice(0,7);
             DATA[idx] = {...DATA[idx], type:ADD_TYPE, cate, amount:Math.round(amount*100)/100, date, note, mood};
         }
     } else {
@@ -1726,6 +1765,17 @@ function saveTransaction(){
     }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    // Sync to monthly save when type is save
+    if(ADD_TYPE === 'save'){
+        const months = new Set([date.slice(0,7)]);
+        if(oldSaveMonth) months.add(oldSaveMonth);
+        const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+        months.forEach(month => {
+            monthly[month] = DATA.filter(i => i.type === 'save' && i.date.slice(0,7) === month).reduce((s,i) => s + i.amount, 0);
+            if(monthly[month] <= 0) delete monthly[month];
+        });
+        localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+    }
     EDIT_ID = null;
     closeSheet();
     refreshAll();
@@ -2499,7 +2549,7 @@ function showURLGuide(){
     const base = location.href.split('?')[0].split('#')[0];
     const u1 = `${base}?amount=25&cate=吃喝&note=午餐`;
     const u2 = `${base}?a=15.5&t=expense&c=出行&n=地铁`;
-    const u3 = `${base}?a=2000&t=save&c=总存款&n=6月工资结余`;
+    const u3 = `${base}?a=2000&t=save&c=存款&n=6月工资结余`;
     const u4 = `${base}?a=5000&t=income&c=生活费&n=6月`;
     closeSheet();
     const sheet = document.createElement('div');
@@ -2517,7 +2567,7 @@ function showURLGuide(){
             <tr><td style="padding:5px 8px;border:1px solid var(--border);font-weight:600;">参数</td><td style="padding:5px 8px;border:1px solid var(--border);font-weight:600;">简写</td><td style="padding:5px 8px;border:1px solid var(--border);font-weight:600;">必填</td><td style="padding:5px 8px;border:1px solid var(--border);font-weight:600;">说明</td></tr>
             <tr><td style="padding:5px 8px;border:1px solid var(--border);">amount</td><td style="padding:5px 8px;border:1px solid var(--border);">a</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--out);">是</td><td style="padding:5px 8px;border:1px solid var(--border);">金额，纯数字</td></tr>
             <tr><td style="padding:5px 8px;border:1px solid var(--border);">type</td><td style="padding:5px 8px;border:1px solid var(--border);">t</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--text2);">否</td><td style="padding:5px 8px;border:1px solid var(--border);">expense(支出) / income(收入) / save(存款)<br>默认 expense</td></tr>
-            <tr><td style="padding:5px 8px;border:1px solid var(--border);">cate</td><td style="padding:5px 8px;border:1px solid var(--border);">c</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--text2);">否</td><td style="padding:5px 8px;border:1px solid var(--border);">分类名，如 吃喝、出行、生活费、总存款<br>不填则默认该类型的第一个分类</td></tr>
+            <tr><td style="padding:5px 8px;border:1px solid var(--border);">cate</td><td style="padding:5px 8px;border:1px solid var(--border);">c</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--text2);">否</td><td style="padding:5px 8px;border:1px solid var(--border);">分类名，如 吃喝、出行、生活费、存款<br>不填则默认该类型的第一个分类</td></tr>
             <tr><td style="padding:5px 8px;border:1px solid var(--border);">note</td><td style="padding:5px 8px;border:1px solid var(--border);">n</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--text2);">否</td><td style="padding:5px 8px;border:1px solid var(--border);">备注文字，支持中文</td></tr>
         </table>
 
@@ -2531,7 +2581,7 @@ function showURLGuide(){
             <code style="font-size:11px;word-break:break-all;display:block;margin-top:2px;">${u2}</code>
         </div>
         <div style="background:var(--input-bg);border-radius:8px;padding:10px 12px;margin:4px 0 8px;cursor:pointer;" onclick="location.href=this.querySelector('code').textContent">
-            <b style="font-size:12px;">存款·总存款</b>
+            <b style="font-size:12px;">存款（默认分类）</b>
             <code style="font-size:11px;word-break:break-all;display:block;margin-top:2px;">${u3}</code>
         </div>
         <div style="background:var(--input-bg);border-radius:8px;padding:10px 12px;margin:4px 0 16px;cursor:pointer;" onclick="location.href=this.querySelector('code').textContent">
@@ -2987,7 +3037,7 @@ function showSavingsGoals(){
                 '</div></div>';
         });
     }
-    html += '<div style="margin-top:12px;"><div style="font-size:12px;color:var(--text2);margin-bottom:6px;">总存款余额：<b style="color:var(--primary);">¥' + totalSaved.toFixed(0) + '</b></div></div>';
+    html += '<div style="margin-top:12px;"><div style="font-size:12px;color:var(--text2);margin-bottom:6px;">存款余额：<b style="color:var(--primary);">¥' + totalSaved.toFixed(0) + '</b></div></div>';
     html += '<div style="background:var(--input-bg);border-radius:12px;padding:14px;margin-top:10px;">' +
         '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">✨ 新建目标</div>' +
         '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
@@ -3722,7 +3772,7 @@ setInterval(() => {
     const note = p.get('note') || p.get('n') || '';
     if(!cate){
         if(type==='income') cate = '生活费';
-        else if(type==='save') cate = '总存款';
+        else if(type==='save') cate = '存款';
         else cate = '吃喝';
     }
     const cats = CATS[type]||CATS.expense;
