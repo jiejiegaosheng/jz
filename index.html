@@ -421,9 +421,9 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="preview-label">本月剩余</div>
             <div class="preview-value" id="previewRemainingDays">-- 天</div>
         </div>
-        <div class="preview-item preview-daily">
+        <div class="preview-item preview-daily" onclick="toggleDailyMode()" title="点击切换模式">
             <span class="preview-icon">💰</span>
-            <div class="preview-label">日均可花</div>
+            <div class="preview-label">日均可花 <span id="dailyModeBadge" style="font-size:9px;opacity:.6;">预算</span></div>
             <div class="preview-value" id="previewDailyAvg">¥--</div>
         </div>
         <div class="preview-item preview-save">
@@ -526,6 +526,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
                 <span class="theme-dot" data-theme="dark" style="background:#0f0f23;border:2px solid var(--border);color:#fff;" onclick="setTheme('dark')">🌙</span>
                 <span class="theme-dot" data-theme="blue" style="background:#3b82f6;border:2px solid var(--border);" onclick="setTheme('blue')">💙</span>
             </div>
+        </div>
+        <div class="setting-item" onclick="toggleDailyMode()">
+            <div class="setting-left"><span class="setting-icon">📅</span><span class="setting-label">日均可花模式</span></div>
+            <div class="setting-right"><span id="dailyModeLabel">预算</span> <span style="font-size:18px;color:var(--text2);">›</span></div>
         </div>
         <div class="setting-item" onclick="manageCategories()">
             <div class="setting-left"><span class="setting-icon">📂</span><span class="setting-label">管理分类</span></div>
@@ -695,7 +699,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span>首页</span></button>
     <button class="nav-item" onclick="switchTab('report')"><span class="nav-icon">📊</span><span>报告</span></button>
-    <button class="nav-fab" onclick="openAdd('expense')" title="记一笔">＋</button>
+    <button class="nav-fab" onclick="smartAdd()" title="记一笔">＋</button>
     <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
     <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
@@ -812,6 +816,15 @@ function updateDataStatus(){
         el.innerHTML = `${emoji} 共 ${entryCount} 笔 · 跨度 ${duration} · 收入 ¥${totalIncome.toFixed(0)} · 支出 ¥${totalExpense.toFixed(0)}`;
     }
 }
+// ========== DAILY MODE ==========
+let DAILY_MODE = localStorage.getItem('jz_daily_mode') || 'budget'; // 'budget' or 'balance'
+function toggleDailyMode(){
+    DAILY_MODE = DAILY_MODE === 'budget' ? 'balance' : 'budget';
+    localStorage.setItem('jz_daily_mode', DAILY_MODE);
+    document.getElementById('dailyModeLabel').textContent = DAILY_MODE === 'budget' ? '预算' : '净结余';
+    refreshAll();
+    showToast('📅 日均可花模式：' + (DAILY_MODE === 'budget' ? '预算' : '净结余'));
+}
 // ========== INIT ==========
 // Auto-recovery: scan ALL localStorage keys for array data if DATA is empty
 if(!DATA.length){
@@ -836,9 +849,59 @@ if(!DATA.length){
         localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     }
 }
+// Migrate old per-entry saves to monthly format (runs once)
+function migrateOldSaves(){
+    const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+    let hasOld = false;
+    // Check DATA for save entries
+    DATA.forEach(i => {
+        if(i.type === 'save'){
+            const m = i.date.slice(0,7);
+            if(!(m in monthly)){ monthly[m] = Math.round((monthly[m]||0) + i.amount); }
+            hasOld = true;
+        }
+    });
+    // Also scan other localStorage keys for old save entries that might have been lost
+    for(let k = 0; k < localStorage.length; k++){
+        const key = localStorage.key(k);
+        if(key === 'jz_data' || key === 'jz_data_backup' || key === 'jz_monthly_save' || key === 'jz_budgets') continue;
+        try {
+            const val = JSON.parse(localStorage.getItem(key));
+            if(Array.isArray(val) && val.length){
+                val.forEach(i => {
+                    const t = (i.type || '').toLowerCase();
+                    if(t === 'save' || t === '存款' || t === 'saving'){
+                        const item = normItem(i);
+                        const m = item.date.slice(0,7);
+                        if(!(m in monthly)){
+                            monthly[m] = Math.round((monthly[m]||0) + item.amount);
+                            hasOld = true;
+                        }
+                    }
+                });
+            }
+        } catch(e){}
+    }
+    if(hasOld){
+        DATA = DATA.filter(i => i.type !== 'save');
+        localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+        localStorage.setItem('jz_data', JSON.stringify(DATA));
+        localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    }
+}
+// Context-aware add button
+function smartAdd(){
+    const navs = document.querySelectorAll('.nav-item');
+    let activeIdx = -1;
+    navs.forEach((n,i)=>{ if(n.classList.contains('active')) activeIdx = i; });
+    if(activeIdx === 2) openAdd('save');  // savings tab
+    else openAdd('expense');
+}
+migrateOldSaves();
 if(THEME==='dark') document.body.classList.add('dark');
 else if(THEME==='blue') document.body.classList.add('theme-blue');
 document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active', d.dataset.theme===THEME));
+document.getElementById('dailyModeLabel').textContent = DAILY_MODE === 'budget' ? '预算' : '净结余';
 renderMonth();
 refreshAll();
 switchTab('home');
@@ -881,8 +944,12 @@ function refreshAll(){
     const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
     const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
     const budget = budgetMap[CURRENT_MONTH] || autoBudget;
-    const remainingBudget = balance;
-    const isOverBudget = remainingBudget <= 0;
+    const remainingBudget = DAILY_MODE === 'balance'
+        ? Math.max(0, balance)
+        : Math.max(0, budget - expense);
+    const isOverBudget = DAILY_MODE === 'balance'
+        ? balance <= 0 && (income > 0 || save > 0)
+        : budget > 0 && expense >= budget;
     const dailyAvg = remainingDays > 0 && remainingBudget > 0 ? remainingBudget / remainingDays : 0;
     
     document.getElementById('previewRemainingDays').textContent = Math.max(0, remainingDays) + ' 天';
@@ -895,6 +962,7 @@ function refreshAll(){
     `;
     const dailyEl = document.getElementById('previewDailyAvg');
     const dailyCard = dailyEl.closest('.preview-item');
+    document.getElementById('dailyModeBadge').textContent = DAILY_MODE === 'budget' ? '预算' : '结余';
     if(isOverBudget){
         dailyEl.textContent = '¥0';
         dailyCard.classList.add('warn');
@@ -1517,6 +1585,15 @@ function openAdd(type, id){
         document.getElementById('addMood').value = '';
         document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('active'));
     }
+    // Pre-select category from FILTER_CATE if not editing and category exists for this type
+    if(!EDIT_ID && FILTER_CATE){
+        const cats = CATS[ADD_TYPE] || CATS.expense;
+        if(cats.some(c => c.name === FILTER_CATE)){
+            document.querySelectorAll('.cat-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.cat === FILTER_CATE);
+            });
+        }
+    }
     document.getElementById('addSheet').classList.add('show');
     document.getElementById('overlay').classList.add('show');
     setTimeout(()=>document.getElementById('addAmount').focus(), 400);
@@ -1529,6 +1606,15 @@ function setAddType(type){
     document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('addTypeToggle').querySelector('.'+type).classList.add('active');
     renderCatGrid();
+    // Re-apply FILTER_CATE if it matches the new type's categories
+    if(!EDIT_ID && FILTER_CATE){
+        const cats = CATS[ADD_TYPE] || CATS.expense;
+        if(cats.some(c => c.name === FILTER_CATE)){
+            document.querySelectorAll('.cat-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.cat === FILTER_CATE);
+            });
+        }
+    }
 }
 
 function renderCatGrid(){
