@@ -1695,13 +1695,26 @@ function setAddType(type){
 function renderCatGrid(){
     const cats = CATS[ADD_TYPE]||CATS.expense;
     const grid = document.getElementById('addCatGrid');
-    grid.innerHTML = cats.map((c,i)=>{
+    let html = cats.map((c,i)=>{
         const idx = DATA.filter(d=>d.type===ADD_TYPE&&d.cate===c.name).length;
         const color = CAT_COLORS[i%CAT_COLORS.length];
         return `<div class="cat-item${i===0?' active':''}" data-cat="${c.name}" onclick="selectCat(this,'${c.name}')">
             <span class="cat-icon">${c.icon}</span>${c.name}
         </div>`;
     }).join('');
+    // Append savings goals as selectable items when type is save
+    if(ADD_TYPE === 'save'){
+        const goals = getSavingsGoals();
+        goals.forEach(g => {
+            const exists = cats.some(c => c.name === g.name);
+            if(!exists){
+                html += `<div class="cat-item" data-cat="${g.name}" onclick="selectCat(this,'${g.name}')" style="border:1px dashed var(--primary);">
+                    <span class="cat-icon">${g.icon||'🐷'}</span>${g.name} <span style="font-size:9px;color:var(--text2);margin-left:2px;">目标</span>
+                </div>`;
+            }
+        });
+    }
+    grid.innerHTML = html;
 }
 
 function selectCat(el, name){
@@ -1738,6 +1751,13 @@ function deleteTx(id){
         monthly[m] = DATA.filter(i => i.type==='save' && i.date.slice(0,7)===m).reduce((s,i) => s + i.amount, 0);
         if(monthly[m] <= 0) delete monthly[m];
         localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+        // Sync goal
+        const goals = getSavingsGoals();
+        const goal = goals.find(g => g.name === deleted.cate);
+        if(goal){
+            goal.saved = DATA.filter(i => i.type==='save' && i.cate===deleted.cate).reduce((s,i) => s + i.amount, 0);
+            saveSavingsGoals(goals);
+        }
     }
     refreshAll();
     showToast('已删除');
@@ -1752,11 +1772,12 @@ function saveTransaction(){
     const mood = document.getElementById('addMood').value;
     const selected = document.querySelector('.cat-item.active');
     const cate = selected ? selected.dataset.cat : (CATS[ADD_TYPE]||CATS.expense)[0].name;
-    let newId, oldSaveMonth;
+    let newId, oldSaveMonth, oldCate;
     if(EDIT_ID){
         const idx = DATA.findIndex(d=>d.id===EDIT_ID);
         if(idx>=0){
             oldSaveMonth = DATA[idx].date.slice(0,7);
+            oldCate = DATA[idx].cate;
             DATA[idx] = {...DATA[idx], type:ADD_TYPE, cate, amount:Math.round(amount*100)/100, date, note, mood};
         }
     } else {
@@ -1783,6 +1804,17 @@ function saveTransaction(){
             if(monthly[month] <= 0) delete monthly[month];
         });
         localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+        // Sync to savings goals
+        const goals = getSavingsGoals();
+        const catesToSync = new Set([cate]);
+        if(oldCate && oldCate !== cate) catesToSync.add(oldCate);
+        catesToSync.forEach(c => {
+            const g = goals.find(goal => goal.name === c);
+            if(g){
+                g.saved = DATA.filter(i => i.type==='save' && i.cate===c).reduce((s,i) => s + i.amount, 0);
+            }
+        });
+        saveSavingsGoals(goals);
     }
     EDIT_ID = null;
     closeSheet();
@@ -2672,7 +2704,7 @@ function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     const pageMap = {home:'pageHome',all:'pageAll',charts:'pageCharts',save:'pageSave',settings:'pageSettings',report:'pageReport',friend:'pageFriend',profile:'pageProfile'};
-    const navMap = {home:0,report:1,save:3,profile:4,all:-1,charts:-1,settings:-1,friend:-1};
+    const navMap = {home:0,report:1,save:2,profile:3,all:-1,charts:-1,settings:-1,friend:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
     if(tab==='all') renderAllList();
@@ -3039,9 +3071,10 @@ function showSavingsGoals(){
                     '<span>¥' + g.saved.toFixed(0) + ' / ¥' + g.target.toFixed(0) + '</span>' +
                 '</div>' +
                 '<div class="budget-bar" style="height:8px;margin-bottom:4px;"><div class="budget-fill good" style="width:' + pct + '%;background:' + (pct>=100?'var(--out)':'var(--in)') + ';"></div></div>' +
-                '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text2);">' +
                     '<span>' + pct.toFixed(0) + '%</span>' +
-                    '<span style="cursor:pointer;color:var(--out);" onclick="deleteSavingsGoal(' + i + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');showSavingsGoals();">🗑️ 删除</span>' +
+                    '<span><button onclick="goalDeposit(' + i + ')" style="padding:3px 10px;border:none;border-radius:6px;background:var(--primary);color:#fff;font-size:11px;cursor:pointer;margin-right:6px;">💰 存入</button>' +
+                    '<span style="cursor:pointer;color:var(--out);" onclick="deleteSavingsGoal(' + i + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');showSavingsGoals();">🗑️ 删除</span></span>' +
                 '</div></div>';
         });
     }
@@ -3081,6 +3114,21 @@ function deleteSavingsGoal(idx){
     const goals = getSavingsGoals();
     if(idx>=0 && idx<goals.length) goals.splice(idx,1);
     saveSavingsGoals(goals);
+}
+function goalDeposit(idx){
+    const goals = getSavingsGoals();
+    const g = goals[idx];
+    if(!g) return;
+    const amt = prompt('向「' + g.name + '」存入金额（¥）：', '');
+    if(amt===null) return;
+    const num = parseFloat(amt);
+    if(isNaN(num) || num<=0) return showToast('金额无效');
+    g.saved = Math.round((g.saved + num)*100)/100;
+    saveSavingsGoals(goals);
+    document.querySelector('.sheet.show')?.remove();
+    document.getElementById('overlay')?.classList.remove('show');
+    showSavingsGoals();
+    showToast('✅ 已存入 ¥' + num.toFixed(0));
 }
 
 // ========== ACHIEVEMENTS ==========
