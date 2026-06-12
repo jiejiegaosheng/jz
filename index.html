@@ -878,6 +878,14 @@ function migrateOldSaves(){
     Object.keys(dataMonths).forEach(m => {
         if(monthly[m] !== dataMonths[m]){ monthly[m] = dataMonths[m]; changed = true; }
     });
+    // Restore aggregated DATA entries for cache months that have no DATA entries
+    // (old code used to delete save entries from DATA after migration)
+    Object.keys(monthly).forEach(m => {
+        if(monthly[m] > 0 && !dataMonths[m]){
+            DATA.push({ id: Date.now()+Math.random(), type:'save', cate:'存款', amount:monthly[m], date:m+'-01', note:'', mood:'' });
+            changed = true;
+        }
+    });
     // Also scan other localStorage keys for old save entries that might have been lost
     for(let k = 0; k < localStorage.length; k++){
         const key = localStorage.key(k);
