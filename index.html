@@ -42,34 +42,41 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .preview-daily.warn .preview-value{color:var(--out);font-size:13px;}
 .preview-days .preview-value{color:var(--primary2);}
 
-/* Meal Plan */
+/* Meal Plan - Journal Style */
 .meal-plan-wrap{padding:8px 0 0;}
 .meal-week-label{font-size:13px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:16px;letter-spacing:.5px;background:var(--input-bg);padding:8px 16px;border-radius:20px;display:inline-block;margin-left:auto;margin-right:auto;width:auto;}
-.meal-day-card{background:var(--card);border-radius:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid var(--border);overflow:hidden;transition:box-shadow .2s;}
-.meal-day-card.today{border-color:var(--primary);box-shadow:0 2px 14px rgba(108,92,231,.15);}
-.meal-day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;font-size:15px;font-weight:700;color:var(--text);}
-.meal-day-header .day-date{font-size:12px;font-weight:400;color:var(--text2);}
-.meal-day-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:12px;opacity:0;padding:2px;transition:opacity .2s;line-height:1;}
+.meal-journal{position:relative;padding:0 12px;}
+.meal-journal::before{content:'';position:absolute;top:0;left:18px;bottom:0;width:1px;background:linear-gradient(to bottom,transparent 0%,var(--border) 5%,var(--border) 95%,transparent 100%);opacity:.4;}
+.meal-day-card{position:relative;margin-bottom:16px;padding:0 0 0 32px;}
+.meal-day-card::before{content:'';position:absolute;left:12px;top:14px;width:10px;height:10px;border-radius:50%;border:2px solid var(--primary);background:var(--card);z-index:1;}
+.meal-day-card.today::before{background:var(--primary);box-shadow:0 0 0 4px rgba(108,92,231,.15);}
+.meal-day-card .day-paper{background:var(--card);border-radius:14px;padding:0;position:relative;overflow:hidden;border:1px solid var(--border);}
+.meal-day-card.today .day-paper{border-color:var(--primary);}
+.meal-day-card .day-paper::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 28px 28px 0;border-color:transparent var(--input-bg) transparent transparent;}
+.meal-day-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 4px 14px;font-size:14px;font-weight:700;color:var(--text);}
+.meal-day-header .day-date{font-size:11px;font-weight:400;color:var(--text2);background:var(--input-bg);padding:2px 10px;border-radius:10px;}
+.meal-day-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:11px;opacity:0;padding:2px;transition:opacity .2s;line-height:1;}
 .meal-day-card:hover .meal-day-del{opacity:.35;}
 .meal-day-del:hover{opacity:1!important;}
-.meal-slot{display:flex;align-items:flex-start;gap:8px;padding:4px 16px 10px;position:relative;}
-.meal-slot-label{font-size:12px;font-weight:600;flex-shrink:0;color:var(--text2);padding:4px 10px;border-radius:8px;display:flex;align-items:center;gap:4px;min-width:64px;}
-.meal-slot-label.breakfast{color:#e17055;background:rgba(225,112,85,.08);}
-.meal-slot-label.lunch{color:#fdcb6e;background:rgba(253,203,110,.12);}
-.meal-slot-label.dinner{color:#6c5ce7;background:rgba(108,92,231,.08);}
-.meal-dishes{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.meal-dish-tag{background:var(--input-bg);border-radius:20px;padding:5px 12px;font-size:13px;display:inline-flex;align-items:center;gap:4px;transition:background .2s;border:1px solid transparent;}
+.meal-day-card .day-content{padding:4px 14px 10px;}
+.meal-slot{display:flex;align-items:flex-start;gap:6px;padding:3px 0;position:relative;}
+.meal-slot-label{font-size:11px;font-weight:600;flex-shrink:0;color:var(--text2);padding:2px 8px;border-radius:6px;display:flex;align-items:center;gap:3px;min-width:52px;letter-spacing:.3px;}
+.meal-slot-label.breakfast{color:#d97706;background:rgba(251,191,36,.1);}
+.meal-slot-label.lunch{color:#059669;background:rgba(16,185,129,.1);}
+.meal-slot-label.dinner{color:#7c3aed;background:rgba(124,58,237,.08);}
+.meal-dishes{flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.meal-dish-tag{background:#fefce8;border-radius:4px 12px 12px 4px;padding:3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:3px;transition:background .2s;border-left:2px solid var(--primary2);}
 .meal-dish-tag .del{font-size:9px;cursor:pointer;color:var(--out);opacity:0;transition:opacity .2s;margin-left:2px;line-height:1;}
 .meal-dish-tag:hover .del{opacity:.5;}
 .meal-dish-tag .del:hover{opacity:1;}
-.meal-dish-tag.has-recipe{cursor:pointer;border-color:rgba(108,92,231,.15);}
-.meal-dish-tag.has-recipe:hover{background:rgba(108,92,231,.1);}
-.meal-slot-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:11px;opacity:0;padding:0 4px;flex-shrink:0;transition:opacity .2s,color .2s;line-height:1;position:absolute;right:16px;top:6px;}
+.meal-dish-tag.has-recipe{cursor:pointer;border-left-color:#f59e0b;}
+.meal-dish-tag.has-recipe:hover{background:#fef3c7;}
+.meal-slot-del{background:none;border:none;color:var(--out);cursor:pointer;font-size:10px;opacity:0;padding:0 2px;flex-shrink:0;transition:opacity .2s;line-height:1;position:absolute;right:0;top:2px;}
 .meal-slot:hover .meal-slot-del{opacity:.4;}
 .meal-slot-del:hover{opacity:1!important;color:var(--out);}
-.meal-add-btn{font-size:11px;color:var(--primary);cursor:pointer;padding:4px 10px;border-radius:16px;border:1px dashed var(--primary);background:none;transition:all .2s;line-height:1.4;opacity:.6;}
+.meal-add-btn{font-size:11px;color:var(--primary);cursor:pointer;padding:3px 10px;border-radius:12px;border:1px dashed var(--primary);background:none;transition:all .2s;line-height:1.3;opacity:.5;}
 .meal-add-btn:hover{opacity:1;background:rgba(108,92,231,.06);border-color:var(--primary);}
-.meal-slot-empty{font-size:12px;color:var(--text2);opacity:.4;}
+.meal-slot-empty{font-size:11px;color:var(--text2);opacity:.4;}
 .meal-search-box{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-radius:20px 20px 0 0;z-index:10002;max-height:70vh;overflow-y:auto;padding:16px 20px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.12);}
 .meal-search-box .search-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .meal-search-box input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);margin-bottom:10px;}
@@ -429,7 +436,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <div class="quick-actions">
         <button class="quick-btn income" onclick="openAdd('income')">➕ 记一笔收入</button>
         <button class="quick-btn expense" onclick="openAdd('expense')">➖ 记一笔支出</button>
-        <button class="quick-btn save" onclick="openAdd('save')">🏦 记一笔存款</button>
+        <button class="quick-btn save" onclick="setMonthlySave()">🏦 本月存款</button>
     </div>
     <div class="section-header" style="padding-bottom:6px;">
         <h2>支出明细</h2>
@@ -858,7 +865,7 @@ function refreshAll(){
     const list = getMonthData();
     const income = list.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
     const expense = list.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
-    const save = list.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const save = getMonthlySave(CURRENT_MONTH);
 
     // Preview bar: remaining days + daily avg + savings
     const now = new Date();
@@ -869,18 +876,18 @@ function refreshAll(){
     const remainingDays = daysInMonth - today;
     
     const monthIncome = income;
+    const balance = income - expense - save;
     const autoBudget = Math.round(monthIncome * 0.7);
     const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
     const budgetMap = raw && raw.month ? { [raw.month]: raw.amount } : (raw || {});
     const budget = budgetMap[CURRENT_MONTH] || autoBudget;
-    const remainingBudget = budget - expense;
+    const remainingBudget = balance;
     const isOverBudget = remainingBudget <= 0;
     const dailyAvg = remainingDays > 0 && remainingBudget > 0 ? remainingBudget / remainingDays : 0;
     
     document.getElementById('previewRemainingDays').textContent = Math.max(0, remainingDays) + ' 天';
     
     // Header stats: income | expense | balance
-    const balance = income - expense - save;
     document.getElementById('headerStats').innerHTML = `
         <span>收入 ¥${income.toFixed(0)}</span>
         <span style="opacity:.5;">|</span>
@@ -1103,7 +1110,6 @@ function renderGroupedList(list, elId, startCollapsed){
             let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
             if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
             else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
-            const hasPhoto = false;
             html += `<div class="transaction-item">
                 <div class="tx-icon" style="background:${bg}">${icon}</div>
                 <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
@@ -1252,14 +1258,17 @@ function renderMealPlan(){
     const last = new Date(keys[keys.length-1]+'T00:00:00');
     const weekLabel = (first.getMonth()+1)+'/'+first.getDate()+' ~ '+(last.getMonth()+1)+'/'+last.getDate();
     let html = '<div class="meal-plan-wrap"><div style="text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;"><button onclick="changeMealWeek(-1)" style="background:var(--input-bg);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--text);">‹</button><span class="meal-week-label">📅 ' + weekLabel + '</span><button onclick="changeMealWeek(1)" style="background:var(--input-bg);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--text);">›</button></div>' + (MEAL_WEEK_OFFSET!==0 ? '<div style="text-align:center;margin-top:4px;"><a href="#" onclick="MEAL_WEEK_OFFSET=0;renderMealPlan();return false;" style="font-size:12px;color:var(--primary);">回到本周</a></div>' : '');
+    html += '<div class="meal-journal">';
     for(const [dayKey, meals] of Object.entries(plan)){
         const d = new Date(dayKey+'T00:00:00');
         const dayName = ['日','一','二','三','四','五','六'][d.getDay()];
         const dateStr = (d.getMonth()+1)+'/'+d.getDate();
         const isToday = new Date().toISOString().slice(0,10) === dayKey;
         const todayClass = isToday ? ' today' : '';
-        html += '<div class="meal-day-card' + todayClass + '">';
-        html += '<div class="meal-day-header"><span>' + (isToday?'🔴 ':'') + '周' + dayName + '</span><div><span class="day-date">' + dateStr + '</span><button class="meal-day-del" onclick="removeDay(\'' + dayKey + '\')" title="删除当天">✕</button></div></div>';
+        const dayIcons = ['😴','☀️','☀️','☀️','☀️','☀️','🎉'][d.getDay()];
+        html += '<div class="meal-day-card' + todayClass + '"><div class="day-paper">';
+        html += '<div class="meal-day-header"><span>' + dayIcons + ' 周' + dayName + '</span><div><span class="day-date">' + dateStr + '</span><button class="meal-day-del" onclick="removeDay(\'' + dayKey + '\')" title="删除当天">✕</button></div></div>';
+        html += '<div class="day-content">';
         Object.keys(meals).forEach(slot => {
             const labels = {breakfast:['☀️','早餐'],lunch:['🌤️','午餐'],dinner:['🌙','晚餐']};
             const label = labels[slot] || [slot,''];
@@ -1280,9 +1289,9 @@ function renderMealPlan(){
             }
             html += '</div></div>';
         });
-        html += '</div>';
+        html += '</div></div></div>';
     }
-    html += '</div>';
+    html += '</div></div>';
     container.innerHTML = html;
 }
 function removeDish(dayKey, slot, idx){
@@ -1425,16 +1434,60 @@ switchTab('home');
 
 // ========== SAVE PAGE ==========
 function renderSavePage(){
-    const saves = DATA.filter(i=>i.type==='save');
-    const total = saves.reduce((s,i)=>s+i.amount,0);
     const curMonth = CURRENT_MONTH.slice(0,7);
-    const monthSaves = saves.filter(i=>i.date.slice(0,7)===curMonth);
-    const monthTotal = monthSaves.reduce((s,i)=>s+i.amount,0);
-    document.getElementById('saveTotal').textContent = '¥'+total.toFixed(total%1?2:0);
-    document.getElementById('saveMonth').textContent = '¥'+monthTotal.toFixed(monthTotal%1?2:0);
-    document.getElementById('saveCount').textContent = saves.length;
-    const sorted = [...saves].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
-    renderGroupedList(sorted, 'saveList');
+    const monthSaveVal = getMonthlySave(curMonth);
+    const allSaves = getMonthlySaveAll();
+    const total = Object.values(allSaves).reduce((s,v)=>s+v, 0);
+    document.getElementById('saveTotal').textContent = '¥'+total.toFixed(0);
+    document.getElementById('saveMonth').textContent = '¥'+(monthSaveVal||0).toFixed(0);
+    document.getElementById('saveCount').textContent = Object.keys(allSaves).length;
+    const el = document.getElementById('saveList');
+    const months = Object.keys(allSaves).sort().reverse();
+    if(months.length===0){
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🏦</div><p>还没有存款记录</p><p style="font-size:12px;color:var(--text2);margin-top:4px;">点击"本月存款"开始攒钱</p></div>';
+        return;
+    }
+    el.innerHTML = months.map(m => {
+        const [y,mon] = m.split('-');
+        const isCur = m === curMonth;
+        return '<div class="budget-card" style="cursor:pointer;border-left:3px solid var(--primary);'+(isCur?'background:var(--input-bg);':'')+'" onclick="setMonthlySave(\''+m+'\')">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<span style="font-weight:600;">' + y + '年' + parseInt(mon) + '月</span>' +
+            '<span style="font-size:18px;font-weight:700;color:var(--primary);">¥' + allSaves[m].toFixed(0) + '</span>' +
+            '</div></div>';
+    }).join('');
+}
+function getMonthlySave(month){
+    const all = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+    return all[month] || 0;
+}
+function getMonthlySaveAll(){
+    return JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+}
+function setMonthlySave(month){
+    if(!month) month = CURRENT_MONTH;
+    const cur = getMonthlySave(month);
+    const amt = prompt('请输入 ' + month + ' 月存款金额（¥）：', cur || '');
+    if(amt===null) return;
+    const num = parseFloat(amt);
+    if(isNaN(num) || num<0){ showToast('金额无效'); return; }
+    const all = getMonthlySaveAll();
+    if(num===0){
+        delete all[month];
+    } else {
+        all[month] = num;
+    }
+    localStorage.setItem('jz_monthly_save', JSON.stringify(all));
+    // Sync a DATA entry so existing code that filters type==='save' still works
+    DATA = DATA.filter(i => !(i.type==='save' && i.date.slice(0,7) === month));
+    if(num > 0){
+        DATA.push({ id: Date.now(), type: 'save', cate: '总存款', amount: num, date: month + '-01', note: '' });
+    }
+    localStorage.setItem('jz_data', JSON.stringify(DATA));
+    localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    refreshAll();
+    if(document.getElementById('pageSave').classList.contains('active')) renderSavePage();
+    showToast('✅ 存款已更新');
 }
 
 // ========== ADD / EDIT TRANSACTION ==========
@@ -3004,11 +3057,38 @@ function saveChatMessage(fid, msg){
     localStorage.setItem('jz_chat_messages', JSON.stringify(all));
 }
 
+function isFriendOnline(fid){
+    return PEER_CONNS[fid] && PEER_CONNS[fid].open;
+}
+
 function sendChatMessage(fid, text){
     const conn = PEER_CONNS[fid];
-    if(!conn || !conn.open) return showToast('好友不在线，消息将在上线后发送');
+    if(!conn || !conn.open){
+        // Queue message for later delivery
+        const queue = JSON.parse(localStorage.getItem('jz_pending_messages') || '{}');
+        if(!queue[fid]) queue[fid] = [];
+        queue[fid].push({ text, time: Date.now() });
+        localStorage.setItem('jz_pending_messages', JSON.stringify(queue));
+        showToast('好友不在线，上线后将自动发送');
+        return;
+    }
     conn.send({ type: 'chat', text, from: getUID(), time: Date.now() });
     saveChatMessage(fid, { text, mine: true, time: Date.now() });
+}
+
+function sendPendingMessages(fid){
+    const queue = JSON.parse(localStorage.getItem('jz_pending_messages') || '{}');
+    if(!queue[fid] || queue[fid].length===0) return;
+    const conn = PEER_CONNS[fid];
+    if(!conn || !conn.open) return;
+    const msgs = queue[fid];
+    delete queue[fid];
+    localStorage.setItem('jz_pending_messages', JSON.stringify(queue));
+    msgs.forEach(m => {
+        conn.send({ type: 'chat', text: m.text, from: getUID(), time: m.time });
+        saveChatMessage(fid, { text: m.text, mine: true, time: m.time });
+    });
+    showToast('📨 已发送 ' + msgs.length + ' 条离线消息');
 }
 
 // ========== BILL SHARING ==========
@@ -3115,7 +3195,7 @@ function renderFriendPage(){
         statusHtml = '😴 还没有好友，快去添加吧';
     } else {
         let onlineCount = 0;
-        friends.forEach(f => { if (PEER_CONNS[f.id]) onlineCount++; });
+        friends.forEach(f => { if (isFriendOnline(f.id)) onlineCount++; });
         statusHtml = '🧑‍🤝‍🧑 共 <b>' + friends.length + '</b> 位好友，<b>' + onlineCount + '</b> 位在线';
     }
     document.getElementById('friendStatus').innerHTML = statusHtml;
@@ -3138,7 +3218,7 @@ function renderFriendPage(){
     const today = new Date().toISOString().slice(0,10);
     let html = reqHtml;
     friends.forEach(f => {
-        const isOnline = !!PEER_CONNS[f.id];
+        const isOnline = isFriendOnline(f.id);
         const taskData = getFriendTask(today, f.id);
         const preview = taskData.fromFriend ? (taskData.done ? '✅ 已完成任务' : '🎯 ' + taskData.fromFriend) : (taskData.myTask ? '📤 已发任务' : '💤 暂无互动');
         const avatar = f.avatar || (f.name ? f.name[0] : f.id[0]);
@@ -3166,7 +3246,7 @@ function renderFriendChat(fid){
     document.getElementById('friendChatTitle').textContent = f.name || f.id.slice(0,8);
     document.getElementById('friendChatTitle').dataset.fid = fid;
     
-    const isOnline = !!PEER_CONNS[fid];
+    const isOnline = isFriendOnline(fid);
     const today = new Date().toISOString().slice(0,10);
     const taskData = getFriendTask(today, fid);
     const avatar = f.avatar || f.name?.[0] || f.id[0];
@@ -3429,6 +3509,7 @@ function sendPendingTasks(fid){
     if(sentReq){
         conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
     }
+    sendPendingMessages(fid);
 }
 
 
@@ -3482,7 +3563,12 @@ setInterval(() => {
     if (friends.length === 0) return;
     initPeer();
     friends.forEach(f => {
-        if (!PEER_CONNS[f.id]) tryConnectFriend(f.id);
+        if (!isFriendOnline(f.id)) {
+            if (PEER_CONNS[f.id]) { delete PEER_CONNS[f.id]; }
+            tryConnectFriend(f.id);
+        } else {
+            sendPendingMessages(f.id);
+        }
     });
     const overlay = document.getElementById('taskPopupOverlay');
     if (!overlay.classList.contains('show')) {
