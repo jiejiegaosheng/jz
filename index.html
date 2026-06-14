@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#6c5ce7">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>记账本</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -522,8 +525,9 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <div class="preview-value" id="saveCount" style="font-size:16px;color:var(--primary);">0</div>
         </div>
     </div>
+    <div id="saveModulePreview" style="padding:8px 12px 4px;"></div>
     <div class="annual-bar" style="padding:6px 16px 4px;">
-        <span class="annual-label">🏦 存款记录</span>
+        <span class="annual-label">📋 月份明细</span>
         <span class="annual-divider">|</span>
         <span id="saveStatsSub" style="font-size:12px;"></span>
     </div>
@@ -603,6 +607,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <div style="display:flex;gap:6px;margin:0 0 10px;">
             <button onclick="pasteClipboardImage()" style="flex:1;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:var(--input-bg);color:var(--text2);font-size:11px;cursor:pointer;">📋 粘贴截图</button>
             <button onclick="document.getElementById('ocrInput').click()" style="flex:1;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:var(--input-bg);color:var(--text2);font-size:11px;cursor:pointer;">📷 选择截图</button>
+        </div>
+        <div id="saveModeToggle" style="display:none;margin-bottom:10px;font-size:12px;color:var(--text2);">
+            <span onclick="setSaveMode('deposit')" id="saveModeDeposit" style="padding:4px 14px;border:1px solid var(--in);border-radius:14px;cursor:pointer;background:var(--in);color:#fff;font-weight:600;">💰 存入</span>
+            <span onclick="setSaveMode('withdraw')" id="saveModeWithdraw" style="padding:4px 14px;border:1px solid var(--out);border-radius:14px;cursor:pointer;background:transparent;color:var(--out);margin-left:6px;">🏦 取出</span>
         </div>
         <div class="cat-grid" id="addCatGrid"></div>
         <div class="form-group">
@@ -789,6 +797,7 @@ let ADD_TYPE = 'expense';
 })();
 let CHART_MODE = 'month';
 let EDIT_ID = null;
+let SAVE_MODE = 'deposit';
 let FILTER_CATE = '';
 const monthToggle = {};
 
@@ -1545,6 +1554,7 @@ function renderSavePage(){
     document.getElementById('saveMonth').textContent = '¥'+(monthSaveVal||0).toFixed(0);
     document.getElementById('saveCount').textContent = Object.keys(allSaves).length;
     document.getElementById('saveStatsSub').textContent = '共 ' + Object.keys(allSaves).length + ' 个月 · 月均 ¥' + (Object.keys(allSaves).length ? (total/Object.keys(allSaves).length).toFixed(0) : '0');
+    renderSaveModulePreview(total, allSaves);
     const el = document.getElementById('saveList');
     const months = Object.keys(allSaves).sort().reverse();
     if(months.length===0){
@@ -1576,6 +1586,39 @@ function renderSavePage(){
         '</div>';
     }).join('');
 }
+function renderSaveModulePreview(total){
+    const el = document.getElementById('saveModulePreview');
+    // Compute per-cate totals (all time)
+    const cateTotals = {};
+    DATA.filter(i => i.type==='save').forEach(i => {
+        cateTotals[i.cate] = (cateTotals[i.cate]||0) + i.amount;
+    });
+    // Collect all cate names from CATS.save + goals + DATA
+    const allCates = new Set();
+    (CATS.save||[]).forEach(c => allCates.add(c.name));
+    getSavingsGoals().forEach(g => allCates.add(g.name));
+    Object.keys(cateTotals).forEach(c => allCates.add(c));
+    const cateList = [...allCates].filter(c => cateTotals[c] > 0).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
+    if(!cateList.length){ el.innerHTML = ''; return; }
+    let html = '<div style="font-size:12px;color:var(--text2);margin-bottom:6px;">📂 存款模块</div>';
+    cateList.forEach(c => {
+        const amt = cateTotals[c]||0;
+        const pct = total > 0 ? (amt/total*100) : 0;
+        const goal = getSavingsGoals().find(g => g.name === c);
+        const icon = goal ? (goal.icon||'🐷') : ((CATS.save||[]).find(x=>x.name===c)?.icon||'🏦');
+        html += '<div style="display:flex;align-items:center;gap:8px;background:var(--input-bg);border-radius:10px;padding:10px 12px;margin-bottom:6px;">' +
+            '<span style="font-size:18px;">' + icon + '</span>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:13px;font-weight:600;">' + c + '</div>' +
+                (total > 0 ? '<div class="budget-bar" style="height:2px;margin-top:4px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
+            '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">¥' + amt.toFixed(0) + '</div>' +
+            '<button onclick="openAdd(\'save\');setTimeout(function(){var el=document.querySelector(\'.cat-item[data-cat=\\\''+c+'\\\']\');if(el){selectCat(el,\''+c+'\')}},100)" style="padding:4px 10px;border:none;border-radius:6px;background:var(--in);color:#fff;font-size:11px;cursor:pointer;">存入</button>' +
+            '<button onclick="openAdd(\'save\');setTimeout(function(){setSaveMode(\'withdraw\');var el=document.querySelector(\'.cat-item[data-cat=\\\''+c+'\\\']\');if(el){selectCat(el,\''+c+'\')}},100)" style="padding:4px 10px;border:none;border-radius:6px;background:var(--out);color:#fff;font-size:11px;cursor:pointer;">取出</button>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+}
 function renderSaveMonthDetail(month){
     const entries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date));
     if(!entries.length){ showToast('该月无存款记录'); return; }
@@ -1586,12 +1629,13 @@ function renderSaveMonthDetail(month){
     let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;">🏦 ' + y + '年' + parseInt(mon) + '月 存款</h3><span onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="cursor:pointer;font-size:20px;color:var(--text2);">✕</span></div>';
     html += '<div style="font-size:12px;color:var(--text2);margin-bottom:10px;">共 ' + entries.length + ' 笔，合计 ¥' + entries.reduce((s,e)=>s+e.amount,0).toFixed(2) + '</div>';
     entries.forEach(e => {
+        const isWd = e.amount < 0;
         html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;">' +
             '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:13px;font-weight:600;">' + e.cate + '</div>' +
+                '<div style="font-size:13px;font-weight:600;">' + e.cate + (isWd?' <span style="color:var(--out);font-size:10px;">取出</span>':'') + '</div>' +
                 '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
             '</div>' +
-            '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">¥' + e.amount.toFixed(2) + '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:' + (isWd?'var(--out)':'var(--primary)') + ';white-space:nowrap;">' + (isWd?'-':'+') + '¥' + Math.abs(e.amount).toFixed(2) + '</div>' +
             '<button class="tx-btn-edit" onclick="openAdd(\'save\',' + e.id + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="opacity:.5;">✏️</button>' +
             '<button class="tx-btn-edit" onclick="deleteTx(' + e.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
         '</div>';
@@ -1644,7 +1688,10 @@ function openAdd(type, id){
     renderCatGrid();
     const item = id ? DATA.find(i=>i.id===id) : null;
     if(item){
-        document.getElementById('addAmount').value = item.amount;
+        const isWithdraw = item.amount < 0;
+        if(isWithdraw){ SAVE_MODE = 'withdraw'; setSaveMode('withdraw'); }
+        else { SAVE_MODE = 'deposit'; setSaveMode('deposit'); }
+        document.getElementById('addAmount').value = Math.abs(item.amount);
         document.getElementById('addDate').value = item.date;
         document.getElementById('addNote').value = item.note||'';
         document.getElementById('addMood').value = item.mood||'';
@@ -1654,6 +1701,7 @@ function openAdd(type, id){
             el.classList.toggle('active', el.dataset.cat === item.cate);
         });
     } else {
+        SAVE_MODE = 'deposit'; setSaveMode('deposit');
         document.getElementById('addAmount').value = '';
         document.getElementById('addDate').valueAsDate = new Date();
         document.getElementById('addNote').value = '';
@@ -1680,6 +1728,12 @@ function setAddType(type){
     document.getElementById('addSheetTitle').textContent = EDIT_ID ? '编辑'+title : title;
     document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('addTypeToggle').querySelector('.'+type).classList.add('active');
+    // Show/hide save mode toggle
+    const modeToggle = document.getElementById('saveModeToggle');
+    if(modeToggle){
+        modeToggle.style.display = type==='save' ? 'block' : 'none';
+    }
+    if(type !== 'save') SAVE_MODE = 'deposit';
     renderCatGrid();
     // Re-apply FILTER_CATE if it matches the new type's categories
     if(!EDIT_ID && FILTER_CATE){
@@ -1689,6 +1743,18 @@ function setAddType(type){
                 el.classList.toggle('active', el.dataset.cat === FILTER_CATE);
             });
         }
+    }
+}
+function setSaveMode(mode){
+    SAVE_MODE = mode;
+    const dBtn = document.getElementById('saveModeDeposit');
+    const wBtn = document.getElementById('saveModeWithdraw');
+    if(mode==='deposit'){
+        dBtn.style.background = 'var(--in)'; dBtn.style.color = '#fff'; dBtn.style.fontWeight = '600';
+        wBtn.style.background = 'transparent'; wBtn.style.color = 'var(--out)'; wBtn.style.fontWeight = '400';
+    } else {
+        wBtn.style.background = 'var(--out)'; wBtn.style.color = '#fff'; wBtn.style.fontWeight = '600';
+        dBtn.style.background = 'transparent'; dBtn.style.color = 'var(--in)'; dBtn.style.fontWeight = '400';
     }
 }
 
@@ -1764,8 +1830,9 @@ function deleteTx(id){
 }
 
 function saveTransaction(){
-    const amount = parseFloat(document.getElementById('addAmount').value);
+    let amount = parseFloat(document.getElementById('addAmount').value);
     if(!amount||amount<=0) return showToast('请输入有效金额');
+    if(ADD_TYPE==='save' && SAVE_MODE==='withdraw') amount = -amount;
     const date = document.getElementById('addDate').value;
     if(!date) return showToast('请选择日期');
     const note = document.getElementById('addNote').value.trim();
@@ -3866,6 +3933,11 @@ setTimeout(() => {
         }
     }
 }, 2000);
+</script>
+<script>
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
