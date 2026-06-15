@@ -473,6 +473,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             <option value="all">📋 全部</option>
             <option value="income">➕ 收入</option>
             <option value="expense">➖ 支出</option>
+            <option value="save">🏦 存款</option>
         </select>
     </div>
     <div class="transaction-list" id="allList"></div>
@@ -1230,20 +1231,51 @@ function renderGroupedList(list, elId, startCollapsed){
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
                 <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(2)}</span>
             </div>`;
-        groups[date].forEach(i=>{
-            const icon = findCat(i.type,i.cate).icon;
-            let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
-            if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
-            else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
-            html += `<div class="transaction-item">
-                <div class="tx-icon" style="background:${bg}">${icon}</div>
-                <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
-                <div class="tx-item-actions">
-                    <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
-                    <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
-                </div>
-            </div>`;
+        // Merge transfer pairs in this date group
+        const mergedItems = [];
+        const seen = new Set();
+        groups[date].forEach(i => {
+            if(seen.has(i.id)) return;
+            if(i._transfer){
+                const pair = groups[date].find(x => x._transfer === i._transfer && x.id !== i.id);
+                if(pair){
+                    seen.add(pair.id);
+                    const from = i.amount < 0 ? i : pair;
+                    const to = i.amount > 0 ? i : pair;
+                    mergedItems.push({ _isTransfer: true, _from: from, _to: to, amount: to.amount, note: '🔄 转入 ' + to.cate + (to.note ? ' · ' + to.note.replace(/^从 .+ 转入\s*·?\s*/,'') : '') });
+                    seen.add(i.id);
+                    return;
+                }
+            }
+            mergedItems.push(i);
+            seen.add(i.id);
+        });
+        mergedItems.forEach(i => {
+            if(i._isTransfer){
+                const icon = findCat('save', i._to.cate).icon;
+                html += `<div class="transaction-item" style="border-left:3px solid var(--primary);">
+                    <div class="tx-icon" style="background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))">${icon}</div>
+                    <div><div class="tx-cate">🔄 ${i._to.cate} <span style="font-size:11px;color:var(--text2);font-weight:400;">← ${i._from.cate}</span></div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                    <div class="tx-amount save" style="margin-left:auto;">+¥${i.amount.toFixed(2)}</div>
+                    <div class="tx-item-actions">
+                        <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i._from.id});deleteTx(${i._to.id})">🗑️</button>
+                    </div>
+                </div>`;
+            } else {
+                const icon = findCat(i.type,i.cate).icon;
+                let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
+                if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
+                else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
+                html += `<div class="transaction-item">
+                    <div class="tx-icon" style="background:${bg}">${icon}</div>
+                    <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
+                    <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
+                    <div class="tx-item-actions">
+                        <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
+                        <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
+                    </div>
+                </div>`;
+            }
         });
         html += `</div>`;
     });
@@ -1649,6 +1681,7 @@ function withdrawFromSave(cate){
     let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🏦 取出存款</h2><button class="sheet-close" onclick="closeSheet()">✕</button></div>' +
         '<div class="sheet-body"><div style="font-size:13px;color:var(--text2);margin-bottom:10px;">从 <b>' + cate + '</b> 取出（可选记入支出）</div>' +
         '<div class="form-group"><label>金额</label><input type="number" id="withdrawAmount" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);"></div>' +
+        '<div class="form-group"><label>备注</label><input type="text" id="withdrawNote" placeholder="选填" maxlength="50" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);"></div>' +
         '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;">记入支出（选填）</div>' +
         '<div class="cat-grid" id="withdrawCatGrid" style="margin-bottom:12px;">' +
         ((CATS.expense||[]).map((c,i) => '<div class="cat-item' + (i===0?'':'') + '" data-cat="' + c.name + '" onclick="selectCat(this,\''+c.name+'\')"><span class="cat-icon">' + c.icon + '</span>' + c.name + '</div>').join('')) +
@@ -1663,13 +1696,14 @@ function withdrawFromSave(cate){
 function doWithdraw(cate){
     const amt = parseFloat(document.getElementById('withdrawAmount').value);
     if(!amt || amt<=0) return showToast('请输入有效金额');
+    const note = document.getElementById('withdrawNote').value.trim();
     let expCate = '';
     const sel = document.querySelector('#withdrawCatGrid .cat-item.active');
     if(sel) expCate = sel.dataset.cat;
     const now = new Date().toISOString().slice(0,10);
-    DATA.push({ id: Date.now()+Math.random(), type:'save', cate, amount:-Math.round(amt*100)/100, date:now, note:'取出', mood:'' });
+    DATA.push({ id: Date.now()+Math.random(), type:'save', cate, amount:-Math.round(amt*100)/100, date:now, note: note || '取出', mood:'' });
     if(expCate){
-        DATA.push({ id: Date.now()+Math.random(), type:'expense', cate:expCate, amount:Math.round(amt*100)/100, date:now, note:'（从'+cate+'取出）', mood:'' });
+        DATA.push({ id: Date.now()+Math.random(), type:'expense', cate:expCate, amount:Math.round(amt*100)/100, date:now, note: (note ? note + '（从'+cate+'取出）' : '从'+cate+'取出'), mood:'' });
     }
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
@@ -1718,6 +1752,7 @@ function showTransferSheet(fromCate){
         }).join('') +
         '</div>' +
         '<div class="form-group"><label>金额</label><input type="number" id="transferAmount" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);"></div>' +
+        '<div class="form-group"><label>备注</label><input type="text" id="transferNote" placeholder="选填" maxlength="50" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);"></div>' +
         '<button onclick="doTransfer(\''+fromCate+'\')" style="width:100%;padding:12px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;">✔ 确认转移</button>' +
         '</div>';
     sheet.innerHTML = html;
@@ -1732,9 +1767,13 @@ function doTransfer(fromCate){
     if(!selected) return showToast('请选择目标模块');
     const toCate = selected.dataset.cat;
     if(toCate === fromCate) return showToast('不能转移到相同模块');
+    const note = document.getElementById('transferNote').value.trim();
     const now = new Date().toISOString().slice(0,10);
-    DATA.push({ id: Date.now()+Math.random(), type:'save', cate:fromCate, amount:-Math.round(amt*100)/100, date:now, note:'转移至'+toCate, mood:'' });
-    DATA.push({ id: Date.now()+Math.random(), type:'save', cate:toCate, amount:Math.round(amt*100)/100, date:now, note:'从'+fromCate+'转入', mood:'' });
+    const tid = Date.now();
+    const fromNote = '转入 ' + toCate + (note ? ' · ' + note : '');
+    const toNote = '从 ' + fromCate + ' 转入' + (note ? ' · ' + note : '');
+    DATA.push({ id: tid + Math.random(), type:'save', cate:fromCate, amount:-Math.round(amt*100)/100, date:now, note: fromNote, mood:'', _transfer: tid });
+    DATA.push({ id: tid + Math.random(), type:'save', cate:toCate, amount:Math.round(amt*100)/100, date:now, note: toNote, mood:'', _transfer: tid });
     localStorage.setItem('jz_data', JSON.stringify(DATA));
     localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
     const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
@@ -1753,25 +1792,54 @@ function doTransfer(fromCate){
     showToast('✅ 已转移 ¥' + amt.toFixed(0) + ' → ' + toCate);
 }
 function renderSaveMonthDetail(month){
-    const entries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date));
+    let entries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date));
     if(!entries.length){ showToast('该月无存款记录'); return; }
+    // Merge transfer pairs (two records with same _transfer id) into one display row
+    const merged = [];
+    const seen = new Set();
+    entries.forEach(e => {
+        if(seen.has(e.id)) return;
+        const pair = e._transfer ? entries.find(x => x._transfer === e._transfer && x.id !== e.id) : null;
+        if(pair){
+            seen.add(pair.id);
+            const from = e.amount < 0 ? e : pair;
+            const to = e.amount > 0 ? e : pair;
+            merged.push({ _isTransfer: true, _from: from, _to: to, date: e.date, amount: to.amount, note: '🔄 ' + from.note });
+        } else {
+            merged.push(e);
+        }
+        seen.add(e.id);
+    });
     const sheet = document.createElement('div');
     sheet.className = 'sheet show';
     sheet.style.cssText = 'z-index:99999;max-height:75vh;overflow-y:auto;';
     const [y,mon] = month.split('-');
     let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;">🏦 ' + y + '年' + parseInt(mon) + '月 存款</h3><span onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="cursor:pointer;font-size:20px;color:var(--text2);">✕</span></div>';
     html += '<div style="font-size:12px;color:var(--text2);margin-bottom:10px;">共 ' + entries.length + ' 笔，合计 ¥' + entries.reduce((s,e)=>s+e.amount,0).toFixed(2) + '</div>';
-    entries.forEach(e => {
-        const isWd = e.amount < 0;
-        html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;">' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:13px;font-weight:600;">' + e.cate + (isWd?' <span style="color:var(--out);font-size:10px;">取出</span>':'') + '</div>' +
-                '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
-            '</div>' +
-            '<div style="font-size:15px;font-weight:700;color:' + (isWd?'var(--out)':'var(--primary)') + ';white-space:nowrap;">' + (isWd?'-':'+') + '¥' + Math.abs(e.amount).toFixed(2) + '</div>' +
-            '<button class="tx-btn-edit" onclick="openAdd(\'save\',' + e.id + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="opacity:.5;">✏️</button>' +
-            '<button class="tx-btn-edit" onclick="deleteTx(' + e.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
-        '</div>';
+    merged.forEach(e => {
+        if(e._isTransfer){
+            html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;border-left:3px solid var(--primary);">' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:13px;font-weight:600;">🔄 ' + e._to.cate + ' <span style="font-size:11px;color:var(--text2);font-weight:400;">← ' + e._from.cate + '</span></div>' +
+                    '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
+                '</div>' +
+                '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">+¥' + e.amount.toFixed(2) + '</div>' +
+                '<div style="display:flex;gap:2px;">' +
+                '<button class="tx-btn-edit" onclick="deleteTx(' + e._from.id + ');deleteTx(' + e._to.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
+                '</div>' +
+            '</div>';
+        } else {
+            const isWd = e.amount < 0;
+            html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;">' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:13px;font-weight:600;">' + e.cate + (isWd?' <span style="color:var(--out);font-size:10px;">取出</span>':'') + '</div>' +
+                    '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
+                '</div>' +
+                '<div style="font-size:15px;font-weight:700;color:' + (isWd?'var(--out)':'var(--primary)') + ';white-space:nowrap;">' + (isWd?'-':'+') + '¥' + Math.abs(e.amount).toFixed(2) + '</div>' +
+                '<button class="tx-btn-edit" onclick="openAdd(\'save\',' + e.id + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="opacity:.5;">✏️</button>' +
+                '<button class="tx-btn-edit" onclick="deleteTx(' + e.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
+            '</div>';
+        }
     });
     sheet.innerHTML = html;
     document.getElementById('overlay').classList.add('show');
