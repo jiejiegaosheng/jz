@@ -7,8 +7,6 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>记账本</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{--bg:#faf5ff;--card:#fff;--text:#1a1a2e;--text2:#8e8ea0;--primary:#7c3aed;--primary2:#a78bfa;--in:#14b8a6;--out:#ef4444;--save:#7c3aed;--border:#e9d5ff;--shadow:0 4px 20px rgba(124,58,237,.08);--radius:16px;--radius-sm:10px;--nav-bg:#fff;--nav-h:64px;--input-bg:#f5f3ff;}
 .dark{--bg:#0f0f23;--card:#1a1a35;--text:#e8e8f0;--text2:#9e9eb8;--border:#2a2a45;--shadow:0 4px 20px rgba(0,0,0,.3);--nav-bg:#101020;--input-bg:#1e1e3a;--primary:#a78bfa;--primary2:#c4b5fd;--in:#14b8a6;--out:#ef4444;--save:#a78bfa;}
@@ -398,6 +396,16 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg,#faf5ff);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s;">
+    <div style="font-size:48px;margin-bottom:12px;">🏦</div>
+    <div style="width:120px;height:3px;background:var(--border,#e9d5ff);border-radius:2px;overflow:hidden;">
+        <div style="width:30%;height:100%;background:var(--primary,#7c3aed);border-radius:2px;animation:loadBar 1.2s ease infinite;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--text2,#8e8ea0);margin-top:10px;">记账本加载中...</div>
+</div>
+<style>
+@keyframes loadBar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}
+</style>
 <!-- Overlay -->
 <div class="overlay" id="overlay" onclick="closeSheet()"></div>
 
@@ -728,6 +736,8 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
 
+<script async src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 // ========== NORMALIZE DATA ==========
 function normItem(i){
@@ -939,6 +949,9 @@ document.getElementById('dailyModeLabel').textContent = DAILY_MODE === 'budget' 
 renderMonth();
 refreshAll();
 switchTab('home');
+// Hide loading overlay
+var lo = document.getElementById('loadingOverlay');
+if(lo){ lo.style.opacity = '0'; setTimeout(function(){ lo.style.display = 'none'; }, 400); }
 
 // ========== MONTH NAV ==========
 function renderMonth(){
@@ -1588,36 +1601,141 @@ function renderSavePage(){
 }
 function renderSaveModulePreview(total){
     const el = document.getElementById('saveModulePreview');
-    // Compute per-cate totals (all time)
     const cateTotals = {};
     DATA.filter(i => i.type==='save').forEach(i => {
         cateTotals[i.cate] = (cateTotals[i.cate]||0) + i.amount;
     });
-    // Collect all cate names from CATS.save + goals + DATA
     const allCates = new Set();
     (CATS.save||[]).forEach(c => allCates.add(c.name));
     getSavingsGoals().forEach(g => allCates.add(g.name));
     Object.keys(cateTotals).forEach(c => allCates.add(c));
     const cateList = [...allCates].filter(c => cateTotals[c] > 0).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
-    if(!cateList.length){ el.innerHTML = ''; return; }
     let html = '<div style="font-size:12px;color:var(--text2);margin-bottom:6px;">📂 存款模块</div>';
     cateList.forEach(c => {
         const amt = cateTotals[c]||0;
         const pct = total > 0 ? (amt/total*100) : 0;
         const goal = getSavingsGoals().find(g => g.name === c);
         const icon = goal ? (goal.icon||'🐷') : ((CATS.save||[]).find(x=>x.name===c)?.icon||'🏦');
+        const targetPct = goal && goal.target > 0 ? Math.min((goal.saved||0)/goal.target*100,100) : -1;
         html += '<div style="display:flex;align-items:center;gap:8px;background:var(--input-bg);border-radius:10px;padding:10px 12px;margin-bottom:6px;">' +
             '<span style="font-size:18px;">' + icon + '</span>' +
             '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:13px;font-weight:600;">' + c + '</div>' +
-                (total > 0 ? '<div class="budget-bar" style="height:2px;margin-top:4px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
+                (total > 1 ? '<div class="budget-bar" style="height:2px;margin-top:4px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
+                (targetPct >= 0 ? '<div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><div class="budget-bar" style="height:3px;flex:1;"><div class="budget-fill good" style="width:' + targetPct + '%;background:linear-gradient(90deg,#f59e0b,#f97316);"></div></div><span style="font-size:9px;color:var(--text2);white-space:nowrap;">' + (goal.saved||0).toFixed(0) + '/' + goal.target.toFixed(0) + '</span></div>' : '') +
             '</div>' +
             '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">¥' + amt.toFixed(0) + '</div>' +
-            '<button onclick="openAdd(\'save\');setTimeout(function(){var el=document.querySelector(\'.cat-item[data-cat=\\\''+c+'\\\']\');if(el){selectCat(el,\''+c+'\')}},100)" style="padding:4px 10px;border:none;border-radius:6px;background:var(--in);color:#fff;font-size:11px;cursor:pointer;">存入</button>' +
-            '<button onclick="openAdd(\'save\');setTimeout(function(){setSaveMode(\'withdraw\');var el=document.querySelector(\'.cat-item[data-cat=\\\''+c+'\\\']\');if(el){selectCat(el,\''+c+'\')}},100)" style="padding:4px 10px;border:none;border-radius:6px;background:var(--out);color:#fff;font-size:11px;cursor:pointer;">取出</button>' +
+            '<button onclick="depositToSave(\''+c+'\')" style="padding:4px 10px;border:none;border-radius:6px;background:var(--in);color:#fff;font-size:11px;cursor:pointer;">存入</button>' +
+            '<button onclick="withdrawFromSave(\''+c+'\')" style="padding:4px 10px;border:none;border-radius:6px;background:var(--out);color:#fff;font-size:11px;cursor:pointer;">取出</button>' +
+            '<button onclick="showTransferSheet(\''+c+'\')" style="padding:4px 8px;border:1px solid var(--primary);border-radius:6px;background:transparent;color:var(--primary);font-size:11px;cursor:pointer;">转移</button>' +
         '</div>';
     });
     el.innerHTML = html;
+}
+function depositToSave(cate){
+    openAdd('save');
+    setTimeout(function(){
+        setSaveMode('deposit');
+        var el = document.querySelector('.cat-item[data-cat="' + cate + '"]');
+        if(el) selectCat(el, cate);
+    }, 100);
+}
+function withdrawFromSave(cate){
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:99999;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🏦 取出存款</h2><button class="sheet-close" onclick="closeSheet()">✕</button></div>' +
+        '<div class="sheet-body"><div style="font-size:13px;color:var(--text2);margin-bottom:10px;">从 <b>' + cate + '</b> 取出（可选记入支出）</div>' +
+        '<div class="form-group"><label>金额</label><input type="number" id="withdrawAmount" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);"></div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;">记入支出（选填）</div>' +
+        '<div class="cat-grid" id="withdrawCatGrid" style="margin-bottom:12px;">' +
+        ((CATS.expense||[]).map((c,i) => '<div class="cat-item' + (i===0?'':'') + '" data-cat="' + c.name + '" onclick="selectCat(this,\''+c.name+'\')"><span class="cat-icon">' + c.icon + '</span>' + c.name + '</div>').join('')) +
+        '</div>' +
+        '<button onclick="doWithdraw(\''+cate+'\')" style="width:100%;padding:12px;border:none;border-radius:8px;background:var(--out);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">✔ 确认取出</button>' +
+        '</div>';
+    sheet.innerHTML = html;
+    document.getElementById('overlay').classList.add('show');
+    document.body.appendChild(sheet);
+    setTimeout(function(){ document.getElementById('withdrawAmount').focus(); }, 300);
+}
+function doWithdraw(cate){
+    const amt = parseFloat(document.getElementById('withdrawAmount').value);
+    if(!amt || amt<=0) return showToast('请输入有效金额');
+    let expCate = '';
+    const sel = document.querySelector('#withdrawCatGrid .cat-item.active');
+    if(sel) expCate = sel.dataset.cat;
+    const now = new Date().toISOString().slice(0,10);
+    DATA.push({ id: Date.now()+Math.random(), type:'save', cate, amount:-Math.round(amt*100)/100, date:now, note:'取出', mood:'' });
+    if(expCate){
+        DATA.push({ id: Date.now()+Math.random(), type:'expense', cate:expCate, amount:Math.round(amt*100)/100, date:now, note:'（从'+cate+'取出）', mood:'' });
+    }
+    localStorage.setItem('jz_data', JSON.stringify(DATA));
+    localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+    monthly[now.slice(0,7)] = DATA.filter(i => i.type==='save' && i.date.slice(0,7)===now.slice(0,7)).reduce((s,i) => s + i.amount, 0);
+    if(monthly[now.slice(0,7)] <= 0) delete monthly[now.slice(0,7)];
+    localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+    const goals = getSavingsGoals();
+    const goal = goals.find(g => g.name === cate);
+    if(goal){
+        goal.saved = DATA.filter(i => i.type==='save' && i.cate===cate).reduce((s,i) => s + i.amount, 0);
+        saveSavingsGoals(goals);
+    }
+    closeSheet();
+    refreshAll();
+    showToast('✅ 已取出 ¥' + amt.toFixed(0) + (expCate?' → '+expCate:''));
+}
+function showTransferSheet(fromCate){
+    const cateTotals = {};
+    DATA.filter(i => i.type==='save').forEach(i => {
+        cateTotals[i.cate] = (cateTotals[i.cate]||0) + i.amount;
+    });
+    const targets = Object.keys(cateTotals).filter(c => c !== fromCate && cateTotals[c] > 0);
+    if(!targets.length) return showToast('没有可转移的目标模块');
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:99999;';
+    let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>🔄 转移存款</h2><button class="sheet-close" onclick="closeSheet()">✕</button></div>' +
+        '<div class="sheet-body">' +
+        '<div style="font-size:13px;color:var(--text2);margin-bottom:10px;">从 <b>' + fromCate + '</b> 转移到</div>' +
+        '<div class="cat-grid" id="transferCatGrid" style="margin-bottom:12px;">' +
+        targets.map((c,i) => {
+            const icon = (CATS.save||[]).find(x=>x.name===c)?.icon||'🏦';
+            const goal = getSavingsGoals().find(g => g.name === c);
+            const ic = goal ? (goal.icon||'🐷') : icon;
+            return '<div class="cat-item' + (i===0?' active':'') + '" data-cat="' + c + '" onclick="selectCat(this,\''+c+'\')">' +
+                '<span class="cat-icon">' + ic + '</span>' + c +
+                '<span style="font-size:10px;color:var(--text2);margin-left:3px;">¥' + (cateTotals[c]||0).toFixed(0) + '</span></div>';
+        }).join('') +
+        '</div>' +
+        '<div class="form-group"><label>金额</label><input type="number" id="transferAmount" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);"></div>' +
+        '<button onclick="doTransfer(\''+fromCate+'\')" style="width:100%;padding:12px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;">✔ 确认转移</button>' +
+        '</div>';
+    sheet.innerHTML = html;
+    document.getElementById('overlay').classList.add('show');
+    document.body.appendChild(sheet);
+    setTimeout(function(){ document.getElementById('transferAmount').focus(); }, 300);
+}
+function doTransfer(fromCate){
+    const amt = parseFloat(document.getElementById('transferAmount').value);
+    if(!amt || amt<=0) return showToast('请输入有效金额');
+    const selected = document.querySelector('#transferCatGrid .cat-item.active');
+    if(!selected) return showToast('请选择目标模块');
+    const toCate = selected.dataset.cat;
+    if(toCate === fromCate) return showToast('不能转移到相同模块');
+    const now = new Date().toISOString().slice(0,10);
+    DATA.push({ id: Date.now()+Math.random(), type:'save', cate:fromCate, amount:-Math.round(amt*100)/100, date:now, note:'转移至'+toCate, mood:'' });
+    DATA.push({ id: Date.now()+Math.random(), type:'save', cate:toCate, amount:Math.round(amt*100)/100, date:now, note:'从'+fromCate+'转入', mood:'' });
+    localStorage.setItem('jz_data', JSON.stringify(DATA));
+    localStorage.setItem('jz_data_backup', JSON.stringify(DATA));
+    const monthly = JSON.parse(localStorage.getItem('jz_monthly_save') || '{}');
+    const m = now.slice(0,7);
+    monthly[m] = DATA.filter(i => i.type==='save' && i.date.slice(0,7)===m).reduce((s,i) => s + i.amount, 0);
+    if(monthly[m] <= 0) delete monthly[m];
+    localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+    closeSheet();
+    refreshAll();
+    showToast('✅ 已转移 ¥' + amt.toFixed(0) + ' → ' + toCate);
 }
 function renderSaveMonthDetail(month){
     const entries = DATA.filter(d => d.type==='save' && d.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date));
