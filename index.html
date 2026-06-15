@@ -1694,8 +1694,9 @@ function showTransferSheet(fromCate){
     });
     const goals = getSavingsGoals();
     const allNames = new Set();
-    Object.keys(cateTotals).forEach(c => allNames.add(c));
+    (CATS.save||[]).forEach(c => allNames.add(c.name));
     goals.forEach(g => allNames.add(g.name));
+    Object.keys(cateTotals).forEach(c => allNames.add(c));
     const targets = [...allNames].filter(c => c !== fromCate).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
     if(!targets.length) return showToast('没有可转移的目标模块');
     const sheet = document.createElement('div');
