@@ -1692,7 +1692,11 @@ function showTransferSheet(fromCate){
     DATA.filter(i => i.type==='save').forEach(i => {
         cateTotals[i.cate] = (cateTotals[i.cate]||0) + i.amount;
     });
-    const targets = Object.keys(cateTotals).filter(c => c !== fromCate && cateTotals[c] > 0);
+    const goals = getSavingsGoals();
+    const allNames = new Set();
+    Object.keys(cateTotals).forEach(c => allNames.add(c));
+    goals.forEach(g => allNames.add(g.name));
+    const targets = [...allNames].filter(c => c !== fromCate).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
     if(!targets.length) return showToast('没有可转移的目标模块');
     const sheet = document.createElement('div');
     sheet.className = 'sheet show';
@@ -1703,11 +1707,13 @@ function showTransferSheet(fromCate){
         '<div class="cat-grid" id="transferCatGrid" style="margin-bottom:12px;">' +
         targets.map((c,i) => {
             const icon = (CATS.save||[]).find(x=>x.name===c)?.icon||'🏦';
-            const goal = getSavingsGoals().find(g => g.name === c);
+            const goal = goals.find(g => g.name === c);
             const ic = goal ? (goal.icon||'🐷') : icon;
+            const bal = cateTotals[c]||0;
             return '<div class="cat-item' + (i===0?' active':'') + '" data-cat="' + c + '" onclick="selectCat(this,\''+c+'\')">' +
                 '<span class="cat-icon">' + ic + '</span>' + c +
-                '<span style="font-size:10px;color:var(--text2);margin-left:3px;">¥' + (cateTotals[c]||0).toFixed(0) + '</span></div>';
+                (goal ? ' <span style="font-size:9px;color:#f59e0b;">目标</span>' : '') +
+                '<span style="font-size:10px;color:var(--text2);margin-left:3px;">¥' + bal.toFixed(0) + '</span></div>';
         }).join('') +
         '</div>' +
         '<div class="form-group"><label>金额</label><input type="number" id="transferAmount" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);"></div>' +
@@ -1735,6 +1741,12 @@ function doTransfer(fromCate){
     monthly[m] = DATA.filter(i => i.type==='save' && i.date.slice(0,7)===m).reduce((s,i) => s + i.amount, 0);
     if(monthly[m] <= 0) delete monthly[m];
     localStorage.setItem('jz_monthly_save', JSON.stringify(monthly));
+    const goals = getSavingsGoals();
+    const toGoal = goals.find(g => g.name === toCate);
+    if(toGoal){
+        toGoal.saved = DATA.filter(i => i.type==='save' && i.cate===toCate).reduce((s,i) => s + i.amount, 0);
+        saveSavingsGoals(goals);
+    }
     closeSheet();
     refreshAll();
     showToast('✅ 已转移 ¥' + amt.toFixed(0) + ' → ' + toCate);
