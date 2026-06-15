@@ -1607,14 +1607,16 @@ function renderSaveModulePreview(total){
     });
     const allCates = new Set();
     (CATS.save||[]).forEach(c => allCates.add(c.name));
-    getSavingsGoals().forEach(g => allCates.add(g.name));
+    const goals = getSavingsGoals();
+    goals.forEach(g => allCates.add(g.name));
     Object.keys(cateTotals).forEach(c => allCates.add(c));
-    const cateList = [...allCates].filter(c => cateTotals[c] > 0).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
+    const goalNames = new Set(goals.map(g => g.name));
+    const cateList = [...allCates].filter(c => cateTotals[c] > 0 || goalNames.has(c)).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
     let html = '<div style="font-size:12px;color:var(--text2);margin-bottom:6px;">📂 存款模块</div>';
     cateList.forEach(c => {
         const amt = cateTotals[c]||0;
         const pct = total > 0 ? (amt/total*100) : 0;
-        const goal = getSavingsGoals().find(g => g.name === c);
+        const goal = goals.find(g => g.name === c);
         const icon = goal ? (goal.icon||'🐷') : ((CATS.save||[]).find(x=>x.name===c)?.icon||'🏦');
         const targetPct = goal && goal.target > 0 ? Math.min((goal.saved||0)/goal.target*100,100) : -1;
         html += '<div style="display:flex;align-items:center;gap:8px;background:var(--input-bg);border-radius:10px;padding:10px 12px;margin-bottom:6px;">' +
@@ -3212,11 +3214,18 @@ function openAvatarSelector(){
     }
 }
 
+function sendProfileUpdate(){
+    const name = localStorage.getItem('jz_profile_name') || '记账本用户';
+    const avatar = localStorage.getItem('jz_profile_avatar') || '😊';
+    Object.values(PEER_CONNS).forEach(conn => {
+        if(conn && conn.open) conn.send({ type:'profile_update', from:getUID(), name, avatar });
+    });
+}
 function setAvatar(a){
     localStorage.setItem('jz_profile_avatar', a);
     document.querySelectorAll('.avatar-option').forEach(el=>el.classList.remove('active'));
     event.target.classList.add('active');
-    setTimeout(()=>{ document.getElementById('avatarSheet')?.remove(); document.getElementById('avatarSelectorOverlay')?.remove(); renderProfilePage(); }, 200);
+    setTimeout(()=>{ document.getElementById('avatarSheet')?.remove(); document.getElementById('avatarSelectorOverlay')?.remove(); renderProfilePage(); sendProfileUpdate(); }, 200);
 }
 
 function editProfileName(){
@@ -3225,6 +3234,7 @@ function editProfileName(){
     if(name && name.trim()){
         localStorage.setItem('jz_profile_name', name.trim());
         renderProfilePage();
+        sendProfileUpdate();
     }
 }
 
@@ -3879,6 +3889,15 @@ function handlePeerData(data, fromId){
         showToast('☁️ 好友撤回了账单查看权限');
         const currFid = document.getElementById('friendChatTitle')?.dataset?.fid;
         if(currFid === data.from) renderFriendChat(data.from);
+    } else if (data.type === 'profile_update') {
+        const friends = getFriends();
+        const f = friends.find(x => x.id === data.from);
+        if(f){
+            if(data.name) f.name = data.name;
+            if(data.avatar) f.avatar = data.avatar;
+            saveFriends(friends);
+            updateFriendUI();
+        }
     }
 }
 
