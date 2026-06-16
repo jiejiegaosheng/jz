@@ -964,6 +964,7 @@ document.getElementById('dailyModeLabel').textContent = DAILY_MODE === 'budget' 
 renderMonth();
 refreshAll();
 switchTab('home');
+initPeer();
 // Hide loading overlay
 var lo = document.getElementById('loadingOverlay');
 if(lo){ lo.style.opacity = '0'; setTimeout(function(){ lo.style.display = 'none'; }, 400); }
@@ -3253,11 +3254,13 @@ function initPeer(){
         return true;
     }
     try{
-        PEER = new Peer(getUID(), {debug:0});
+        PEER = new Peer(getUID(), {debug:0, config:{'iceServers':[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}});
         PEER.on('open', id=>{
             PEER_STATUS = 'ready';
             const friends = getFriends();
             friends.forEach(f => tryConnectFriend(f.id));
+            const reqs = getFriendRequests();
+            reqs.filter(r=>r.direction==='sent'&&r.status!=='rejected').forEach(r => tryConnectFriend(r.id));
         });
         PEER.on('connection', conn=>{
             const fromId = conn.peer;
@@ -3267,6 +3270,10 @@ function initPeer(){
             conn.on('data', data => handlePeerData(data, fromId));
             conn.on('close', ()=>{ delete PEER_CONNS[fromId]; updateFriendUI(); });
             conn.on('error', ()=>{});
+            const reqs = getFriendRequests();
+            if(reqs.find(r=>r.id===fromId&&r.direction==='sent'&&r.status!=='rejected')){
+                conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+            }
             sendPendingTasks(fromId);
             updateFriendUI();
         });
@@ -3300,6 +3307,10 @@ function tryConnectFriend(fid){
             conn.on('data', data => handlePeerData(data, fid));
             conn.on('close', ()=>{ delete PEER_CONNS[fid]; updateFriendUI(); });
             conn.on('error', ()=>{ delete PEER_PENDING[fid]; });
+            const reqs = getFriendRequests();
+            if(reqs.find(r=>r.id===fid&&r.direction==='sent'&&r.status!=='rejected')){
+                conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
+            }
             sendPendingTasks(fid);
             updateFriendUI();
         });
