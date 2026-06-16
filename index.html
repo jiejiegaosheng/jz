@@ -371,6 +371,8 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .avatar-option:active{transform:scale(.9);}
 .avatar-option.active{border-color:var(--primary);background:rgba(108,92,231,.1);}
 #profileAvatar:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.2)!important;}
+.scope-opt{padding:5px 10px;border:1.5px solid var(--border);border-radius:16px;background:var(--input-bg);color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;user-select:none;}
+.scope-opt.active{border-color:var(--primary);color:var(--primary);background:rgba(108,92,231,.08);font-weight:600;}
 
 /* Profile menu */
 .profile-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px;}
@@ -3567,6 +3569,7 @@ function sendFriendRequest(fid){
     if(conn && conn.open){
         conn.send({ type: 'friend_request', from: getUID(), name: localStorage.getItem('jz_profile_name') || '记账本用户' });
     }
+    // Queue for when connection opens (sendPendingTasks will pick it up)
 }
 
 function connectFriend(){
@@ -3580,10 +3583,21 @@ function connectFriend(){
     reqs.push({ id: code, status: 'sent', direction: 'sent', time: Date.now() });
     saveFriendRequests(reqs);
     initPeer();
-    tryConnectFriend(code);
-    sendFriendRequest(code);
+    showToast('📩 正在连接...');
+    // Retry connection aggressively
+    let attempts = 0;
+    function retry(){
+        tryConnectFriend(code);
+        sendFriendRequest(code);
+        attempts++;
+        if(attempts < 10){
+            setTimeout(retry, 800);
+        } else {
+            showToast('📩 好友请求已发送，等待对方同意');
+        }
+    }
+    retry();
     document.getElementById('friendCodeInput').value = '';
-    showToast('📩 好友请求已发送，等待对方同意');
     renderFriendPage();
 }
 
@@ -3683,22 +3697,33 @@ function requestViewBill(fid){
     showToast('📩 已发送账单查看申请');
 }
 
-function approveBillView(fid, duration){
+function approveBillView(fid, duration, scope){
     const expires = duration === -1 ? 9999999999999 : Date.now() + duration * 86400000;
     const shares = getBillShares();
     if(!shares[fid]) shares[fid] = {};
-    shares[fid].viewing = { approved: true, expires };
+    scope = scope || { type: 'all' };
+    shares[fid].viewing = { approved: true, expires, scope };
     saveBillShares(shares);
     const conn = PEER_CONNS[fid];
     if(conn && conn.open){
-        // Send approval and current bill data
-        const monthExpense = DATA.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+        let filtered = [...DATA];
+        const now = new Date();
+        if(scope.type === 'year'){
+            const cutoff = new Date(now.getFullYear()-1, now.getMonth(), now.getDate()).toISOString().slice(0,10);
+            filtered = filtered.filter(i => i.date >= cutoff);
+        } else if(scope.type === 'month'){
+            filtered = filtered.filter(i => i.date.slice(0,7) === scope.value);
+        } else if(scope.type === 'module'){
+            filtered = filtered.filter(i => i.cate === scope.value);
+        }
+        const monthExpense = filtered.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
         const catTotals = {};
-        DATA.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
-        const totalInc = DATA.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
-        const totalSave = DATA.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+        filtered.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+        const totalInc = filtered.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+        const totalSave = filtered.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
         const durationLabel = duration === -1 ? '永久' : duration === 1 ? '1天' : duration === 10 ? '10天' : '30天';
-        conn.send({ type: 'bill_view_approved', from: getUID(), duration: durationLabel, data: { catTotals, totalExpense: monthExpense, totalIncome: totalInc, totalSave } });
+        const scopeLabel = scope.type === 'year' ? '近1年' : scope.type === 'month' ? scope.value+'月' : scope.type === 'module' ? scope.value+'模块' : '全部';
+        conn.send({ type: 'bill_view_approved', from: getUID(), duration: durationLabel, scope: scopeLabel, data: { catTotals, totalExpense: monthExpense, totalIncome: totalInc, totalSave } });
     }
     showToast('✅ 已同意查看账单');
 }
@@ -3710,26 +3735,50 @@ function showBillSharedWithMe(){
     for(const [fid, share] of Object.entries(shares)){
         if(share.viewing && share.viewing.approved){
             const f = friends.find(x => x.id === fid);
-            sharedBy.push({ fid, name: f ? (f.name || fid.slice(0,8)) : fid.slice(0,8), expires: share.viewing.expires });
+            sharedBy.push({ fid, name: f ? (f.name || fid.slice(0,8)) : fid.slice(0,8), expires: share.viewing.expires, scope: share.viewing.scope || {} });
         }
     }
     const sheet = document.createElement('div');
     sheet.className = 'sheet show';
-    sheet.style.cssText = 'z-index:10002;max-height:70vh;overflow-y:auto;';
+    sheet.style.cssText = 'z-index:10002;max-height:75vh;overflow-y:auto;';
     let html = '<div class="sheet-handle"></div><div class="sheet-header"><h2>☁️ 好友看到的账单</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div><div class="sheet-body">';
     if(!sharedBy.length){
         html += '<div style="text-align:center;padding:24px;color:var(--text2);font-size:14px;">暂无好友有权查看你的账单</div>';
     } else {
         sharedBy.forEach(s => {
             const expired = s.expires < Date.now();
+            const scopeLabel = s.scope.type === 'year' ? '近1年' : s.scope.type === 'month' ? s.scope.value + '月' : s.scope.type === 'module' ? s.scope.value + '模块' : '永久';
             html += '<div style="display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--border);">' +
-                '<div style="flex:1;"><span style="font-weight:600;">' + s.name + '</span><span style="font-size:12px;color:var(--text2);margin-left:8px;">' + (expired?'❌ 已过期':'✅ 有效中') + '</span></div>' +
+                '<div style="flex:1;"><span style="font-weight:600;">' + s.name + '</span><span style="font-size:11px;color:var(--text2);margin-left:6px;">' + scopeLabel + '</span><span style="font-size:12px;color:var(--text2);margin-left:6px;">' + (expired?'❌ 已过期':'✅ 有效中') + '</span></div>' +
+                '<button onclick="previewSharedBill(\'' + s.fid + '\')" style="padding:6px 10px;border:1px solid var(--primary);border-radius:6px;background:transparent;color:var(--primary);font-size:11px;cursor:pointer;">预览</button>' +
                 '<button onclick="revokeBillShare(\'' + s.fid + '\')" style="padding:6px 12px;border:none;border-radius:6px;background:var(--out);color:#fff;font-size:12px;cursor:pointer;">撤回</button>' +
             '</div>';
         });
     }
     html += '</div>';
     sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    document.getElementById('overlay').classList.add('show');
+}
+function previewSharedBill(fid){
+    const shares = getBillShares();
+    const share = shares[fid]?.viewing;
+    if(!share || !share.data) return showToast('暂无共享数据');
+    const data = share.data;
+    const friends = getFriends();
+    const f = friends.find(x => x.id === fid);
+    const name = f ? (f.name || fid.slice(0,8)) : fid.slice(0,8);
+    const scope = share.scope || {};
+    const scopeLabel = scope.type === 'year' ? '近1年' : scope.type === 'month' ? scope.value + '月' : scope.type === 'module' ? scope.value + '模块' : '全部';
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet show';
+    sheet.style.cssText = 'z-index:10002;max-height:75vh;overflow-y:auto;';
+    let h = '<div class="sheet-handle"></div><div class="sheet-header"><h2>☁️ ' + name + ' 看到的</h2><button class="sheet-close" onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\');">✕</button></div>' +
+        '<div class="sheet-body"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;">范围：' + scopeLabel + '</div>' +
+        '<div style="background:var(--input-bg);border-radius:12px;padding:16px;margin-bottom:12px;">' +
+        renderCloudBills(data) + '</div>';
+    h += '</div>';
+    sheet.innerHTML = h;
     document.body.appendChild(sheet);
     document.getElementById('overlay').classList.add('show');
 }
@@ -3795,9 +3844,11 @@ function renderFriendPage(){
         const taskData = getFriendTask(today, f.id);
         const preview = taskData.fromFriend ? (taskData.done ? '✅ 已完成任务' : '🎯 ' + taskData.fromFriend) : (taskData.myTask ? '📤 已发任务' : '💤 暂无互动');
         const avatar = f.avatar || (f.name ? f.name[0] : f.id[0]);
+        const isImg = avatar.startsWith('data:');
+        const avatarHtml = isImg ? '<div class="friend-avatar" style="background-image:url(' + avatar + ');background-size:cover;background-position:center;font-size:0;" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单"></div>' : '<div class="friend-avatar" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单">' + avatar + '</div>';
         
         html += '<div class="friend-card" onclick="switchToFriendChat(\'' + f.id + '\')">' +
-            '<div class="friend-avatar" onclick="event.stopPropagation();requestViewBill(\'' + f.id + '\')" title="申请查看账单">' + avatar + '</div>' +
+            avatarHtml +
             '<div class="friend-info">' +
                 '<div class="friend-name">' + (f.name || f.id.slice(0,8)) + ' <span style="font-size:10px;color:var(--text2);font-weight:400;">' + (isOnline ? '🟢 在线' : '🟡 离线') + '</span></div>' +
                 '<div class="friend-id">' + preview + '</div>' +
@@ -3838,7 +3889,7 @@ function renderFriendChat(fid){
     }
     
     let html = '<div style="text-align:center;padding:16px 16px 8px;">' +
-        '<div style="width:52px;height:52px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;cursor:pointer;" onclick="event.stopPropagation();editFriendNickname(\'' + fid + '\')" title="修改备注">' + avatar + '</div>' +
+        (avatar.startsWith('data:') ? '<div style="width:52px;height:52px;border-radius:50%;background:var(--input-bg);background-image:url(' + avatar + ');background-size:cover;background-position:center;margin:0 auto 6px;cursor:pointer;" onclick="event.stopPropagation();editFriendNickname(\'' + fid + '\')" title="修改备注"></div>' : '<div style="width:52px;height:52px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;cursor:pointer;" onclick="event.stopPropagation();editFriendNickname(\'' + fid + '\')" title="修改备注">' + avatar + '</div>') +
         '<div style="font-size:14px;font-weight:600;cursor:pointer;" onclick="editFriendNickname(\'' + fid + '\')">' + (f.name || f.id.slice(0,8)) + ' ✏️</div>' +
         '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (isOnline ? '🟢 在线' : '🟡 离线') + ' · 连续打卡 ' + streak + ' 天 🔥</div>' +
         '<div style="display:flex;justify-content:center;gap:8px;margin-top:4px;">' +
@@ -3973,10 +4024,8 @@ function handlePeerData(data, fromId){
     if (data.type === 'task') {
         const taskData = getFriendTask(today, fromId);
         if (data.task && !taskData.fromFriend) {
-            saveFriendTask(today, fromId, { fromFriend: data.task, done: false, popupShown: false });
+            saveFriendTask(today, fromId, { fromFriend: data.task, done: false, popupShown: true });
             showTaskPopup(data.task, fromId);
-            const all = JSON.parse(localStorage.getItem('jz_friend_tasks') || '{}');
-            if(all[today] && all[today][fromId]) { all[today][fromId].popupShown = true; localStorage.setItem('jz_friend_tasks', JSON.stringify(all)); }
             updateFriendUI();
         }
     } else if (data.type === 'done') {
@@ -4065,18 +4114,29 @@ function showBillViewApproveDialog(fid, fname){
             <h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">账单查看申请</h3>
             <div style="font-size:13px;color:var(--text2);">${fname} 想查看你的账单</div>
         </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">选择查看范围：</div>
+        <div id="scopeCats" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+            <span class="scope-opt active" data-scope='{"type":"all"}' onclick="selectScope(this)">全部</span>
+            <span class="scope-opt" data-scope='{"type":"year"}' onclick="selectScope(this)">近1年</span>
+            <span class="scope-opt" data-scope='{"type":"month","value":"${CURRENT_MONTH.slice(0,7)}"}' onclick="selectScope(this)">本月</span>` +
+            CATS.expense.map(c => `<span class="scope-opt" data-scope='{"type":"module","value":"${c.name}"}' onclick="selectScope(this)">${c.icon}${c.name}</span>`).join('') +
+        `</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-            <button onclick="approveBillView('${fid}',1); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 1 天</button>
-            <button onclick="approveBillView('${fid}',10); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 10 天</button>
-            <button onclick="approveBillView('${fid}',30); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 同意查看 1 个月</button>
-            <button onclick="approveBillView('${fid}',-1); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:none;border-radius:10px;background:var(--primary2);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">✅ 永久查看</button>
-            <button onclick="this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;">❌ 拒绝</button>
+            <button onclick="var s=document.querySelector('#scopeCats .scope-opt.active');var sc=s?JSON.parse(s.dataset.scope):{type:'all'};approveBillView('${fid}',1,sc); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:10px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 同意查看 1 天</button>
+            <button onclick="var s=document.querySelector('#scopeCats .scope-opt.active');var sc=s?JSON.parse(s.dataset.scope):{type:'all'};approveBillView('${fid}',10,sc); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:10px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 同意查看 10 天</button>
+            <button onclick="var s=document.querySelector('#scopeCats .scope-opt.active');var sc=s?JSON.parse(s.dataset.scope):{type:'all'};approveBillView('${fid}',30,sc); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:10px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 同意查看 1 个月</button>
+            <button onclick="var s=document.querySelector('#scopeCats .scope-opt.active');var sc=s?JSON.parse(s.dataset.scope):{type:'all'};approveBillView('${fid}',-1,sc); this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:10px;border:none;border-radius:10px;background:var(--primary2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ 永久查看</button>
+            <button onclick="this.closest('div').parentElement.parentElement.remove();document.querySelector('.overlay.show').remove();" style="padding:10px;border:1.5px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;">❌ 拒绝</button>
         </div>`;
     document.body.appendChild(overlay);
     document.body.appendChild(dlg);
 }
 
 // ========== UPDATED sendPendingTasks WITH REQUESTS ==========
+function selectScope(el){
+    document.querySelectorAll('#scopeCats .scope-opt').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+}
 function sendPendingTasks(fid){
     const conn = PEER_CONNS[fid];
     if (!conn || !conn.open) return;
@@ -4167,7 +4227,7 @@ setInterval(() => {
             }
         }
     }
-}, 3000);
+}, 1500);
 
 // ========== URL DEEP LINK (like iCost share extension) ==========
 // ========== URL DEEP LINK (like iCost share extension) ==========
