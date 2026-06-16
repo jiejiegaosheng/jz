@@ -451,7 +451,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     </div>
     <div class="section-header" style="padding-bottom:6px;">
         <h2>支出明细</h2>
-        <span class="more" onclick="switchTab('all')">全部 →</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span id="globalBudgetToggle" style="display:inline-flex;align-items:center;"></span>
+            <span class="more" onclick="switchTab('all')">全部 →</span>
+        </div>
     </div>
     <div id="budgetModuleList"></div>
     <div class="section-header" style="padding-bottom:6px;padding-top:6px;">
@@ -1027,9 +1030,15 @@ function refreshAll(){
     const catTotals = {};
     monthExpenses.forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
     const cats = CATS.expense;
+    const budgetDisabledCats = JSON.parse(localStorage.getItem('jz_budget_disabled_cats')) || [];
+    const enabledCats = cats.filter(c => !budgetDisabledCats.includes(c.name));
     const catEffectiveBudgets = {};
     cats.forEach(c => {
-        catEffectiveBudgets[c.name] = monthCatBudgets[c.name] || Math.round(budget / cats.length);
+        if(budgetDisabledCats.includes(c.name)){
+            catEffectiveBudgets[c.name] = 0;
+        } else {
+            catEffectiveBudgets[c.name] = monthCatBudgets[c.name] || (enabledCats.length ? Math.round(budget / enabledCats.length) : 0);
+        }
     });
     const totalCatBudget = Object.values(catEffectiveBudgets).reduce((s,v)=>s+v, 0);
     const pct = totalCatBudget>0 ? Math.min(expense/totalCatBudget*100,100) : 0;
@@ -1080,6 +1089,20 @@ function refreshAll(){
     el.innerHTML = cats.map(c=>{
         const spent = catTotals[c.name]||0;
         const catBudget = catEffectiveBudgets[c.name];
+        const budgetDisabled = budgetDisabledCats.includes(c.name);
+        if(budgetDisabled){
+            return `<div class="chart-card" style="padding:12px;margin:0 16px 6px;cursor:pointer;overflow:hidden;border-left:3px solid var(--primary2);" onclick="filterCategory('${c.name}')" onmousedown="longPressStart(event,'${c.name}')" onmouseup="longPressEnd(event,'${c.name}')" onmousemove="longPressMove(event)" ontouchstart="longPressStart(event,'${c.name}')" ontouchend="longPressEnd(event,'${c.name}')" ontouchmove="longPressMove(event)">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:22px;">${c.icon}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
+                            <span>${c.name}</span>
+                            <span style="color:var(--text);font-weight:600;">¥${spent.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
         const pct = catBudget>0 ? Math.min(spent/catBudget*100,100) : 0;
         const barColor = pct>=100?'var(--out)':pct>=50?'#fdcb6e':'var(--in)';
         const funEmoji = pct>=100?'😱':pct>=80?'😅':pct>=50?'😊':pct>=20?'😌':'🌟';
@@ -1099,6 +1122,17 @@ function refreshAll(){
             </div>
         </div>`;
     }).join('');
+
+    // Global budget toggle
+    const toggleEl = document.getElementById('globalBudgetToggle');
+    if(toggleEl){
+        const allDisabled = budgetDisabledCats.length >= cats.length;
+        toggleEl.innerHTML = `<label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
+            <input type="checkbox" ${allDisabled?'':'checked'} onchange="toggleAllBudgets(this.checked)" style="opacity:0;width:0;height:0;">
+            <span style="position:absolute;inset:0;background:${allDisabled?'var(--border)':'var(--primary)'};border-radius:10px;transition:.2s;"></span>
+            <span style="position:absolute;top:2px;left:${allDisabled?'2px':'18px'};width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;"></span>
+        </label>`;
+    }
 
     // Income modules
     const incEl = document.getElementById('incomeModuleList');
@@ -1643,7 +1677,7 @@ function renderSaveModulePreview(total){
     goals.forEach(g => allCates.add(g.name));
     Object.keys(cateTotals).forEach(c => allCates.add(c));
     const goalNames = new Set(goals.map(g => g.name));
-    const cateList = [...allCates].filter(c => cateTotals[c] > 0 || goalNames.has(c)).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
+    const cateList = [...allCates].filter(c => cateTotals[c] > 0 || goalNames.has(c) || (CATS.save||[]).some(s => s.name === c)).sort((a,b) => (cateTotals[b]||0) - (cateTotals[a]||0));
     let html = '<div style="font-size:12px;color:var(--text2);margin-bottom:6px;">📂 存款模块</div>';
     cateList.forEach(c => {
         const amt = cateTotals[c]||0;
@@ -2646,6 +2680,8 @@ function showCategoryBudget(cate){
         return sum + (monthCatBudgets[c.name] || Math.round(budget / CATS.expense.length));
     }, 0);
 
+    const budgetDisabledCats = JSON.parse(localStorage.getItem('jz_budget_disabled_cats')) || [];
+    const isBudgetDisabled = budgetDisabledCats.includes(cate);
     closeSheet();
     const sheet = document.createElement('div');
     sheet.className = 'sheet show';
@@ -2653,8 +2689,17 @@ function showCategoryBudget(cate){
     const cat = CATS.expense.find(c=>c.name===cate)||{icon:'📌'};
     sheet.innerHTML = `
     <div class="sheet-handle"></div>
-    <div class="sheet-header"><h2>${cat.icon} ${cate} 预算</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
+    <div class="sheet-header"><h2>${cat.icon} ${cate}</h2><button class="sheet-close" onclick="this.closest('.sheet').remove();document.getElementById('overlay').classList.remove('show');">✕</button></div>
     <div class="sheet-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--input-bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+            <span style="font-size:14px;font-weight:600;">预算管理</span>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+                <input type="checkbox" ${isBudgetDisabled?'':'checked'} onchange="toggleCatBudget('${cate}',this.checked)" style="opacity:0;width:0;height:0;">
+                <span style="position:absolute;inset:0;background:${isBudgetDisabled?'var(--border)':'var(--primary)'};border-radius:12px;transition:.3s;"></span>
+                <span style="position:absolute;top:2px;left:${isBudgetDisabled?'2px':'22px'};width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s;"></span>
+            </label>
+        </div>
+        ${isBudgetDisabled?'':`
         <div style="background:var(--input-bg);border-radius:12px;padding:16px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
                 <span style="font-size:12px;color:var(--text2);">本月收入</span>
@@ -2680,6 +2725,7 @@ function showCategoryBudget(cate){
             <button onclick="setQuickCatBudget('${cate}',${Math.round(spent+Math.max(100, budget*0.1))})" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;">余量+<br><span style="font-size:11px;color:var(--text2);">¥${Math.round(spent+Math.max(100, budget*0.1))}</span></button>
         </div>
         <button onclick="saveCatBudget('${cate}')" style="width:100%;margin-top:16px;padding:14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">✔ 保存分类预算</button>
+        `}
     </div>`;
     document.body.appendChild(sheet);
     document.getElementById('overlay').classList.add('show');
@@ -2700,6 +2746,28 @@ function saveCatBudget(cate){
     if(sheet) { sheet.remove(); document.getElementById('overlay').classList.remove('show'); }
     refreshAll();
     showToast('✅ '+cate+' 预算已设为 ¥'+val.toFixed(0));
+}
+function toggleCatBudget(cate, enabled){
+    const disabled = JSON.parse(localStorage.getItem('jz_budget_disabled_cats')) || [];
+    if(enabled){
+        const idx = disabled.indexOf(cate);
+        if(idx>=0) disabled.splice(idx,1);
+    } else {
+        if(!disabled.includes(cate)) disabled.push(cate);
+    }
+    localStorage.setItem('jz_budget_disabled_cats', JSON.stringify(disabled));
+    closeSheet();
+    refreshAll();
+    showToast(enabled ? cate+' 预算已启用' : cate+' 预算已关闭');
+}
+function toggleAllBudgets(enableAll){
+    const disabled = [];
+    if(!enableAll){
+        CATS.expense.forEach(c => disabled.push(c.name));
+    }
+    localStorage.setItem('jz_budget_disabled_cats', JSON.stringify(disabled));
+    refreshAll();
+    showToast(enableAll ? '全部预算已开启' : '全部预算已关闭');
 }
 
 // ========== EDIT BUDGET ==========
