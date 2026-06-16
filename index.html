@@ -397,14 +397,13 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg,#faf5ff);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s;">
+<div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg,#faf5ff);z-index:99999;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s;">
     <div style="font-size:48px;margin-bottom:12px;">🏦</div>
     <div style="width:120px;height:3px;background:var(--border,#e9d5ff);border-radius:2px;overflow:hidden;">
         <div style="width:30%;height:100%;background:var(--primary,#7c3aed);border-radius:2px;animation:loadBar 1.2s ease infinite;"></div>
     </div>
     <div style="font-size:12px;color:var(--text2,#8e8ea0);margin-top:10px;">记账本加载中...</div>
 </div>
-<script>var e=document.getElementById('loadingOverlay');if(e)e.style.display='none';</script>
 <style>
 @keyframes loadBar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}
 </style>
@@ -751,8 +750,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
     <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
 
-<script async src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 // ========== NORMALIZE DATA ==========
 function normItem(i){
@@ -4457,6 +4454,8 @@ setTimeout(() => {
     }
 }, 2000);
 </script>
+<script async src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
