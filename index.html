@@ -2144,6 +2144,21 @@ function findCat(type,name){
 }
 
 // ========== OCR RECOGNITION ==========
+let _tesseractLoading = false;
+let _tesseractCallbacks = [];
+function loadTesseract(){
+    return new Promise(function(resolve){
+        if(typeof Tesseract !== 'undefined'){ resolve(); return; }
+        _tesseractCallbacks.push(resolve);
+        if(_tesseractLoading) return;
+        _tesseractLoading = true;
+        var s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        s.onload=function(){ _tesseractCallbacks.forEach(function(f){f();}); _tesseractCallbacks=[]; };
+        document.body.appendChild(s);
+    });
+}
+
 // ========== CLIPBOARD IMAGE PASTE (read clipboard directly) ==========
 function showAddSheet(){
     const sheet = document.getElementById('addSheet');
@@ -2166,6 +2181,7 @@ async function pasteClipboardImage(){
         if(!imgBlob) return showToast('⚠️ 剪贴板中没有截图');
         await showAddSheet();
         showToast('⏳ 识别截图金额...');
+        await loadTesseract();
         const { data: { text } } = await Tesseract.recognize(imgBlob, 'chi_sim+eng', {
             logger: m => { if(m.status==='recognizing text' && m.progress<1)
                 document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
@@ -2236,6 +2252,7 @@ async function handleOCR(input){
     setAddType('expense');
     showToast('⏳ 识别中...');
     try {
+        await loadTesseract();
         const { data: { text } } = await Tesseract.recognize(file, 'chi_sim+eng', {
             logger: m => {
                 if(m.status==='recognizing text' && m.progress<1)
@@ -2263,6 +2280,7 @@ document.addEventListener('paste', e=>{
             setTimeout(async ()=>{
                 showToast('⏳ 识别截图金额...');
                 try{
+                    await loadTesseract();
                     const { data: { text } } = await Tesseract.recognize(imgFile, 'chi_sim+eng', {
                         logger: m => { if(m.status==='recognizing text' && m.progress<1)
                             document.getElementById('toast').textContent = `⏳ ${Math.round(m.progress*100)}%`; }
@@ -3247,6 +3265,13 @@ function saveFriendTask(date, friendId, data) {
 })();
 
 function initPeer(){
+    if(typeof Peer === 'undefined'){
+        var s=document.createElement('script');
+        s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+        s.onload=function(){ initPeer(); };
+        document.body.appendChild(s);
+        return;
+    }
     if(PEER) {
         if(PEER.disconnected){
             try{ PEER.destroy(); } catch(e){}
@@ -4454,8 +4479,6 @@ setTimeout(() => {
     }
 }, 2000);
 </script>
-<script async src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
