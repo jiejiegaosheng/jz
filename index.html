@@ -417,7 +417,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <div class="header-top">
             <h1>记账本</h1>
             <div class="header-actions">
-                <span onclick="switchTab('charts')" title="图表">📊</span>
                 <span onclick="openSearch()" title="搜索">🔍</span>
             </div>
         </div>
@@ -500,6 +499,17 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
         <span class="more" onclick="showCatePage()">← 返回明细</span>
     </div>
     <div id="mealPlanContent" style="padding:0 16px;"></div>
+</div>
+<div class="page" id="pageReportBill">
+    <div class="section-header">
+        <h2 id="reportBillTitle">📈 年度账单</h2>
+        <span class="more" onclick="switchTab('report')">← 返回报告</span>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 16px 10px;">
+        <button class="chart-mode-btn active" id="rptChartModeMonth" onclick="setRptChartMode('month')">📅 月</button>
+        <button class="chart-mode-btn" id="rptChartModeYear" onclick="setRptChartMode('year')">📆 年</button>
+    </div>
+    <div id="reportBillBody" style="padding:0 16px;"></div>
 </div>
 
 <div class="page" id="pageCharts">
@@ -653,9 +663,9 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 </div>
 
 <div class="page" id="pageReport">
-    <div class="section-header"><h2>📊 年度报告</h2><span style="font-size:12px;color:var(--text2);opacity:.5;">📈 年度账单</span></div>
-    <div id="reportFriendTasks" style="padding:10px 16px 0;"></div>
+    <div class="section-header"><h2>📊 年度报告</h2><span class="more" onclick="showReportBillPage()">📈 年度账单</span></div>
     <div class="chart-container" id="reportContent"></div>
+    <div id="reportFriendTasks" style="padding:10px 16px 0;"></div>
 </div>
 
 <div class="page" id="pageFriend">
@@ -711,7 +721,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
             </div>
             <div class="setting-item" onclick="showBillSharedWithMe()" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;border-bottom:1px solid var(--border);">
                 <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#74b9ff,#0984e3);">☁️</span><span class="setting-label">好友看到的账单</span></div>
-                <div class="setting-right"><span style="font-size:18px;color:var(--text2);">›</span></div>
+                <div class="setting-right"><span id="billPreviewCount" style="font-size:12px;color:var(--text2);margin-right:4px;"></span><span style="font-size:18px;color:var(--text2);">›</span></div>
             </div>
             <div class="setting-item" onclick="switchTab('settings')" style="border:none;border-radius:0;box-shadow:none;margin-bottom:0;">
                 <div class="setting-left"><span class="setting-icon" style="background:linear-gradient(135deg,#636e72,#b2bec3);">⚙️</span><span class="setting-label">设置</span></div>
@@ -737,7 +747,6 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span>首页</span></button>
     <button class="nav-item" onclick="switchTab('report')"><span class="nav-icon">📊</span><span>报告</span></button>
-    <button class="nav-fab" onclick="smartAdd()" title="记一笔">＋</button>
     <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
     <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
@@ -2450,22 +2459,17 @@ function renderReport(){
     const earliest = dates[0];
     const latest = dates[dates.length-1];
     const days = Math.round((new Date(latest)-new Date(earliest))/86400000)+1;
-    // Fun comparisons
     const hotpot = Math.round(totalExp/80);
     const milktea = Math.round(totalExp/15);
     const iphone = Math.round(totalExp/7999);
-    // Mood stats
     const moodData = {};
     all.filter(i=>i.mood).forEach(i=>{ moodData[i.mood]=(moodData[i.mood]||0)+1; });
     const topMood = Object.entries(moodData).sort((a,b)=>b[1]-a[1])[0];
-    // Most expensive day
     const dayTotals = {};
     all.filter(i=>i.type==='expense').forEach(i=>{ dayTotals[i.date]=(dayTotals[i.date]||0)+i.amount; });
     const topDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
-    // Most expensive item
     const sortedByAmt = [...all].filter(i=>i.type==='expense').sort((a,b)=>b.amount-a.amount);
     const topItem = sortedByAmt[0];
-
     el.innerHTML = `
         <div class="chart-card" style="text-align:center;padding:24px 16px;">
             <div style="font-size:40px;margin-bottom:8px;">📊</div>
@@ -2503,6 +2507,127 @@ function renderReport(){
             <div style="font-size:28px;font-weight:700;color:var(--primary);margin:6px 0;">${days}</div>
             <div style="font-size:12px;color:var(--text2);">天</div>
         </div>`;
+}
+let RPT_CHART_MODE = 'month';
+function setRptChartMode(mode){
+    RPT_CHART_MODE = mode;
+    document.querySelectorAll('#pageReportBill .chart-mode-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('rptChartMode'+(mode==='month'?'Month':'Year')).classList.add('active');
+    renderReportBill();
+}
+function showReportBillPage(){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('pageReportBill').classList.add('active');
+    renderReportBill();
+}
+function renderReportBill(){
+    const body = document.getElementById('reportBillBody');
+    const all = DATA;
+    const data = RPT_CHART_MODE==='month'
+        ? all.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH)
+        : all.filter(i=>i.type==='expense' && i.date.slice(0,4)===CURRENT_MONTH.slice(0,4));
+    if(!data.length){
+        body.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><p>暂无支出数据</p></div>';
+        return;
+    }
+    const catTotals = {};
+    data.forEach(i=>{ catTotals[i.cate]=(catTotals[i.cate]||0)+i.amount; });
+    const entries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    const total = entries.reduce((s,e)=>s+e[1],0);
+    const cats = CATS.expense; const catColors = {};
+    cats.forEach((c,i)=>{ catColors[c.name]=CAT_COLORS[i%CAT_COLORS.length]; });
+    const other = '#b2bec3';
+    const legend = entries.map(([cate,amt])=>{ const p=(amt/total*100).toFixed(1); return '<div class="legend-item" style="cursor:pointer;" onclick="filterCategory(\''+cate+'\')"><span class="legend-dot" style="background:'+(catColors[cate]||other)+'"></span><span class="legend-label">'+cate+'</span><span class="legend-value">¥'+amt.toFixed(0)+' ('+p+'%)</span></div>'; }).join('');
+    const sugs = [];
+    let prevTotal = 0;
+    if(RPT_CHART_MODE==='month'){
+        const [y,m]=CURRENT_MONTH.split('-').map(Number);
+        const prev = m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;
+        prevTotal = all.filter(i=>i.type==='expense'&&i.date.slice(0,7)===prev).reduce((s,i)=>s+i.amount,0);
+    } else {
+        const py = String(Number(CURRENT_MONTH.slice(0,4))-1);
+        prevTotal = all.filter(i=>i.type==='expense'&&i.date.slice(0,4)===py).reduce((s,i)=>s+i.amount,0);
+    }
+    if(prevTotal>0){
+        const d=total-prevTotal,p=Math.round(d/prevTotal*100);
+        if(d>0) sugs.push('📈 相比上'+(RPT_CHART_MODE==='month'?'月':'年')+'多花 <b>¥'+d.toFixed(0)+'</b>（+'+p+'%），建议适当控制');
+        else sugs.push('📉 相比上'+(RPT_CHART_MODE==='month'?'月':'年')+'少花 <b>¥'+Math.abs(d).toFixed(0)+'</b>（'+p+'%），继续保持');
+    }
+    if(entries.length){
+        const baseline = 100 / CATS.expense.length;
+        entries.forEach(([cate,amt])=>{
+            const p=Math.round(amt/total*100);
+            if(p>baseline*2.5) sugs.push('⚠️ <b>'+cate+'</b> 占支出 '+p+'%（参考 ≤ '+Math.round(baseline*2.5)+'%），建议适当缩减');
+            else if(p>baseline*1.6) sugs.push('💭 <b>'+cate+'</b> 占支出 '+p+'%（参考 ≤ '+Math.round(baseline*1.6)+'%），留意是否有节省空间');
+        });
+    }
+    const monthIncome = all.filter(i=>i.type==='income'&&i.date.slice(0,7)===CURRENT_MONTH).reduce((s,i)=>s+i.amount,0);
+    const autoBudget = Math.round(monthIncome*0.7);
+    const raw = JSON.parse(localStorage.getItem('jz_custom_budget'));
+    const budgetMap = raw&&raw.month?{[raw.month]:raw.amount}:(raw||{});
+    const budget = budgetMap[CURRENT_MONTH]||autoBudget;
+    if(RPT_CHART_MODE==='month'&&budget>0&&total>budget){
+        sugs.push('🚨 本月已超预算 <b>¥'+(total-budget).toFixed(0)+'</b>');
+    } else if(RPT_CHART_MODE==='month'&&budget>0&&total>budget*0.7){
+        sugs.push('⚡ 预算已用 <b>'+Math.round(total/budget*100)+'%</b>，注意剩余开支');
+    }
+    const days = Math.max(1,new Set(data.map(i=>i.date)).size);
+    const dailyAvg = total/days;
+    const suggestedDaily = Math.round(budget/30);
+    if(RPT_CHART_MODE==='month'&&dailyAvg>suggestedDaily*1.1){
+        sugs.push('📊 日均 ¥'+dailyAvg.toFixed(1)+'（参考 ≤ ¥'+suggestedDaily+'），可尝试降低日均开支');
+    } else {
+        sugs.push('📊 日均支出 <b>¥'+dailyAvg.toFixed(1)+'</b>');
+    }
+    if(monthIncome>0){
+        const savePct = Math.round((monthIncome-total)/monthIncome*100);
+        if(savePct<15&&RPT_CHART_MODE==='month') sugs.push('🏦 储蓄率仅 '+savePct+'%（建议 ≥ 20%），适当增加储蓄');
+        else if(savePct>=20) sugs.push('🏦 储蓄率 '+savePct+'%，理财习惯不错 👏');
+    }
+    if(sugs.length===0) sugs.push('✅ 本月支出控制良好，无特别建议');
+    let html = '<div class="chart-card"><h3><span class="chart-deco">📊</span> 分类占比</h3><div class="pie-wrapper"><div class="pie-chart" id="rptPie"></div><div class="pie-legend">'+legend+'</div></div></div><div class="chart-card"><h3><span class="chart-deco">💡</span> 消费建议</h3>'+sugs.map(s=>'<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5;">'+s+'</div>').join('')+'</div>';
+    body.innerHTML = html;
+    const cvs=document.createElement('canvas'); cvs.width=120; cvs.height=120; cvs.style.cssText='width:120px;height:120px;';
+    const ctx=cvs.getContext('2d'); const cx=60,cy=60,rr=50; let sa=-Math.PI/2;
+    entries.forEach(([cate,amt])=>{ const sl=(amt/total)*2*Math.PI; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,rr,sa,sa+sl); ctx.closePath(); ctx.fillStyle=catColors[cate]||other; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); sa+=sl; });
+    if(sa<3*Math.PI/2){ ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,rr,sa,3*Math.PI/2); ctx.closePath(); ctx.fillStyle='#f0f0f0'; ctx.fill(); }
+    setTimeout(()=>{ const pc=document.getElementById('rptPie'); if(pc) pc.appendChild(cvs); },0);
+}
+function renderReportCharts(){
+    const el = document.getElementById('reportChartSection');
+    if(!el) return;
+    const data = DATA.filter(i=>i.type==='expense' && i.date.slice(0,7)===CURRENT_MONTH);
+    const src = data.length ? data : DATA.filter(i=>i.type==='expense' && i.date.slice(0,4)===CURRENT_MONTH.slice(0,4));
+    if(!src.length){ el.innerHTML = ''; return; }
+    const catTotals = {};
+    src.forEach(i=>{ catTotals[i.cate]=(catTotals[i.cate]||0)+i.amount; });
+    const entries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    const total = entries.reduce((s,e)=>s+e[1],0);
+    const cats = CATS.expense; const catColors = {};
+    cats.forEach((c,i)=>{ catColors[c.name]=CAT_COLORS[i%CAT_COLORS.length]; });
+    const other = '#b2bec3';
+    const legend = entries.map(([cate,amt])=>{ const p=(amt/total*100).toFixed(1); return '<div class="legend-item" style="cursor:pointer;" onclick="filterCategory(\''+cate+'\')"><span class="legend-dot" style="background:'+(catColors[cate]||other)+'"></span><span class="legend-label">'+cate+'</span><span class="legend-value">¥'+amt.toFixed(0)+' ('+p+'%)</span></div>'; }).join('');
+    const sugs = [];
+    const prev = CURRENT_MONTH.slice(5)==='01'?(Number(CURRENT_MONTH.slice(0,4))-1)+'-12':CURRENT_MONTH.slice(0,4)+'-'+String(Number(CURRENT_MONTH.slice(5))-1).padStart(2,'0');
+    const pt = DATA.filter(i=>i.type==='expense'&&i.date.slice(0,7)===prev).reduce((s,i)=>s+i.amount,0);
+    if(pt>0){ const d=total-pt,p=Math.round(d/pt*100); sugs.push((d>0?'📈 相比上月多花 ':'📉 相比上月少花 ')+'<b>¥'+Math.abs(d).toFixed(0)+'</b>（'+(d>0?'+':'')+p+'%）'); }
+    if(entries.length){ const t=entries[0],tp=Math.round(t[1]/total*100); if(tp>30) sugs.push('⚠️ <b>'+t[0]+'</b> 占支出 '+tp+'%，建议适当缩减'); else if(tp>20) sugs.push('💭 <b>'+t[0]+'</b> 是最大支出项（'+tp+'%），留意节省空间'); }
+    const days = Math.max(1,new Set(src.map(i=>i.date)).size);
+    sugs.push('📊 日均支出 <b>¥'+(total/days).toFixed(1)+'</b>');
+    el.innerHTML = '<div class="chart-card"><h3><span class="chart-deco">📊</span> 分类占比 <span style="font-size:11px;color:var(--text2);font-weight:400;">'+CURRENT_MONTH+'</span></h3><div class="pie-wrapper"><div class="pie-chart" id="rptPie"></div><div class="pie-legend">'+legend+'</div></div></div><div class="chart-card"><h3><span class="chart-deco">💡</span> 消费建议</h3>'+sugs.map(s=>'<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5;">'+s+'</div>').join('')+'</div>';
+    const cvs=document.createElement('canvas'); cvs.width=120; cvs.height=120; cvs.style.cssText='width:120px;height:120px;';
+    const ctx=cvs.getContext('2d'); const cx=60,cy=60,rr=50; let sa=-Math.PI/2;
+    entries.forEach(([cate,amt])=>{ const sl=(amt/total)*2*Math.PI; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,rr,sa,sa+sl); ctx.closePath(); ctx.fillStyle=catColors[cate]||other; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); sa+=sl; });
+    const pc=document.getElementById('rptPie'); if(pc) pc.appendChild(cvs);
+}
+function renderReportBillList(){
+    const keyword = document.getElementById('reportSearchInput').value.trim().toLowerCase();
+    const filterType = document.getElementById('reportFilterType').value;
+    let filtered = [...DATA];
+    if(filterType!=='all') filtered = filtered.filter(i=>i.type===filterType);
+    if(keyword) filtered = filtered.filter(i=>i.cate.includes(keyword)||(i.note||'').toLowerCase().includes(keyword));
+    filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+    renderGroupedList(filtered, 'reportBillList');
 }
 
 // ========== RANDOM CHALLENGES (WHEEL) ==========
@@ -3302,10 +3427,10 @@ function renderProfilePage(){
     const avatar = localStorage.getItem('jz_profile_avatar') || '😊';
     const avatarEl = document.getElementById('profileAvatar');
     if(avatar.startsWith('data:')){
-        avatarEl.style.backgroundImage = 'url(' + avatar + ')';
+        avatarEl.style.cssText = 'width:68px;height:68px;border-radius:50%;background-image:url(' + avatar + ');background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;border:3px solid rgba(255,255,255,.25);transition:transform .2s,box-shadow .2s;box-shadow:0 4px 20px rgba(0,0,0,.15);';
         avatarEl.textContent = '';
     } else {
-        avatarEl.style.backgroundImage = '';
+        avatarEl.style.cssText = 'width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;border:3px solid rgba(255,255,255,.25);background-size:cover;background-position:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 20px rgba(0,0,0,.15);';
         avatarEl.textContent = avatar;
     }
     document.getElementById('profileName').textContent = name;
@@ -3314,6 +3439,11 @@ function renderProfilePage(){
     const sav = DATA.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
     const friends = getFriends();
     document.getElementById('profileSubtitle').textContent = '📊 ' + DATA.length + ' 笔  ·  💰¥' + inc.toFixed(0) + '  ·  💸¥' + exp.toFixed(0) + '  ·  🏦¥' + sav.toFixed(0) + '  ·  🤝' + friends.length + ' 位好友';
+    // Update bill share preview count
+    const shares = getBillShares();
+    const sharedCount = Object.values(shares).filter(s => s.viewing && s.viewing.approved).length;
+    const el = document.getElementById('billPreviewCount');
+    if(el) el.textContent = sharedCount > 0 ? sharedCount + '人' : '';
 }
 
 function openAvatarSelector(){
@@ -3346,7 +3476,7 @@ function openAvatarSelector(){
         fileInput.type = 'file';
         fileInput.id = 'avatarFileInput';
         fileInput.accept = 'image/*';
-        fileInput.style.display = 'none';
+        fileInput.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
         fileInput.onchange = function(e){
             const file = e.target.files[0];
             if(!file) return;
@@ -3356,10 +3486,11 @@ function openAvatarSelector(){
                 document.getElementById('avatarSheet')?.remove();
                 document.getElementById('avatarSelectorOverlay')?.remove();
                 renderProfilePage();
+                sendProfileUpdate();
                 showToast('✅ 头像已更新');
             };
             reader.readAsDataURL(file);
-            this.value = '';
+            e.target.value = '';
         };
         document.body.appendChild(fileInput);
     }
@@ -3601,6 +3732,14 @@ function connectFriend(){
     renderFriendPage();
 }
 
+function cancelFriendRequest(fid){
+    const reqs = getFriendRequests();
+    const idx = reqs.findIndex(r => r.id === fid && r.direction === 'sent');
+    if(idx>=0) { reqs.splice(idx,1); saveFriendRequests(reqs); }
+    if(PEER_CONNS[fid]) { try{ PEER_CONNS[fid].close(); } catch(e){} delete PEER_CONNS[fid]; }
+    showToast('已撤回好友请求');
+    renderFriendPage();
+}
 function approveFriendRequest(fid, fname){
     const friends = getFriends();
     if(friends.find(f => f.id === fid)) return showToast('已经是好友了');
@@ -3702,28 +3841,30 @@ function approveBillView(fid, duration, scope){
     const shares = getBillShares();
     if(!shares[fid]) shares[fid] = {};
     scope = scope || { type: 'all' };
-    shares[fid].viewing = { approved: true, expires, scope };
+    // Compute the filtered data and summary (same as friend sees)
+    let filtered = [...DATA];
+    const now = new Date();
+    if(scope.type === 'year'){
+        const cutoff = new Date(now.getFullYear()-1, now.getMonth(), now.getDate()).toISOString().slice(0,10);
+        filtered = filtered.filter(i => i.date >= cutoff);
+    } else if(scope.type === 'month'){
+        filtered = filtered.filter(i => i.date.slice(0,7) === scope.value);
+    } else if(scope.type === 'module'){
+        filtered = filtered.filter(i => i.cate === scope.value);
+    }
+    const monthExpense = filtered.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+    const catTotals = {};
+    filtered.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+    const totalInc = filtered.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+    const totalSave = filtered.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
+    const durationLabel = duration === -1 ? '永久' : duration === 1 ? '1天' : duration === 10 ? '10天' : '30天';
+    const scopeLabel = scope.type === 'year' ? '近1年' : scope.type === 'month' ? scope.value+'月' : scope.type === 'module' ? scope.value+'模块' : '全部';
+    const data = { catTotals, totalExpense: monthExpense, totalIncome: totalInc, totalSave };
+    shares[fid].viewing = { approved: true, expires, scope, data };
     saveBillShares(shares);
     const conn = PEER_CONNS[fid];
     if(conn && conn.open){
-        let filtered = [...DATA];
-        const now = new Date();
-        if(scope.type === 'year'){
-            const cutoff = new Date(now.getFullYear()-1, now.getMonth(), now.getDate()).toISOString().slice(0,10);
-            filtered = filtered.filter(i => i.date >= cutoff);
-        } else if(scope.type === 'month'){
-            filtered = filtered.filter(i => i.date.slice(0,7) === scope.value);
-        } else if(scope.type === 'module'){
-            filtered = filtered.filter(i => i.cate === scope.value);
-        }
-        const monthExpense = filtered.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
-        const catTotals = {};
-        filtered.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
-        const totalInc = filtered.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
-        const totalSave = filtered.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0);
-        const durationLabel = duration === -1 ? '永久' : duration === 1 ? '1天' : duration === 10 ? '10天' : '30天';
-        const scopeLabel = scope.type === 'year' ? '近1年' : scope.type === 'month' ? scope.value+'月' : scope.type === 'module' ? scope.value+'模块' : '全部';
-        conn.send({ type: 'bill_view_approved', from: getUID(), duration: durationLabel, scope: scopeLabel, data: { catTotals, totalExpense: monthExpense, totalIncome: totalInc, totalSave } });
+        conn.send({ type: 'bill_view_approved', from: getUID(), duration: durationLabel, scope: scopeLabel, data });
     }
     showToast('✅ 已同意查看账单');
 }
@@ -3763,12 +3904,25 @@ function showBillSharedWithMe(){
 function previewSharedBill(fid){
     const shares = getBillShares();
     const share = shares[fid]?.viewing;
-    if(!share || !share.data) return showToast('暂无共享数据');
-    const data = share.data;
+    if(!share) return showToast('暂无共享数据');
+    // Compute preview data from local DATA
+    let filtered = [...DATA];
+    const now = new Date();
+    const scope = share.scope || {};
+    if(scope.type === 'year'){
+        const cutoff = new Date(now.getFullYear()-1, now.getMonth(), now.getDate()).toISOString().slice(0,10);
+        filtered = filtered.filter(i => i.date >= cutoff);
+    } else if(scope.type === 'month'){
+        filtered = filtered.filter(i => i.date.slice(0,7) === scope.value);
+    } else if(scope.type === 'module'){
+        filtered = filtered.filter(i => i.cate === scope.value);
+    }
+    const catTotals = {};
+    filtered.filter(i=>i.type==='expense').forEach(i=>{ catTotals[i.cate] = (catTotals[i.cate]||0) + i.amount; });
+    const data = { catTotals, totalExpense: filtered.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0), totalIncome: filtered.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0), totalSave: filtered.filter(i=>i.type==='save').reduce((s,i)=>s+i.amount,0) };
     const friends = getFriends();
     const f = friends.find(x => x.id === fid);
     const name = f ? (f.name || fid.slice(0,8)) : fid.slice(0,8);
-    const scope = share.scope || {};
     const scopeLabel = scope.type === 'year' ? '近1年' : scope.type === 'month' ? scope.value + '月' : scope.type === 'module' ? scope.value + '模块' : '全部';
     const sheet = document.createElement('div');
     sheet.className = 'sheet show';
@@ -3831,8 +3985,15 @@ function renderFriendPage(){
             '<button class="req-btn reject" onclick="rejectFriendRequest(\'' + r.id + '\')">拒绝</button>' +
         '</div>';
     });
+    // Show sent requests with revoke button
+    sentReqs.forEach(r => {
+        reqHtml += '<div class="request-card" style="opacity:.7;">' +
+            '<div class="req-info"><div class="req-name">📤 ' + (r.name || r.id.slice(0,8)) + '</div><div class="req-id">已发送好友请求 · ' + r.id.slice(0,8) + '</div></div>' +
+            '<button class="req-btn reject" onclick="cancelFriendRequest(\'' + r.id + '\')">撤回</button>' +
+        '</div>';
+    });
     
-    if(friends.length === 0){
+    if(friends.length === 0 && sentReqs.length === 0){
         listEl.innerHTML = reqHtml + '<div class="empty-state"><div class="empty-icon" style="font-size:56px;">🤝</div><p style="font-size:15px;color:var(--text2);">暂无好友，输入好友码添加吧</p><p style="font-size:12px;color:var(--text2);margin-top:4px;opacity:.6;">交换好友码即可互相添加</p></div>';
         return;
     }
@@ -4075,7 +4236,7 @@ function handlePeerData(data, fromId){
     } else if (data.type === 'bill_view_approved') {
         const shares = getBillShares();
         if(!shares[data.from]) shares[data.from] = {};
-        shares[data.from].viewing = { approved: true, data: data.data, expires: Date.now() + 86400000 };
+        shares[data.from].viewing = { approved: true, data: data.data, scope: data.scope || '全部', expires: Date.now() + 86400000 };
         saveBillShares(shares);
         showToast('☁️ ' + data.from.slice(0,4) + ' 已同意查看账单（' + (data.duration || '') + '）');
         const currFid = document.getElementById('friendChatTitle')?.dataset?.fid;
