@@ -751,6 +751,8 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 </nav>
 
 <script>
+// ========== FORMAT AMOUNT (strip trailing zeros) ==========
+function fmt(n){var s=n.toFixed(2).replace(/\.?0+$/,'');return s;}
 // ========== NORMALIZE DATA ==========
 function normItem(i){
     let type = i.type || '';
@@ -1035,7 +1037,7 @@ function refreshAll(){
         dailyEl.textContent = '¥' + dailyAvg.toFixed(0);
         dailyCard.classList.remove('warn');
     }
-    document.getElementById('previewSave').textContent = '¥' + save.toFixed(save % 1 ? 2 : 0);
+    document.getElementById('previewSave').textContent = '¥' + fmt(save);
 
     // Budget info row
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
@@ -1111,7 +1113,7 @@ function refreshAll(){
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                             <span>${c.name}</span>
-                            <span style="color:var(--text);font-weight:600;">¥${spent.toFixed(2)}</span>
+                            <span style="color:var(--text);font-weight:600;">¥${fmt(spent)}</span>
                         </div>
                     </div>
                 </div>
@@ -1128,7 +1130,7 @@ function refreshAll(){
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                         <span>${c.name}${badge} <span style="font-size:14px;">${funEmoji}</span></span>
-                        <span>¥${spent.toFixed(2)} / ¥${catBudget.toFixed(0)}</span>
+                        <span>¥${fmt(spent)} / ¥${catBudget.toFixed(0)}</span>
                     </div>
                     <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
                     <div style="font-size:10px;color:var(--text2);margin-top:3px;">${tip}</div>
@@ -1176,7 +1178,7 @@ function refreshAll(){
                     <div style="flex:1;">
                         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                             <span>${c.name} ${incFun}</span>
-                            <span style="color:var(--in);">¥${val.toFixed(2)}</span>
+                            <span style="color:var(--in);">¥${fmt(val)}</span>
                         </div>
                         <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill" style="width:${pct}%;background:var(--in);"></div></div>
                         <div style="font-size:10px;color:var(--text2);margin-top:3px;">${incTip}</div>
@@ -1277,7 +1279,7 @@ function renderGroupedList(list, elId, startCollapsed){
             <div class="date-group-header">
                 <span class="date-dot"></span>
                 ${label} ${label===date?'':`<span class="date-sub">${date}</span>`}
-                <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${dayTotal.toFixed(2)}</span>
+                <span class="date-day-total" style="color:${dayTotal>=0?'var(--in)':'var(--out)'}">${dayTotal>=0?'+':''}¥${fmt(dayTotal)}</span>
             </div>`;
         // Merge transfer pairs in this date group
         const mergedItems = [];
@@ -1304,7 +1306,7 @@ function renderGroupedList(list, elId, startCollapsed){
                 html += `<div class="transaction-item" style="border-left:3px solid var(--primary);">
                     <div class="tx-icon" style="background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))">${icon}</div>
                     <div><div class="tx-cate">🔄 ${i._to.cate} <span style="font-size:11px;color:var(--text2);font-weight:400;">← ${i._from.cate}</span></div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                    <div class="tx-amount save" style="margin-left:auto;">+¥${i.amount.toFixed(2)}</div>
+                    <div class="tx-amount save" style="margin-left:auto;">+¥${fmt(i.amount)}</div>
                     <div class="tx-item-actions">
                         <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i._from.id});deleteTx(${i._to.id})">🗑️</button>
                     </div>
@@ -1317,7 +1319,7 @@ function renderGroupedList(list, elId, startCollapsed){
                 html += `<div class="transaction-item">
                     <div class="tx-icon" style="background:${bg}">${icon}</div>
                     <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
-                    <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${i.amount.toFixed(2)}</div>
+                    <div class="tx-amount ${typeCls}" style="margin-left:auto;">${sign}¥${fmt(i.amount)}</div>
                     <div class="tx-item-actions">
                         <button class="tx-btn-edit" onclick="event.stopPropagation();openAdd('${i.type}',${i.id})">✏️</button>
                         <button class="tx-btn-del" onclick="event.stopPropagation();deleteTx(${i.id})">🗑️</button>
@@ -1673,7 +1675,7 @@ function renderSavePage(){
                     '</div>' +
                     (breakdownHtml ? '<div style="margin-top:2px;">' + breakdownHtml + '</div>' : '') +
                 '</div>' +
-                '<div style="font-size:17px;font-weight:700;color:var(--primary);">¥' + allSaves[m].toFixed(2) + '</div>' +
+                '<div style="font-size:17px;font-weight:700;color:var(--primary);">¥' + fmt(allSaves[m]) + '</div>' +
             '</div>' +
             (total > 0 ? '<div class="budget-bar" style="height:3px;margin-top:8px;"><div class="budget-fill good" style="width:' + pct + '%;background:linear-gradient(90deg,var(--primary2),var(--primary));"></div></div>' : '') +
         '</div>';
@@ -1863,7 +1865,7 @@ function renderSaveMonthDetail(month){
     sheet.style.cssText = 'z-index:99999;max-height:75vh;overflow-y:auto;';
     const [y,mon] = month.split('-');
     let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;">🏦 ' + y + '年' + parseInt(mon) + '月 存款</h3><span onclick="this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="cursor:pointer;font-size:20px;color:var(--text2);">✕</span></div>';
-    html += '<div style="font-size:12px;color:var(--text2);margin-bottom:10px;">共 ' + entries.length + ' 笔，合计 ¥' + entries.reduce((s,e)=>s+e.amount,0).toFixed(2) + '</div>';
+    html += '<div style="font-size:12px;color:var(--text2);margin-bottom:10px;">共 ' + entries.length + ' 笔，合计 ¥' + fmt(entries.reduce((s,e)=>s+e.amount,0)) + '</div>';
     merged.forEach(e => {
         if(e._isTransfer){
             html += '<div class="tx-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--card-bg,var(--input-bg));margin-bottom:6px;border-left:3px solid var(--primary);">' +
@@ -1871,7 +1873,7 @@ function renderSaveMonthDetail(month){
                     '<div style="font-size:13px;font-weight:600;">🔄 ' + e._to.cate + ' <span style="font-size:11px;color:var(--text2);font-weight:400;">← ' + e._from.cate + '</span></div>' +
                     '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
                 '</div>' +
-                '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">+¥' + e.amount.toFixed(2) + '</div>' +
+                '<div style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;">+¥' + fmt(e.amount) + '</div>' +
                 '<div style="display:flex;gap:2px;">' +
                 '<button class="tx-btn-edit" onclick="deleteTx(' + e._from.id + ');deleteTx(' + e._to.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
                 '</div>' +
@@ -1883,7 +1885,7 @@ function renderSaveMonthDetail(month){
                     '<div style="font-size:13px;font-weight:600;">' + e.cate + (isWd?' <span style="color:var(--out);font-size:10px;">取出</span>':'') + '</div>' +
                     '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + e.date + (e.note?' · ' + e.note:'') + '</div>' +
                 '</div>' +
-                '<div style="font-size:15px;font-weight:700;color:' + (isWd?'var(--out)':'var(--primary)') + ';white-space:nowrap;">' + (isWd?'-':'+') + '¥' + Math.abs(e.amount).toFixed(2) + '</div>' +
+                '<div style="font-size:15px;font-weight:700;color:' + (isWd?'var(--out)':'var(--primary)') + ';white-space:nowrap;">' + (isWd?'-':'+') + '¥' + fmt(Math.abs(e.amount)) + '</div>' +
                 '<button class="tx-btn-edit" onclick="openAdd(\'save\',' + e.id + ');this.closest(\'.sheet\').remove();document.getElementById(\'overlay\').classList.remove(\'show\')" style="opacity:.5;">✏️</button>' +
                 '<button class="tx-btn-edit" onclick="deleteTx(' + e.id + ');this.closest(\'.sheet\').remove()" style="opacity:.3;color:var(--out);">🗑️</button>' +
             '</div>';
@@ -2225,7 +2227,7 @@ function applyOCRResult(text){
     const val = extractAmount(text);
     if(val !== null){
         document.getElementById('addAmount').value = val;
-        showToast('✅ 识别金额 ¥'+val.toFixed(val%1?2:0));
+        showToast('✅ 识别金额 ¥'+fmt(val));
     }
     const t = cleanOCRText(text);
     const keywordMap = {
@@ -2515,7 +2517,7 @@ function renderReport(){
             <h3>🏆 趣味盘点</h3>
             <div style="font-size:13px;line-height:1.8;">
                 ${topCate?`<p>• 你在 <b>${topCate[0]}</b> 上花了最多钱，占支出 <b>${topCatePct}%</b></p>`:''}
-                ${topItem?`<p>• 单笔最大支出：<b>¥${topItem.amount.toFixed(2)}</b> — ${topItem.cate}${topItem.note?' ('+topItem.note+')':''}</p>`:''}
+                ${topItem?`<p>• 单笔最大支出：<b>¥${fmt(topItem.amount)}</b> — ${topItem.cate}${topItem.note?' ('+topItem.note+')':''}</p>`:''}
                 ${topDay?`<p>• 花钱最多的一天是 <b>${topDay[0]}</b>，花了 <b>¥${topDay[1].toFixed(0)}</b></p>`:''}
                 <p>• 总支出相当于吃了 <b>${hotpot}</b> 顿火锅，或 <b>${milktea}</b> 杯奶茶</p>
                 ${iphone>0?`<p>• 省下来能买 <b>${iphone}</b> 个 iPhone 📱</p>`:''}
@@ -2860,7 +2862,7 @@ function showCategoryBudget(cate){
             <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
             <div style="display:flex;justify-content:space-between;font-size:14px;">
                 <span style="font-weight:600;">${cat.icon} ${cate}</span>
-                <span style="color:var(--out);font-weight:700;">已花 ¥${spent.toFixed(2)}</span>
+                <span style="color:var(--out);font-weight:700;">已花 ¥${fmt(spent)}</span>
             </div>
         </div>
         <div class="form-group">
