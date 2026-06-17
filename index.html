@@ -154,10 +154,10 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 .tx-mood{font-size:14px;margin-left:4px;}
 
 /* Bottom Nav with FAB */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:var(--nav-bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:4px 0 env(safe-area-inset-bottom,6px);z-index:9999;transition:background .3s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:rgba(255,255,255,.92);}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:var(--nav-bg);border-top:1px solid var(--border);display:flex;justify-content:center;align-items:center;padding:4px 0 env(safe-area-inset-bottom,6px);z-index:9999;transition:background .3s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:rgba(255,255,255,.92);}
 .dark .bottom-nav{background:rgba(16,16,32,.92);}
 .theme-blue .bottom-nav{background:rgba(238,242,255,.92);}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;cursor:pointer;border:none;background:none;color:var(--text2);font-size:10px;transition:color .2s,transform .15s;position:relative;min-width:48px;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;cursor:pointer;border:none;background:none;color:var(--text2);font-size:10px;transition:color .2s,transform .15s;position:relative;min-width:48px;}
 .nav-item:active{transform:scale(.92);}
 .nav-item .nav-icon{font-size:20px;line-height:1.2;transition:transform .2s;}
 .nav-item.active .nav-icon{transform:scale(1.1);}
@@ -746,6 +746,7 @@ body{background:var(--bg);color:var(--text);transition:background .3s,color .3s;
 <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span>首页</span></button>
     <button class="nav-item" onclick="switchTab('report')"><span class="nav-icon">📊</span><span>报告</span></button>
+    <button class="nav-fab" onclick="smartAdd()">＋</button>
     <button class="nav-item" onclick="switchTab('save')"><span class="nav-icon">🏦</span><span>存款</span></button>
     <button class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>我的</span></button>
 </nav>
@@ -1034,10 +1035,10 @@ function refreshAll(){
         dailyEl.textContent = '¥0';
         dailyCard.classList.add('warn');
     } else {
-        dailyEl.textContent = '¥' + dailyAvg.toFixed(0);
+        dailyEl.textContent = '¥' + dailyAvg.toFixed(2);
         dailyCard.classList.remove('warn');
     }
-    document.getElementById('previewSave').textContent = '¥' + fmt(save);
+    document.getElementById('previewSave').textContent = '¥' + save.toFixed(2);
 
     // Budget info row
     const catBudgets = JSON.parse(localStorage.getItem('jz_cat_budgets')) || {};
@@ -1645,10 +1646,10 @@ function renderSavePage(){
     const monthSaveVal = getMonthlySave(curMonth);
     const allSaves = getMonthlySaveAll();
     const total = Object.values(allSaves).reduce((s,v)=>s+v, 0);
-    document.getElementById('saveTotal').textContent = '¥'+total.toFixed(0);
-    document.getElementById('saveMonth').textContent = '¥'+(monthSaveVal||0).toFixed(0);
+    document.getElementById('saveTotal').textContent = '¥'+total.toFixed(2);
+    document.getElementById('saveMonth').textContent = '¥'+(monthSaveVal||0).toFixed(2);
     document.getElementById('saveCount').textContent = Object.keys(allSaves).length;
-    document.getElementById('saveStatsSub').textContent = '共 ' + Object.keys(allSaves).length + ' 个月 · 月均 ¥' + (Object.keys(allSaves).length ? (total/Object.keys(allSaves).length).toFixed(0) : '0');
+    document.getElementById('saveStatsSub').textContent = '共 ' + Object.keys(allSaves).length + ' 个月 · 月均 ¥' + (Object.keys(allSaves).length ? (total/Object.keys(allSaves).length).toFixed(2) : '0');
     renderSaveModulePreview(total, allSaves);
     const el = document.getElementById('saveList');
     const months = Object.keys(allSaves).sort().reverse();
@@ -3520,14 +3521,28 @@ function openAvatarSelector(){
         fileInput.onchange = function(e){
             const file = e.target.files[0];
             if(!file) return;
+            showToast('⏳ 压缩头像...');
             const reader = new FileReader();
             reader.onload = function(ev){
-                localStorage.setItem('jz_profile_avatar', ev.target.result);
-                document.getElementById('avatarSheet')?.remove();
-                document.getElementById('avatarSelectorOverlay')?.remove();
-                renderProfilePage();
-                sendProfileUpdate();
-                showToast('✅ 头像已更新');
+                const img = new Image();
+                img.onload = function(){
+                    const maxSize = 200;
+                    let w = img.width, h = img.height;
+                    if(w > h){ if(w > maxSize){ h *= maxSize/w; w = maxSize; } }
+                    else { if(h > maxSize){ w *= maxSize/h; h = maxSize; } }
+                    const c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const dataUrl = c.toDataURL('image/jpeg', 0.8);
+                    localStorage.setItem('jz_profile_avatar', dataUrl);
+                    document.getElementById('avatarSheet')?.remove();
+                    document.getElementById('avatarSelectorOverlay')?.remove();
+                    renderProfilePage();
+                    sendProfileUpdate();
+                    showToast('✅ 头像已更新');
+                };
+                img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
             e.target.value = '';
@@ -3539,8 +3554,9 @@ function openAvatarSelector(){
 function sendProfileUpdate(){
     const name = localStorage.getItem('jz_profile_name') || '记账本用户';
     const avatar = localStorage.getItem('jz_profile_avatar') || '😊';
+    const msg = { type:'profile_update', from:getUID(), name, avatar };
     Object.values(PEER_CONNS).forEach(conn => {
-        if(conn && conn.open) conn.send({ type:'profile_update', from:getUID(), name, avatar });
+        if(conn && conn.open) try { conn.send(msg); } catch(e) { console.warn('send profile failed', e); }
     });
 }
 function setAvatar(a){
