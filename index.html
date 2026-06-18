@@ -1024,9 +1024,9 @@ function refreshAll(){
     
     // Header stats: income | expense | balance
     document.getElementById('headerStats').innerHTML = `
-        <span>收入 ¥${income.toFixed(0)}</span>
+        <span>收入 ¥${income.toFixed(2)}</span>
         <span style="opacity:.5;">|</span>
-        <span>支出 ¥${expense.toFixed(0)}</span>
+        <span>支出 ¥${expense.toFixed(2)}</span>
     `;
     const dailyEl = document.getElementById('previewDailyAvg');
     const dailyCard = dailyEl.closest('.preview-item');
@@ -1071,17 +1071,17 @@ function refreshAll(){
         <div class="preview-item">
             <span class="preview-icon">💰</span>
             <div class="preview-label">结余</div>
-            <div class="preview-value" style="font-size:14px;color:${balance>=0?'var(--in)':'var(--out)'};">¥${balance.toFixed(0)}</div>
+            <div class="preview-value" style="font-size:14px;color:${balance>=0?'var(--in)':'var(--out)'};">¥${balance.toFixed(2)}</div>
         </div>
         <div class="preview-item" style="cursor:pointer;" onclick="${pct>=100?`editBudget(${expense.toFixed(0)})`:'editBudget()'}">
             <span class="preview-icon">${budgetIcon}</span>
             <div class="preview-label">${budgetLabel}</div>
-            <div class="preview-value" style="color:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};">${pct>=100?'¥'+totalCatBudget.toFixed(0):'¥'+remaining.toFixed(0)}</div>
+            <div class="preview-value" style="color:${pct>=100?'var(--out)':pct>=80?'#fdcb6e':'var(--in)'};">${pct>=100?'¥'+totalCatBudget.toFixed(2):'¥'+remaining.toFixed(2)}</div>
         </div>
         <div class="preview-item">
             <span class="preview-icon">💳</span>
             <div class="preview-label">已花</div>
-            <div class="preview-value" style="color:var(--out);">¥${expense.toFixed(0)}</div>
+            <div class="preview-value" style="color:var(--out);">¥${expense.toFixed(2)}</div>
         </div>
     `;
     
@@ -1114,7 +1114,7 @@ function refreshAll(){
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                             <span>${c.name}</span>
-                            <span style="color:var(--text);font-weight:600;">¥${fmt(spent)}</span>
+                            <span style="color:var(--text);font-weight:600;">¥${spent.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -1131,7 +1131,7 @@ function refreshAll(){
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
                         <span>${c.name}${badge} <span style="font-size:14px;">${funEmoji}</span></span>
-                        <span>¥${fmt(spent)} / ¥${catBudget.toFixed(0)}</span>
+                        <span>¥${spent.toFixed(2)} / ¥${catBudget.toFixed(2)}</span>
                     </div>
                     <div class="budget-bar" style="height:5px;margin-top:4px;"><div class="budget-fill good" style="width:${pct}%;background:${barColor};"></div></div>
                     <div style="font-size:10px;color:var(--text2);margin-top:3px;">${tip}</div>
@@ -1316,7 +1316,7 @@ function renderGroupedList(list, elId, startCollapsed){
                 const icon = findCat(i.type,i.cate).icon;
                 let sign = '+', bg = 'linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,210,160,.08))', color = 'var(--in)', typeCls = 'income';
                 if(i.type==='expense'){ sign='-'; bg='linear-gradient(135deg,rgba(255,118,117,.15),rgba(255,154,154,.08))'; color='var(--out)'; typeCls='expense'; }
-                else if(i.type==='save'){ sign=''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
+                else if(i.type==='save'){ sign=i.amount>=0?'+':''; bg='linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))'; color='var(--primary)'; typeCls='save'; }
                 html += `<div class="transaction-item">
                     <div class="tx-icon" style="background:${bg}">${icon}</div>
                     <div><div class="tx-cate">${i.cate}${i.mood?`<span class="tx-mood">${i.mood}</span>`:''}</div>${i.note?`<div class="tx-remark">${i.note}</div>`:''}</div>
@@ -2854,16 +2854,16 @@ function showCategoryBudget(cate){
         <div style="background:var(--input-bg);border-radius:12px;padding:16px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
                 <span style="font-size:12px;color:var(--text2);">本月收入</span>
-                <span style="font-weight:700;">¥${monthIncome.toFixed(0)}</span>
+                <span style="font-weight:700;">¥${monthIncome.toFixed(2)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
                 <span style="font-size:12px;color:var(--text2);">各模块预算合计</span>
-                <span style="font-weight:700;color:var(--primary);">¥${totalCatBudget.toFixed(0)}</span>
+                <span style="font-weight:700;color:var(--primary);">¥${totalCatBudget.toFixed(2)}</span>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
             <div style="display:flex;justify-content:space-between;font-size:14px;">
                 <span style="font-weight:600;">${cat.icon} ${cate}</span>
-                <span style="color:var(--out);font-weight:700;">已花 ¥${fmt(spent)}</span>
+                <span style="color:var(--out);font-weight:700;">已花 ¥${spent.toFixed(2)}</span>
             </div>
         </div>
         <div class="form-group">
@@ -3194,7 +3194,7 @@ function switchTab(tab){
     const navMap = {home:0,report:1,save:2,profile:3,all:-1,charts:-1,settings:-1,friend:-1};
     document.getElementById(pageMap[tab]).classList.add('active');
     if(navMap[tab]>=0) document.querySelectorAll('.nav-item')[navMap[tab]].classList.add('active');
-    if(tab==='all') renderAllList();
+    if(tab==='all'){ renderAllList(); FILTER_CATE=''; }
     if(tab==='charts') renderCharts();
     if(tab==='save') renderSavePage();
     if(tab==='report'){ renderReport(); renderReportFriendTasks(); }
